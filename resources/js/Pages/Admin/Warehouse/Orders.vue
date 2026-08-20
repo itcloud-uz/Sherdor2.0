@@ -269,6 +269,7 @@ const formatMoney = (amount) => {
                             <div class="w-32">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Narxi (UZS) *</label>
                                 <input v-model="item.unit_price" type="number" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm text-right">
+<div v-if="item.unit_price" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(item.unit_price) }} UZS</div>
                             </div>
                             
                             <div class="w-32 pt-6 text-right pr-6">

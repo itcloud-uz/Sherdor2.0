@@ -207,6 +207,7 @@ const handleFileUpload = async (event) => {
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Umumiy Summa (UZS)</label>
                         <input v-model="form.total_amount" type="number" required min="0" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" placeholder="Shartnoma summasi">
+<div v-if="form.total_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(form.total_amount) }} UZS</div>
                     </div>
                     
                     <div>

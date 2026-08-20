@@ -373,6 +373,7 @@ function deleteAsset(id) {
                         <div>
                             <label class="block text-slate-400 font-bold uppercase tracking-wider mb-1.5">Sotib olish narxi (UZS)</label>
                             <input v-model="assetForm.purchase_cost" type="number" step="0.01" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs bg-slate-50/50" required>
+<div v-if="assetForm.purchase_cost" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(assetForm.purchase_cost) }} UZS</div>
                         </div>
 
 

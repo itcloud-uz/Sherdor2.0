@@ -4252,12 +4252,14 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             <label class="block text-sm font-medium text-gray-500 mb-1">1 kv.m narxi</label>
                                             <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
                                                 <input type="number" v-model.number="calcPricePerSqm" @input="onPricePerSqmInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
+<div v-if="calcPricePerSqm" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(calcPricePerSqm) }} UZS</div>
                                             </div>
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-500 mb-1">{{ selectedUnit?.type === 'commercial' ? "Do'kon" : "Uy" }} narxi (Jami)</label>
                                             <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
                                                 <input type="number" v-model.number="calcPrice" @input="onPriceInput" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
+<div v-if="calcPrice" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(calcPrice) }} UZS</div>
                                             </div>
                                         </div>
                                     </div>
@@ -4269,6 +4271,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </label>
                                         <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
                                             <input type="number" v-model.number="calcDownPayment" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
+<div v-if="calcDownPayment" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(calcDownPayment) }} UZS</div>
                                         </div>
                                         <div class="grid grid-cols-5 gap-2 mt-2">
                                             <button v-for="pct in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]" :key="pct" type="button" @click="setDownPaymentPercent(pct)" class="px-2 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium text-center">
@@ -4488,12 +4491,14 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 <label class="block text-xs font-semibold text-gray-500 mb-1">1 kv.m narxi</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
                                                     <input type="number" v-model.number="basePricePerSqm" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" required />
+<div v-if="basePricePerSqm" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(basePricePerSqm) }} UZS</div>
                                                 </div>
                                             </div>
                                             <div>
                                                 <label class="block text-xs font-semibold text-gray-500 mb-1">Uy narxi (Jami)</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
                                                     <input type="number" v-model.number="contractForm.total_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" required />
+<div v-if="contractForm.total_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.total_amount) }} UZS</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -4554,6 +4559,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                         <label class="block text-[9px] font-bold text-gray-500 mb-0.5">Oylik To'lov miqdori</label>
                                                         <div class="flex items-center bg-[#f8fafc] border border-gray-200 rounded-lg px-3 py-2">
                                                             <input type="number" v-model.number="contractForm.custom_monthly_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" />
+<div v-if="contractForm.custom_monthly_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.custom_monthly_amount) }} UZS</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -4580,6 +4586,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                         <label class="block text-[9px] font-bold text-gray-500 mb-0.5">Oylik To'lov miqdori</label>
                                                         <div class="flex items-center bg-[#f8fafc] border border-gray-200 rounded-lg px-3 py-2">
                                                             <input type="number" v-model.number="contractForm.custom_monthly_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" />
+<div v-if="contractForm.custom_monthly_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.custom_monthly_amount) }} UZS</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -4604,6 +4611,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 <label class="block text-xs font-semibold text-gray-500 mb-1">Boshlang'ich to'lov</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
                                                     <input type="number" v-model.number="contractForm.down_payment" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" required />
+<div v-if="contractForm.down_payment" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.down_payment) }} UZS</div>
                                                 </div>
                                                 
                                                 <!-- Down Payment Progress -->
@@ -4626,6 +4634,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                     <label class="block text-[10px] font-semibold text-gray-500 mb-1">Muddat (oy)</label>
                                                     <div class="relative flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2">
                                                         <input type="number" v-model.number="contractForm.down_payment_split_months" min="1" max="12" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
+<div v-if="contractForm.down_payment_split_months" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.down_payment_split_months) }} UZS</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -4636,6 +4645,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 <label class="block text-xs font-semibold text-gray-500 mb-1">To'liq to'lanadigan summa</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
                                                     <input type="number" v-model.number="contractForm.actual_paid_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" :placeholder="contractForm.total_amount" required />
+<div v-if="contractForm.actual_paid_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.actual_paid_amount) }} UZS</div>
                                                 </div>
                                                 <p class="text-[10px] text-gray-400 mt-1">Odatda uyning to'liq narxi ({{ formatSoM(contractForm.total_amount) }}) ga teng bo'ladi.</p>
                                             </div>
@@ -4673,6 +4683,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                     <label class="block text-[10px] font-semibold text-gray-500 mb-1">1-Boshlang'ich to'lov</label>
                                                     <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2">
                                                         <input type="number" v-model.number="initialDownPaymentPaid" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" placeholder="Ixtiyoriy" />
+<div v-if="initialDownPaymentPaid" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(initialDownPaymentPaid) }} UZS</div>
                                                     </div>
                                                 </div>
                                                 <div>
@@ -4815,6 +4826,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 <label class="block text-sm font-medium text-gray-500 mb-1">Jami Narxi</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3">
                                                     <input type="number" step="0.01" v-model.number="unitForm.price" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans" required />
+<div v-if="unitForm.price" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(unitForm.price) }} UZS</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -5084,6 +5096,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         <div>
                             <label class="block text-xs font-mono text-gray-500 mb-1">Jami Narxi (USD/UZS)</label>
                             <input v-model="unitForm.price" type="number" step="0.01" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
+<div v-if="unitForm.price" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(unitForm.price) }} UZS</div>
                         </div>
                     </div>
 
@@ -5262,8 +5275,10 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
                         <div class="flex items-center gap-3">
                             <input v-model="tempFilterMinPrice" type="number" placeholder="Min" class="w-1/2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm">
+<div v-if="tempFilterMinPrice" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(tempFilterMinPrice) }} UZS</div>
                             <span class="text-gray-400">—</span>
                             <input v-model="tempFilterMaxPrice" type="number" placeholder="Max" class="w-1/2 bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm">
+<div v-if="tempFilterMaxPrice" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(tempFilterMaxPrice) }} UZS</div>
                         </div>
                     </div>
                 </div>
@@ -5770,10 +5785,12 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Umumiy narxi (QQS bilan)</label>
                                 <input v-model.number="contractForm.total_amount" type="number" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
+<div v-if="contractForm.total_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.total_amount) }} UZS</div>
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Kvadrat metri narxi</label>
                                 <input v-model="contractForm.price_per_sqm" type="number" readonly tabindex="-1" class="w-full bg-gray-100 border border-gray-200 text-gray-500 text-xs rounded-xl px-4 py-3 cursor-not-allowed">
+<div v-if="contractForm.price_per_sqm" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.price_per_sqm) }} UZS</div>
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-4">To'lov turi</label>
@@ -5794,6 +5811,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Boshlang'ich to'lov</label>
                                 <input v-model.number="contractForm.down_payment" type="number" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all">
+<div v-if="contractForm.down_payment" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.down_payment) }} UZS</div>
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Muddat (oy)</label>
@@ -5812,6 +5830,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <div>
                                     <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Boshlang'ich to'lov muddati (oy)</label>
                                     <input type="number" v-model.number="contractForm.down_payment_split_months" min="1" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-bold" :required="contractForm.is_down_payment_split" />
+<div v-if="contractForm.down_payment_split_months" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.down_payment_split_months) }} UZS</div>
                                 </div>
                             </div>
                             <div v-if="contractForm.is_down_payment_split" class="text-xs text-amber-700 font-sans">

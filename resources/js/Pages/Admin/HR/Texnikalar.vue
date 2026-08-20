@@ -708,7 +708,19 @@ const exportToExcel = () => {
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Hisobot");
+        
+        // Format all numeric cells with thousand separators
+        wb.SheetNames.forEach(sheetName => {
+            let sheet = wb.Sheets[sheetName];
+            for (let cell in sheet) {
+                if (cell[0] === '!') continue;
+                if (sheet[cell].t === 'n') {
+                    sheet[cell].z = '#,##0';
+                }
+            }
+        });
         XLSX.writeFile(wb, `${selectedOwner.value.name.replace(/\s+/g, '_')}_Hisobot.xlsx`);
+
     } catch (error) {
         console.error("Excel yaratishda xatolik:", error);
         alert("Excel yaratishda xatolik yuz berdi. Dasturchiga murojaat qiling.");
@@ -816,7 +828,19 @@ const exportFinanceToExcel = () => {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Moliya_Tranzaksiyalar");
         const fileName = `${selectedOwner.value.name.replace(/\s+/g, '_')}_Moliya_Tranzaksiyalar.xlsx`;
+        
+        // Format all numeric cells with thousand separators
+        wb.SheetNames.forEach(sheetName => {
+            let sheet = wb.Sheets[sheetName];
+            for (let cell in sheet) {
+                if (cell[0] === '!') continue;
+                if (sheet[cell].t === 'n') {
+                    sheet[cell].z = '#,##0';
+                }
+            }
+        });
         XLSX.writeFile(wb, fileName);
+
     } catch (error) {
         console.error("Excel yaratishda xatolik:", error);
         alert("Excel yaratishda xatolik yuz berdi. Dasturchiga murojaat qiling.");
@@ -1179,6 +1203,7 @@ const exportFinanceToExcel = () => {
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">Narxi (UZS) <span class="text-red-500">*</span></label>
                                 <input v-model.number="workForm.price" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-2.5 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
+<div v-if="workForm.price" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(workForm.price) }} UZS</div>
                             </div>
                         </div>
 
@@ -1236,6 +1261,7 @@ const exportFinanceToExcel = () => {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">So'mma (UZS) *</label>
                         <input v-model.number="transactionForm.amount" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-2.5 bg-blue-50 focus:border-blue-500 focus:ring-blue-500" required />
+<div v-if="transactionForm.amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(transactionForm.amount) }} UZS</div>
                     </div>
 
                     <div>

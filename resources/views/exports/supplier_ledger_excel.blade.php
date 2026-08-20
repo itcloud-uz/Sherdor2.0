@@ -9,7 +9,7 @@
         </tr>
         <tr>
             <th colspan="4">Vakil: {{ $supplier->name }} | Tel: {{ $supplier->phone }}</th>
-            <th colspan="4" style="text-align: right;">Joriy Balans: {{ number_format(abs($supplier->balance), 2, '.', '') }} UZS ({{ $supplier->balance > 0 ? 'Qarzimiz bor' : ($supplier->balance < 0 ? 'Haqimiz bor' : 'Nol') }})</th>
+            <th colspan="4" style="text-align: right;">Joriy Balans: {{ number_format(abs($supplier->balance), 2, '.', ' ') }} UZS ({{ $supplier->balance > 0 ? 'Qarzimiz bor' : ($supplier->balance < 0 ? 'Haqimiz bor' : 'Nol') }})</th>
         </tr>
         <tr><th colspan="8"></th></tr>
     </thead>
@@ -60,13 +60,13 @@
                     <td style="border: 1px solid #000;">{{ $item['size'] ?: '-' }}</td>
                     <td style="border: 1px solid #000;">{{ $item['unit'] }}</td>
                     <td style="border: 1px solid #000;">{{ $item['qty'] }}</td>
-                    <td style="border: 1px solid #000;">{{ number_format($item['price'], 0, '.', '') }}</td>
-                    <td style="border: 1px solid #000;">{{ number_format($item['total'], 0, '.', '') }}</td>
+                    <td style="border: 1px solid #000;">{{ number_format($item['price'], 0, '.', ' ') }}</td>
+                    <td style="border: 1px solid #000;">{{ number_format($item['total'], 0, '.', ' ') }}</td>
                 </tr>
             @endforeach
             <tr>
                 <td colspan="7" style="font-weight: bold; text-align: right; border: 1px solid #000;">Jami ({{ $category }}):</td>
-                <td style="font-weight: bold; color: red; border: 1px solid #000;">{{ number_format($sum, 0, '.', '') }}</td>
+                <td style="font-weight: bold; color: red; border: 1px solid #000;">{{ number_format($sum, 0, '.', ' ') }}</td>
             </tr>
             <tr><td colspan="8"></td></tr>
         @empty
@@ -94,7 +94,7 @@
                 <td colspan="2" style="border: 1px solid #000;">{{ date('d.m.Y', strtotime($p->transaction_date)) }}</td>
                 <td colspan="2" style="border: 1px solid #000;">{{ ucfirst($p->payment_method) }}</td>
                 <td colspan="2" style="border: 1px solid #000;">{{ $p->notes ?: '-' }}</td>
-                <td colspan="2" style="border: 1px solid #000; text-align: right; color: green;">{{ number_format($p->amount, 0, '.', '') }}</td>
+                <td colspan="2" style="border: 1px solid #000; text-align: right; color: green;">{{ number_format($p->amount, 0, '.', ' ') }}</td>
             </tr>
         @empty
             <tr>
@@ -103,7 +103,7 @@
         @endforelse
         <tr>
             <td colspan="6" style="font-weight: bold; text-align: right; border: 1px solid #000;">Jami To'lovlar:</td>
-            <td colspan="2" style="font-weight: bold; color: green; border: 1px solid #000; text-align: right;">{{ number_format($total_payment, 0, '.', '') }}</td>
+            <td colspan="2" style="font-weight: bold; color: green; border: 1px solid #000; text-align: right;">{{ number_format($total_payment, 0, '.', ' ') }}</td>
         </tr>
     </tbody>
 </table>

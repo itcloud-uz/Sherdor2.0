@@ -481,17 +481,23 @@ const exportTransactionsToExcel = () => {
         return;
     }
     try {
-        const header = [["Sana", "Turi", "Izoh", "Summa (UZS)"]];
+        const header = [["Sana", "Turi", "Izoh", "To'lov turi", "Summa (UZS)"]];
         const rows = selectedBrigade.value.transactions.map(txn => {
             let type = txn.type;
             if (type === 'payment') type = "To'lov / Avans";
             else if (type === 'salary_accrual') type = "Ish haqi yozilishi";
             else if (type === 'penalty') type = "Jarima / Ushlanma";
             
+            let payment_method = '-';
+            if (txn.payment_method === 'cash') payment_method = 'Naqd';
+            else if (txn.payment_method === 'card') payment_method = 'Plastik';
+            else if (txn.payment_method === 'bank_transfer') payment_method = 'Bank';
+
             return [
                 new Date(txn.date || txn.created_at).toLocaleDateString('uz-UZ'),
                 type,
                 txn.description || '-',
+                payment_method,
                 Number(txn.amount || 0)
             ];
         });
@@ -499,7 +505,7 @@ const exportTransactionsToExcel = () => {
         // Jami summa
         const totalAmount = selectedBrigade.value.transactions.reduce((sum, t) => sum + Number(t.amount || 0), 0);
         rows.push([]);
-        rows.push(["", "", "JAMI:", totalAmount]);
+        rows.push(["", "", "", "JAMI:", totalAmount]);
 
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([...header, ...rows]);
@@ -508,7 +514,19 @@ const exportTransactionsToExcel = () => {
         ws['!cols'] = [{wch: 15}, {wch: 25}, {wch: 40}, {wch: 20}];
         
         XLSX.utils.book_append_sheet(wb, ws, "To'lovlar");
+        
+        // Format all numeric cells with thousand separators
+        wb.SheetNames.forEach(sheetName => {
+            let sheet = wb.Sheets[sheetName];
+            for (let cell in sheet) {
+                if (cell[0] === '!') continue;
+                if (sheet[cell].t === 'n') {
+                    sheet[cell].z = '#,##0';
+                }
+            }
+        });
         XLSX.writeFile(wb, `${selectedBrigade.value.name.replace(/\s+/g, '_')}_Tolovlar.xlsx`);
+
     } catch (error) {
         console.error("Excel yaratishda xatolik:", error);
     }
@@ -573,7 +591,19 @@ const exportToExcel = () => {
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Xizmatlar");
+        
+        // Format all numeric cells with thousand separators
+        wb.SheetNames.forEach(sheetName => {
+            let sheet = wb.Sheets[sheetName];
+            for (let cell in sheet) {
+                if (cell[0] === '!') continue;
+                if (sheet[cell].t === 'n') {
+                    sheet[cell].z = '#,##0';
+                }
+            }
+        });
         XLSX.writeFile(wb, `${selectedBrigade.value.name.replace(/\s+/g, '_')}_Hisobot.xlsx`);
+
     } catch (error) {
         console.error("Excel yaratishda xatolik:", error);
         alert("Excel yaratishda xatolik yuz berdi.");
@@ -959,6 +989,7 @@ const handleDragEnd = () => {
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Narxi</label>
                                 <input v-model.number="serviceForm.price" type="number" min="0" class="w-full border-gray-300 rounded-md text-sm p-2 font-medium focus:border-indigo-500 focus:ring-indigo-500" />
+<div v-if="serviceForm.price" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(serviceForm.price) }} UZS</div>
                             </div>
 
                             <!-- Umuniy hisob-kitob -->
@@ -1029,6 +1060,7 @@ const handleDragEnd = () => {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">So'mma (UZS) *</label>
                         <input v-model.number="transactionForm.amount" type="number" min="0" class="w-full border-gray-300 rounded-lg text-lg p-2.5 bg-blue-50 focus:border-blue-500 focus:ring-blue-500" required />
+<div v-if="transactionForm.amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(transactionForm.amount) }} UZS</div>
                     </div>
 
                     <div>

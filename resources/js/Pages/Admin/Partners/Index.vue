@@ -356,7 +356,19 @@ function exportToExcel(type) {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Hisobot");
-    XLSX.writeFile(wb, `${title.replace(/\s+/g, '_')}_${new Date().getTime()}.xlsx`);
+    
+        // Format all numeric cells with thousand separators
+        wb.SheetNames.forEach(sheetName => {
+            let sheet = wb.Sheets[sheetName];
+            for (let cell in sheet) {
+                if (cell[0] === '!') continue;
+                if (sheet[cell].t === 'n') {
+                    sheet[cell].z = '#,##0';
+                }
+            }
+        });
+        XLSX.writeFile(wb, `${title.replace(/\s+/g, '_')}_${new Date().getTime()}.xlsx`);
+
 }
 
 function exportLedgerCSV() {
@@ -383,7 +395,19 @@ function exportLedgerCSV() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Operatsiyalar");
-    XLSX.writeFile(wb, `Operatsiyalar_${new Date().getTime()}.xlsx`);
+    
+        // Format all numeric cells with thousand separators
+        wb.SheetNames.forEach(sheetName => {
+            let sheet = wb.Sheets[sheetName];
+            for (let cell in sheet) {
+                if (cell[0] === '!') continue;
+                if (sheet[cell].t === 'n') {
+                    sheet[cell].z = '#,##0';
+                }
+            }
+        });
+        XLSX.writeFile(wb, `Operatsiyalar_${new Date().getTime()}.xlsx`);
+
 }
 
 // Charts Data Computations
@@ -627,11 +651,13 @@ function formatDate(dateString) {
                     <div>
                         <label class="block text-gray-500 mb-1">Ulush Foizi (%)</label>
                         <input v-model="partnerForm.investment_share_percentage" type="number" step="0.01" min="0" max="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
+<div v-if="partnerForm.investment_share_percentage" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(partnerForm.investment_share_percentage) }} UZS</div>
                         <p class="text-[9px] text-gray-500 mt-1">Majburiy emas. Agar foydadan sherik bo'lmasa 0 kiriting.</p>
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">Kiritilgan Sarmoya (UZS)</label>
                         <input v-model="partnerForm.total_invested" type="number" min="0" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+<div v-if="partnerForm.total_invested" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(partnerForm.total_invested) }} UZS</div>
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
                         <button type="button" @click="showAddPartnerModal = false" class="px-4 py-2 hover:bg-gray-100 rounded uppercase">{{ $t('cancel') }}</button>
@@ -650,14 +676,17 @@ function formatDate(dateString) {
                     <div>
                         <label class="block text-gray-500 mb-1">Ulush Foizi (%)</label>
                         <input v-model="editPartnerForm.investment_share_percentage" type="number" step="0.01" min="0" max="100" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full">
+<div v-if="editPartnerForm.investment_share_percentage" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(editPartnerForm.investment_share_percentage) }} UZS</div>
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">Kiritilgan Sarmoya (UZS)</label>
                         <input v-model="editPartnerForm.total_invested" type="number" min="0" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+<div v-if="editPartnerForm.total_invested" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(editPartnerForm.total_invested) }} UZS</div>
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">Bo'ynidagi qarz / Hisobdorlik (UZS)</label>
                         <input v-model="editPartnerForm.accountable_balance" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-red-600" required>
+<div v-if="editPartnerForm.accountable_balance" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(editPartnerForm.accountable_balance) }} UZS</div>
                         <p class="text-[9px] text-gray-500 mt-1">Diqqat: Ushbu qiymatni qo'lda o'zgartirish moliyaviy xatolikka olib kelishi mumkin.</p>
                     </div>
                     <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
@@ -678,6 +707,7 @@ function formatDate(dateString) {
                     <div>
                         <label class="block text-gray-500 mb-1">Summa (UZS)</label>
                         <input v-model="advanceForm.amount" type="number" min="1" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-lg" required>
+<div v-if="advanceForm.amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(advanceForm.amount) }} UZS</div>
                     </div>
                     <div>
                         <label class="block text-gray-500 mb-1">Maqsad (Izoh)</label>
@@ -725,6 +755,7 @@ function formatDate(dateString) {
                     <div>
                         <label class="block text-gray-500 mb-1">Xarajat Summasi (UZS)</label>
                         <input v-model="expenseForm.amount" type="number" min="1" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm w-full text-lg font-bold font-mono text-right py-2 px-3" required placeholder="Xarajat summasini kiriting...">
+<div v-if="expenseForm.amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(expenseForm.amount) }} UZS</div>
                         <p v-if="expenseForm.errors?.amount" class="text-red-600 text-[10px] mt-1">{{ expenseForm.errors.amount }}</p>
                     </div>
 

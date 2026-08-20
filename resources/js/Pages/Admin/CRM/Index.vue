@@ -7186,6 +7186,7 @@ const ledgerReportData = computed(() => {
                                             <td class="p-3 text-sm font-mono text-emerald-600">
                                                 <div v-if="editingScheduleId === schedule.id" class="flex items-center gap-2">
                                                     <input type="number" step="0.01" v-model="editingPaidAmount" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-24 text-gray-900 text-xs py-1 px-2">
+<div v-if="editingPaidAmount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(editingPaidAmount) }} UZS</div>
                                                     <button @click="saveSchedulePayment(schedule)" :disabled="isProcessing" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium">{{ $t('save') }}</button>
                                                     <button @click="editingScheduleId = null" class="px-2 py-1 text-gray-900 text-[10px] rounded hover:bg-white/30 transition-all">{{ $t('cancel') }}</button>
                                                 </div>
@@ -7266,6 +7267,7 @@ const ledgerReportData = computed(() => {
                                             <td class="p-3 text-sm font-mono text-emerald-600">
                                                 <div v-if="editingScheduleId === schedule.id" class="flex items-center gap-2">
                                                     <input type="number" step="0.01" v-model="editingPaidAmount" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-24 text-gray-900 text-xs py-1 px-2">
+<div v-if="editingPaidAmount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(editingPaidAmount) }} UZS</div>
                                                     <button @click="saveSchedulePayment(schedule)" :disabled="isProcessing" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium">{{ $t('save') }}</button>
                                                     <button @click="editingScheduleId = null" class="px-2 py-1 text-gray-900 text-[10px] rounded hover:bg-white/30 transition-all">{{ $t('cancel') }}</button>
                                                 </div>
@@ -7340,6 +7342,7 @@ const ledgerReportData = computed(() => {
                                     <td class="p-3 text-sm font-mono text-emerald-600">
                                         <div v-if="editingScheduleId === schedule.id" class="flex items-center gap-2">
                                             <input type="number" step="0.01" v-model="editingPaidAmount" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-24 text-gray-900 text-xs py-1 px-2">
+<div v-if="editingPaidAmount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(editingPaidAmount) }} UZS</div>
                                             <button @click="saveSchedulePayment(schedule)" :disabled="isProcessing" class="bg-green-50 text-green-700 border border-green-200 rounded-md px-2 py-1 text-xs font-medium">{{ $t('save') }}</button>
                                             <button @click="editingScheduleId = null" class="px-2 py-1 text-gray-900 text-[10px] rounded hover:bg-white/30 transition-all">{{ $t('cancel') }}</button>
                                         </div>
@@ -7452,6 +7455,7 @@ const ledgerReportData = computed(() => {
                                     <div>
                                         <label class="block text-[10px] font-bold text-gray-500 mb-1">Summa ({{ i + 1 }}-bosqich):</label>
                                         <input type="number" v-model="inst.amount" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono font-bold">
+<div v-if="inst.amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(inst.amount) }} UZS</div>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-gray-500 mb-1">Sana:</label>
@@ -8003,6 +8007,7 @@ const ledgerReportData = computed(() => {
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5"><span class="text-red-500">*</span> Oldindan to'lov</label>
                             <div class="relative flex items-center">
                                 <input v-model.number="contractForm.down_payment" type="number" min="0" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl pl-4 pr-24 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all" :required="!isEditingClient && currentStep === 3">
+<div v-if="contractForm.down_payment" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.down_payment) }} UZS</div>
                                 <span class="absolute right-4 text-[10px] font-semibold text-gray-400 pointer-events-none">
                                     {{ finalContractPrice > 0 ? Math.round((contractForm.down_payment / finalContractPrice) * 100) : 0 }}% • UZS
                                 </span>
@@ -8052,6 +8057,7 @@ const ledgerReportData = computed(() => {
                             <label class="block text-xs font-semibold text-gray-700 mb-1.5">Chegirma miqdori</label>
                             <div class="relative flex items-center">
                                 <input v-model.number="discountAmount" type="number" min="0" class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl pl-4 pr-16 py-3 focus:outline-none focus:ring-2 focus:ring-[#f2a900]/20 focus:border-[#f2a900] transition-all">
+<div v-if="discountAmount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(discountAmount) }} UZS</div>
                                 <span class="absolute right-4 text-xs font-semibold text-gray-400 pointer-events-none">UZS</span>
                             </div>
                         </div>
@@ -8350,10 +8356,12 @@ const ledgerReportData = computed(() => {
                             <div>
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('total_price_with_vat') }}</label>
                                 <input v-model="contractForm.total_amount" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600 font-bold text-lg" required placeholder="Umumiy summani kiriting">
+<div v-if="contractForm.total_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.total_amount) }} UZS</div>
                             </div>
                             <div>
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('price_per_sqm_label') }} (Avtomatik hisoblandi)</label>
                                 <input v-model="contractForm.price_per_sqm" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full opacity-70 cursor-not-allowed" readonly tabindex="-1">
+<div v-if="contractForm.price_per_sqm" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.price_per_sqm) }} UZS</div>
                             </div>
                         </div>
 
@@ -8376,6 +8384,7 @@ const ledgerReportData = computed(() => {
                             <div v-if="contractForm.payment_type === 'installment'">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('down_payment') }}</label>
                                 <input v-model="contractForm.down_payment" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" required>
+<div v-if="contractForm.down_payment" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.down_payment) }} UZS</div>
                             </div>
                             <div v-if="contractForm.payment_type === 'installment'">
                                 <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('term_months') }}</label>
@@ -8389,6 +8398,7 @@ const ledgerReportData = computed(() => {
                                 <div>
                                     <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Haqiqatda qilingan to'lov</label>
                                     <input v-model="contractForm.actual_paid_amount" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-amber-600" placeholder="Masalan: 600000000">
+<div v-if="contractForm.actual_paid_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.actual_paid_amount) }} UZS</div>
                                 </div>
                                 <div v-if="Number(contractForm.actual_paid_amount) > 0">
                                     <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">Kassaga yo'naltirish</label>
@@ -9765,6 +9775,7 @@ const ledgerReportData = computed(() => {
                             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">To'lov Summasi</label>
                             <div class="relative">
                                 <input v-model="transactionForm.amount" type="number" required min="1" placeholder="Masalan: 5000000" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl pl-4 pr-12 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-bold">
+<div v-if="transactionForm.amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(transactionForm.amount) }} UZS</div>
                                 <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-bold">so'm</span>
                             </div>
                         </div>
@@ -9861,6 +9872,7 @@ const ledgerReportData = computed(() => {
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">To'lov Summasi</label>
                         <div class="relative">
                             <input v-model="editTransactionForm.amount" type="number" required min="1" class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl pl-4 pr-12 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold">
+<div v-if="editTransactionForm.amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(editTransactionForm.amount) }} UZS</div>
                             <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-bold">so'm</span>
                         </div>
                     </div>
@@ -10009,6 +10021,7 @@ const ledgerReportData = computed(() => {
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Boshlang'ich qoldiq (Balans)</label>
                         <div class="relative">
                             <input v-model="counterpartyForm.balance" type="number" required class="w-full bg-white border border-gray-300 text-gray-900 rounded-xl pl-4 pr-12 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold">
+<div v-if="counterpartyForm.balance" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(counterpartyForm.balance) }} UZS</div>
                             <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-bold">so'm</span>
                         </div>
                         <span class="text-[10px] text-gray-400 mt-1 block">Manfiy qiymat qarzdorlikni, musbat qiymat esa haqdorlikni bildiradi.</span>
@@ -10340,6 +10353,7 @@ const ledgerReportData = computed(() => {
                                     </td>
                                     <td class="p-3">
                                         <input type="number" step="0.01" v-model.number="row.expected_amount" required class="bg-white border border-gray-300 text-gray-900 rounded-lg px-2.5 py-1.5 text-xs shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none font-mono w-48" placeholder="Summa">
+<div v-if="row.expected_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(row.expected_amount) }} UZS</div>
                                     </td>
                                     <td class="p-3">
                                         <select v-model="row.payment_type" required class="bg-white border border-gray-300 text-gray-900 rounded-lg px-2.5 py-1.5 text-xs shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 focus:outline-none w-36">

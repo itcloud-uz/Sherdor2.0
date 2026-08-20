@@ -2300,6 +2300,7 @@ const exportSalesStatsToExcel = () => {
                             placeholder="Summa kiriting"
                             class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                         />
+<div v-if="adjForm.amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(adjForm.amount) }} UZS</div>
                     </div>
                     
                     <div>
@@ -2348,6 +2349,7 @@ const exportSalesStatsToExcel = () => {
                             placeholder="To'lov summasi"
                             class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                         />
+<div v-if="payForm.amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(payForm.amount) }} UZS</div>
                     </div>
                     
                     <div>
@@ -2645,6 +2647,7 @@ const exportSalesStatsToExcel = () => {
                                     required
                                     class="w-full border border-gray-200 rounded-xl pl-3 pr-12 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                                 />
+<div v-if="kpiForm.bonus_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(kpiForm.bonus_amount) }} UZS</div>
                                 <span class="absolute right-3 top-2.5 text-xs text-gray-400 font-bold">UZS</span>
                             </div>
                         </div>

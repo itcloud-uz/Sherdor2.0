@@ -384,6 +384,7 @@ const filteredInventory = computed(() => {
                         <div>
                             <label class="block text-[10px] font-semibold text-gray-500 mb-1 uppercase tracking-wider">Birlik Narxi (UZS) *</label>
                             <input v-model="form.price" type="number" required class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 font-medium focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition-colors text-sm text-right">
+<div v-if="form.price" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(form.price) }} UZS</div>
                         </div>
 
                         <div>

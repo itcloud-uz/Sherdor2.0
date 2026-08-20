@@ -6474,6 +6474,7 @@ function deleteCategory(id) {
                             <div>
                                 <label class="block text-[10px] text-gray-400 mb-1 uppercase">Oylik To'lov *</label>
                                 <input v-model="registerForm.monthly_payment" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+<div v-if="registerForm.monthly_payment" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(registerForm.monthly_payment) }} UZS</div>
                             </div>
                         </div>
 
@@ -6498,6 +6499,7 @@ function deleteCategory(id) {
                     <div>
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Boshlang'ich balans (UZS)</label>
                         <input v-model="registerForm.initial_balance_uzs" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+<div v-if="registerForm.initial_balance_uzs" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(registerForm.initial_balance_uzs) }} UZS</div>
                     </div>
 
                     <!-- Bino / Obyekt -->
@@ -6783,6 +6785,7 @@ function deleteCategory(id) {
                         <div>
                             <label class="block text-[10px] text-gray-400 mb-1 uppercase">Dastlabki Balans</label>
                             <input v-model="counterpartyForm.balance" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+<div v-if="counterpartyForm.balance" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(counterpartyForm.balance) }} UZS</div>
                         </div>
                     </div>
 
@@ -6861,6 +6864,7 @@ function deleteCategory(id) {
                         <div>
                             <label class="block text-[10px] text-gray-400 mb-1 uppercase">Oylik to'lov</label>
                             <input v-model="liabilityForm.monthly_payment" type="number" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9">
+<div v-if="liabilityForm.monthly_payment" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(liabilityForm.monthly_payment) }} UZS</div>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
@@ -7033,6 +7037,7 @@ function deleteCategory(id) {
                     <div>
                         <label class="block text-[10px] text-gray-400 mb-1 uppercase">Joriy balans (qarz) *</label>
                         <input v-model="editSupplierForm.balance" type="number" step="0.01" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full h-9" required>
+<div v-if="editSupplierForm.balance" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(editSupplierForm.balance) }} UZS</div>
                     </div>
                     <div class="flex justify-end gap-3 pt-6 border-t border-gray-100">
                         <button type="button" @click="showEditSupplierModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-bold">Bekor qilish</button>
@@ -8018,6 +8023,7 @@ function deleteCategory(id) {
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">4. Olingan summa (UZS)</label>
                             <input v-model.number="takeDebtForm.total_amount" type="number" placeholder="200000000" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-purple-500 font-bold" required />
+<div v-if="takeDebtForm.total_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(takeDebtForm.total_amount) }} UZS</div>
                         </div>
                     </div>
 
@@ -8083,6 +8089,7 @@ function deleteCategory(id) {
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">4. Qaytarilgan summa (UZS)</label>
                             <input v-model.number="repayDebtForm.sent_amount" type="number" placeholder="171840000" class="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 font-bold" required />
+<div v-if="repayDebtForm.sent_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(repayDebtForm.sent_amount) }} UZS</div>
                         </div>
                     </div>
 

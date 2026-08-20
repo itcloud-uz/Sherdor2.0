@@ -666,26 +666,59 @@ onMounted(() => {
                 </div>
 
                 <!-- Col 3: Aloqa & ITCloud Kontaktlari -->
-                <div>
-                    <h5 class="text-white font-bold text-sm uppercase tracking-wider mb-4">Aloqa & ITCloud</h5>
-                    <ul class="space-y-3 text-sm text-gray-400">
-                        <li>
-                            <span class="text-xs text-gray-500 block">Qo'llab-quvvatlash va Sotuv:</span>
-                            <a href="tel:+998977084444" class="text-white font-semibold hover:text-amber-400 transition-colors">+998 (97) 708-44-44</a>
-                        </li>
-                        <li>
-                            <span class="text-xs text-gray-500 block">Texnik Bo'lim:</span>
-                            <a href="tel:+998935732929" class="text-white font-semibold hover:text-amber-400 transition-colors">+998 (93) 573-29-29</a>
-                        </li>
-                        <li>
-                            <span class="text-xs text-gray-500 block">Veb-sayt:</span>
-                            <a href="https://itcloud.uz" target="_blank" class="text-cyan-400 hover:underline font-medium">www.itcloud.uz</a>
-                        </li>
-                        <li>
-                            <span class="text-xs text-gray-500 block">Manzil:</span>
-                            <span class="text-gray-300 text-xs">Urgut shahar, Navoiy shoh ko'chasi 83-uy</span>
-                        </li>
-                    </ul>
+                <div class="md:col-span-1">
+                    <h5 class="text-white font-bold text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Aloqa & ITCloud
+                    </h5>
+                    
+                    <!-- Phone numbers -->
+                    <div class="space-y-2 mb-4">
+                        <a href="tel:+998911873700" class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/10 hover:border-amber-400/50 hover:bg-white/[0.06] transition-all group">
+                            <span class="text-base">📞</span>
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-medium">Sotuv va Konsultatsiya:</span>
+                                <span class="text-xs font-bold text-white group-hover:text-amber-300 transition-colors">+998 (91) 187-37-00</span>
+                            </div>
+                        </a>
+
+                        <a href="tel:+998335180005" class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/10 hover:border-cyan-400/50 hover:bg-white/[0.06] transition-all group">
+                            <span class="text-base">📱</span>
+                            <div>
+                                <span class="text-[10px] text-gray-400 block font-medium">Texnik va Boshqaruv:</span>
+                                <span class="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">+998 (33) 518-00-05</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Telegram Links -->
+                    <div class="space-y-1.5 mb-4">
+                        <span class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider block">Telegram:</span>
+                        <div class="flex flex-col gap-1.5">
+                            <a href="https://t.me/ITclouduz_me" target="_blank" class="inline-flex items-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
+                                <span class="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[10px] font-bold">TG</span>
+                                @ITclouduz_me
+                            </a>
+                            <a href="https://t.me/itcloud_support" target="_blank" class="inline-flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                                <span class="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/30 text-[10px] font-bold">TG</span>
+                                @itcloud_support
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Instagram Links -->
+                    <div class="space-y-1.5">
+                        <span class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider block">Instagram:</span>
+                        <div class="flex flex-col gap-1.5">
+                            <a href="https://instagram.com/itcloud.uz" target="_blank" class="inline-flex items-center gap-2 text-xs text-pink-400 hover:text-pink-300 transition-colors">
+                                <span class="px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/30 text-[10px] font-bold">IG</span>
+                                @itcloud.uz
+                            </a>
+                            <a href="https://instagram.com/shodiyor_kholmurodov" target="_blank" class="inline-flex items-center gap-2 text-xs text-purple-400 hover:text-purple-300 transition-colors">
+                                <span class="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/30 text-[10px] font-bold">IG</span>
+                                @shodiyor_kholmurodov
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
 

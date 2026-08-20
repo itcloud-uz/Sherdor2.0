@@ -1288,9 +1288,25 @@ class FinanceController extends Controller
         $wasApproved = $transaction->status === 'approved';
 
         DB::transaction(function () use ($transaction, $validated, $wasApproved) {
+            $moneyTransferId = $transaction->money_transfer_id;
+            $twinTx = null;
+            $transfer = null;
+
+            if ($moneyTransferId) {
+                $transfer = MoneyTransfer::find($moneyTransferId);
+                $twinTx = Transaction::where('money_transfer_id', $moneyTransferId)
+                    ->where('id', '!=', $transaction->id)
+                    ->first();
+            }
+
             if ($wasApproved) {
-                // Revert all old side effects (balances, sub-ledgers, invoice paid amount, target balance, CRM schedules, etc.)
+                // Revert all old side effects for main transaction
                 $this->executeTransactionDeletionSideEffects($transaction);
+
+                // Revert side effects for twin transaction if it exists and was approved
+                if ($twinTx && $twinTx->status === 'approved') {
+                    $this->executeTransactionDeletionSideEffects($twinTx);
+                }
             }
 
             // Apply conversion calculation if counterparty is present
@@ -1304,13 +1320,43 @@ class FinanceController extends Controller
                 }
             }
 
-            // Update the transaction details
+            // Update the main transaction details
             $transaction->update($validated);
             $transaction->refresh();
 
+            // Sync with MoneyTransfer and twin Transaction
+            if ($transfer) {
+                if ($transaction->type === 'expense') {
+                    $transfer->from_account_id = $transaction->account_id;
+                    $transfer->sent_amount = $transaction->amount;
+                } else {
+                    $transfer->to_account_id = $transaction->account_id;
+                    $transfer->received_amount = $transaction->amount;
+                }
+                if (!empty($validated['notes'])) {
+                    $transfer->description = $validated['notes'];
+                }
+                $transfer->save();
+
+                if ($twinTx) {
+                    $twinTx->update([
+                        'amount' => $transaction->amount,
+                        'transaction_date' => $transaction->transaction_date,
+                        'notes' => $transaction->notes,
+                        'description' => $transaction->description,
+                        'payment_method' => $transaction->payment_method,
+                    ]);
+                }
+            }
+
             if ($transaction->status === 'approved') {
-                // Re-apply all new side effects (using new amount, date, counterparty, account, target, etc.)
+                // Re-apply all new side effects for main transaction
                 $this->executeTransactionApprovalSideEffects($transaction);
+
+                // Re-apply side effects for twin transaction
+                if ($twinTx && $twinTx->status === 'approved') {
+                    $this->executeTransactionApprovalSideEffects($twinTx);
+                }
             }
         });
 

@@ -1732,14 +1732,6 @@ function handleEditFileUpload(e) {
 }
 
 function openEditTransactionModal(txn) {
-    if (txn.money_transfer_id) {
-        const transfer = (props.moneyTransfers || []).find(t => t.id === txn.money_transfer_id);
-        if (transfer) {
-            openEditTransferModal(transfer);
-            return;
-        }
-    }
-
     let paymentPurpose = txn.notes || '';
     let extraNotes = txn.description || '';
     if (!extraNotes && paymentPurpose.includes('\n[Izoh]: ')) {
@@ -3100,25 +3092,45 @@ function submitTransfer() {
 }
 
 function openEditTransferModal(t) {
-    isEditingTransfer.value = true;
-    editingTransferId.value = t.id;
-    isTransferFromLocked.value = false;
-    
-    let transferTxDate = null;
-    if (t.transactions && t.transactions.length > 0 && t.transactions[0].transaction_date) {
-        transferTxDate = t.transactions[0].transaction_date.slice(0, 10);
+    let txn = null;
+    if (t.transactions && t.transactions.length > 0) {
+        txn = t.transactions[0];
+    } else {
+        txn = (sortedTransactions.value || props.transactions || []).find(tx => tx.money_transfer_id === t.id);
     }
     
-    transferForm.value = {
-        from_account_id: t.from_account_id,
-        to_account_id: t.to_account_id,
-        sent_amount: parseFloat(t.sent_amount),
+    if (txn) {
+        openEditTransactionModal(txn);
+        return;
+    }
+
+    let transferTxDate = (t.created_at ? t.created_at.slice(0, 10) : '');
+    let transferCategory = (props.allCategories || props.categories || []).find(c => c.name === "Ichki O'tkazma");
+
+    editTransactionForm.value = {
+        id: null,
+        money_transfer_id: t.id,
+        amount: parseFloat(t.sent_amount || 0),
+        notes: t.description || "Ichki o'tkazma",
+        extra_notes: '',
+        attachment: null,
+        category_id: transferCategory ? transferCategory.id : '',
+        building_id: '',
+        account_id: t.from_account_id,
+        payment_method: 'cash',
+        transaction_date: transferTxDate,
+        counterparty_id: '',
+        partner_id: '',
+        worker_id: '',
+        brigade_id: '',
+        machinery_id: '',
+        supplier_id: '',
+        fixed_asset_id: '',
         exchange_rate: parseFloat(t.exchange_rate || 1.0),
-        transaction_date: transferTxDate || (t.created_at ? t.created_at.slice(0, 10) : new Date().toLocaleString('sv').slice(0, 10)),
-        notes: t.description || '',
-        description: ''
+        converted_amount: '',
+        type: 'expense'
     };
-    showQuickTransferModal.value = true;
+    showEditTransactionModal.value = true;
 }
 
 function deleteTransferItem(id) {

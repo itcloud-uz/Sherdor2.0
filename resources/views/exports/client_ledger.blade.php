@@ -88,10 +88,50 @@
     @php
         $client = $contract->client;
         $unit = $contract->unit;
+        $building = $unit->floor->building ?? null;
+        $template = $contract->template;
+
+        // Dynamic Company & Director resolution per contract & environment
+        $contractTextSearch = strtolower(
+            ($contract->contract_number ?? '') . ' ' .
+            ($template->name ?? '') . ' ' .
+            ($template->description ?? '') . ' ' .
+            ($building->name ?? '') . ' ' .
+            ($building->block_name ?? '') . ' ' .
+            ($building->corpus_name ?? '')
+        );
+
+        $isZamonOrHayot = (
+            strpos($contractTextSearch, 'zamon') !== false ||
+            strpos($contractTextSearch, 'hayot') !== false ||
+            strpos($contractTextSearch, 'sharipov') !== false ||
+            strpos($contractTextSearch, '302455208') !== false ||
+            strpos(strtolower(base_path()), 'sellerarp') !== false
+        );
+
+        $isBaraka = (
+            strpos($contractTextSearch, 'baraka') !== false ||
+            strpos(strtolower(base_path()), 'baraka') !== false
+        );
 
         $settings = \App\Models\SystemSetting::first();
-        $companyName = $settings->company_name ?? '"SHER-DOR" XUSUSIY KORXONASI';
-        $directorName = $settings->company_director ?? 'J. Raxmonov';
+
+        if ($isZamonOrHayot) {
+            $companyName = '“ZAMON SIFAT SERVIS” MCHJ';
+            $directorName = 'E. Sharipov';
+            $companyLabel = '«БАЖАРУВЧИ»';
+            $buyerLabel = '«БУЮРТМАЧИ»';
+        } elseif ($isBaraka) {
+            $companyName = '“BARAKA RESIDENCE” MCHJ';
+            $directorName = ($settings && $settings->company_director) ? $settings->company_director : 'Direktor';
+            $companyLabel = '«KORXONA»';
+            $buyerLabel = '«XARIDOR»';
+        } else {
+            $companyName = ($settings && $settings->company_name) ? $settings->company_name : '“SHER-DOR” XUSUSIY KORXONASI';
+            $directorName = ($settings && $settings->company_director) ? $settings->company_director : 'J. Raxmonov';
+            $companyLabel = '«KORXONA»';
+            $buyerLabel = '«XARIDOR»';
+        }
 
         $clientName = $client ? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '') . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum';
         $pinfl = $client->pinfl ?? '-';

@@ -49,16 +49,47 @@ class ContractTemplate extends Model
         $client = $contract->client;
         $unit = $contract->unit;
 
-        // Fetch company settings from database
+        $building = $unit->floor->building ?? null;
+        $templateName = $this->name ?? '';
+
+        $searchText = strtolower(
+            ($contract->contract_number ?? '') . ' ' .
+            ($templateName) . ' ' .
+            ($this->description ?? '') . ' ' .
+            ($building->name ?? '') . ' ' .
+            ($building->block_name ?? '') . ' ' .
+            ($building->corpus_name ?? '')
+        );
+
+        $isZamon = (
+            strpos($searchText, 'zamon') !== false ||
+            strpos($searchText, 'hayot') !== false ||
+            strpos($searchText, 'sharipov') !== false ||
+            strpos($searchText, '302455208') !== false ||
+            strpos(strtolower(base_path()), 'sellerarp') !== false
+        );
+
         $settings = SystemSetting::first();
-        $korxonaNomi = $settings->company_name ?? '«SHER-DOR» xususiy korxonasi';
-        $korxonaManzili = $settings->company_address ?? 'Urgut tuman Do`stlik maxallasi Navoi-Shox ko`chasi №3-uy';
-        $korxonaHr = $settings->company_bank_account ?? '2020 8000 6005 5796 1001';
-        $korxonaBank = $settings->company_bank_name ?? 'ATB “Agrobank” Urgut tuman filiali';
-        $korxonaMfo = $settings->company_mfo ?? '00300';
-        $korxonaInn = $settings->company_inn ?? '202 162 496';
-        $korxonaDirector = $settings->company_director ?? 'J.Raxmonov';
-        $korxonaTelefon = $settings->company_phone ?? '(97) 708-44-44, (93) 573-29-29';
+
+        if ($isZamon) {
+            $korxonaNomi = '“ZAMON SIFAT SERVIS” MCHJ';
+            $korxonaManzili = 'Samarqand shahri, Firdavsiy ko`chasi 81-uy';
+            $korxonaHr = '2020 8000 6005 5796 1001';
+            $korxonaBank = 'ATB “Agrobank” Samarqand shahar filiali';
+            $korxonaMfo = '00300';
+            $korxonaInn = '302455208';
+            $korxonaDirector = 'E. Sharipov';
+            $korxonaTelefon = '(97) 708-44-44, (93) 573-29-29';
+        } else {
+            $korxonaNomi = ($settings && $settings->company_name) ? $settings->company_name : '“SHER-DOR” XUSUSIY KORXONASI';
+            $korxonaManzili = ($settings && $settings->company_address) ? $settings->company_address : 'Samarqand viloyati, Urgut tumani, Do`stlik MFY, Navoiy ko`chasi 83-uy';
+            $korxonaHr = ($settings && $settings->company_bank_account) ? $settings->company_bank_account : '2020 8000 6005 5796 1001';
+            $korxonaBank = ($settings && $settings->company_bank_name) ? $settings->company_bank_name : 'ATB “Agrobank” Urgut tuman filiali';
+            $korxonaMfo = ($settings && $settings->company_mfo) ? $settings->company_mfo : '00300';
+            $korxonaInn = ($settings && $settings->company_inn) ? $settings->company_inn : '202 162 496';
+            $korxonaDirector = ($settings && $settings->company_director) ? $settings->company_director : 'J. Raxmonov';
+            $korxonaTelefon = ($settings && $settings->company_phone) ? $settings->company_phone : '(91) 708-44-44, (93) 573-29-29';
+        }
 
         $totalAmount = $contract->total_amount ?? 0;
         $downPayment = $contract->down_payment ?? 0;
@@ -259,16 +290,47 @@ class ContractTemplate extends Model
         $client = $contract->client;
         $unit = $contract->unit;
 
-        // Fetch company settings from database
+        $building = $unit->floor->building ?? null;
+        $templateName = $this->name ?? '';
+
+        $searchText = strtolower(
+            ($contract->contract_number ?? '') . ' ' .
+            ($templateName) . ' ' .
+            ($this->description ?? '') . ' ' .
+            ($building->name ?? '') . ' ' .
+            ($building->block_name ?? '') . ' ' .
+            ($building->corpus_name ?? '')
+        );
+
+        $isZamon = (
+            strpos($searchText, 'zamon') !== false ||
+            strpos($searchText, 'hayot') !== false ||
+            strpos($searchText, 'sharipov') !== false ||
+            strpos($searchText, '302455208') !== false ||
+            strpos(strtolower(base_path()), 'sellerarp') !== false
+        );
+
         $settings = SystemSetting::first();
-        $korxonaNomi = $settings->company_name ?? '«SHER-DOR» xususiy korxonasi';
-        $korxonaManzili = $settings->company_address ?? 'Urgut tuman Do`stlik maxallasi Navoi-Shox ko`chasi №3-uy';
-        $korxonaHr = $settings->company_bank_account ?? '2020 8000 6005 5796 1001';
-        $korxonaBank = $settings->company_bank_name ?? 'ATB “Agrobank” Urgut tuman filiali';
-        $korxonaMfo = $settings->company_mfo ?? '00300';
-        $korxonaInn = $settings->company_inn ?? '202 162 496';
-        $korxonaDirector = $settings->company_director ?? 'J.Raxmonov';
-        $korxonaTelefon = $settings->company_phone ?? '(97) 708-44-44, (93) 573-29-29';
+
+        if ($isZamon) {
+            $korxonaNomi = '“ZAMON SIFAT SERVIS” MCHJ';
+            $korxonaManzili = 'Samarqand shahri, Firdavsiy ko`chasi 81-uy';
+            $korxonaHr = '2020 8000 6005 5796 1001';
+            $korxonaBank = 'ATB “Agrobank” Samarqand shahar filiali';
+            $korxonaMfo = '00300';
+            $korxonaInn = '302455208';
+            $korxonaDirector = 'E. Sharipov';
+            $korxonaTelefon = '(97) 708-44-44, (93) 573-29-29';
+        } else {
+            $korxonaNomi = ($settings && $settings->company_name) ? $settings->company_name : '“SHER-DOR” XUSUSIY KORXONASI';
+            $korxonaManzili = ($settings && $settings->company_address) ? $settings->company_address : 'Samarqand viloyati, Urgut tumani, Do`stlik MFY, Navoiy ko`chasi 83-uy';
+            $korxonaHr = ($settings && $settings->company_bank_account) ? $settings->company_bank_account : '2020 8000 6005 5796 1001';
+            $korxonaBank = ($settings && $settings->company_bank_name) ? $settings->company_bank_name : 'ATB “Agrobank” Urgut tuman filiali';
+            $korxonaMfo = ($settings && $settings->company_mfo) ? $settings->company_mfo : '00300';
+            $korxonaInn = ($settings && $settings->company_inn) ? $settings->company_inn : '202 162 496';
+            $korxonaDirector = ($settings && $settings->company_director) ? $settings->company_director : 'J. Raxmonov';
+            $korxonaTelefon = ($settings && $settings->company_phone) ? $settings->company_phone : '(91) 708-44-44, (93) 573-29-29';
+        }
 
         $totalAmount = $contract->total_amount ?? 0;
         $downPayment = $contract->down_payment ?? 0;

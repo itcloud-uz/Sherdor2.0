@@ -6376,6 +6376,9 @@ const ledgerReportData = computed(() => {
                                 <td class="p-4 text-right">
                                     <div class="flex items-center justify-end gap-3">
                                         <!-- Quick pay debt button -->
+                                        <button @click="openDebtLedger(c)" class="px-3 py-1 border rounded-lg text-xs font-bold transition-all shadow-sm font-sans bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-500 hover:text-white">
+                                            Hisob-kitob jurnali
+                                        </button>
                                         <button @click="openQuickTransaction(c.balance > 0 ? 'expense' : 'income', c.customable)" class="px-3 py-1 border rounded-lg text-xs font-bold transition-all shadow-sm font-sans" :class="c.balance > 0 ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-500 hover:text-white' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-500 hover:text-white'">
                                             {{ c.balance > 0 ? '+ Pulni Qaytarish' : '+ Qarzni to\'lash' }}
                                         </button>

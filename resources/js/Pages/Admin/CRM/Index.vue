@@ -6620,60 +6620,57 @@ const ledgerReportData = computed(() => {
                 </div>
 
                 <!-- 1. GROUPED VIEW BY CLIENT (Default) -->
-                <div v-if="clientPaymentsViewMode === 'grouped'" class="overflow-x-auto border border-gray-150 rounded-2xl">
-                    <table class="w-full text-left text-sm font-sans">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                <div v-if="clientPaymentsViewMode === 'grouped'" class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
+                    <table class="w-full text-left text-xs font-sans border-collapse">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-[11px] font-bold tracking-wider border-b border-gray-200">
                             <tr>
-                                <th class="p-4 w-12 text-center font-bold">№</th>
-                                <th class="p-4">Mijoz (Ism & Telefon)</th>
-                                <th class="p-4 text-right">Jami shartnoma summasi</th>
-                                <th class="p-4 text-right">Jami to'langan summa</th>
-                                <th class="p-4 text-right">Qolgan qarzdorlik</th>
-                                <th class="p-4 text-center">Oxirgi to'lov sanasi</th>
-                                <th class="p-4 text-center">To'lovlar soni</th>
-                                <th class="p-4 text-right">Amallar</th>
+                                <th class="px-3 py-3 w-10 text-center">№</th>
+                                <th class="px-4 py-3 text-left">Mijoz (Ism & Telefon)</th>
+                                <th class="px-4 py-3 text-right whitespace-nowrap">Jami shartnoma summasi</th>
+                                <th class="px-4 py-3 text-right whitespace-nowrap">Jami to'langan summa</th>
+                                <th class="px-4 py-3 text-right whitespace-nowrap">Qolgan qarzdorlik</th>
+                                <th class="px-4 py-3 text-center whitespace-nowrap">Oxirgi to'lov sanasi</th>
+                                <th class="px-4 py-3 text-center whitespace-nowrap">To'lovlar soni</th>
+                                <th class="px-4 py-3 text-right whitespace-nowrap">Amallar</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <tr v-for="(entry, idx) in filteredClientPaymentsGrouped" :key="entry.key" @click="openClientLedgerFromGroup(entry)" class="hover:bg-gray-50 cursor-pointer transition-colors">
-                                <td class="p-4 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
-                                <td class="p-4">
-                                    <div @click="openClientLedgerFromGroup(entry)" class="flex items-center gap-3 cursor-pointer group" title="Mijoz hisob-kitob jurnalini (Shaxsiy varaqasini) ko'rish">
-                                        <div class="w-10 h-10 rounded-full bg-orange-500 group-hover:bg-orange-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0 uppercase transition-colors">
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                            <tr v-for="(entry, idx) in filteredClientPaymentsGrouped" :key="entry.key" @click="openClientLedgerFromGroup(entry)" class="hover:bg-amber-50/40 cursor-pointer transition-colors">
+                                <td class="px-3 py-3.5 text-gray-400 font-bold text-center text-xs">{{ idx + 1 }}</td>
+                                <td class="px-4 py-3.5">
+                                    <div class="flex items-center gap-3 group">
+                                        <div class="w-9 h-9 rounded-full bg-orange-500 group-hover:bg-orange-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0 uppercase transition-colors">
                                             {{ (entry.name.split(' ')[0]?.[0] || '') + (entry.name.split(' ')[1]?.[0] || '') || 'M' }}
                                         </div>
                                         <div>
-                                            <p class="font-bold text-gray-900 text-sm leading-tight group-hover:text-orange-600 transition-colors flex items-center gap-1">
+                                            <p class="font-bold text-gray-900 text-sm leading-snug group-hover:text-orange-600 transition-colors flex items-center gap-1">
                                                 {{ entry.name }}
-                                                <span class="text-[10px] text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">👁️</span>
                                             </p>
-                                            <span class="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono mt-1 inline-block">{{ entry.phone }}</span>
+                                            <span class="text-[11px] text-blue-600 font-mono">{{ entry.phone }}</span>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="p-4 text-right font-bold text-gray-900 text-base">
-                                    {{ entry.totalAgreed ? Number(entry.totalAgreed).toLocaleString() + " so'm" : '-' }}
+                                <td class="px-4 py-3.5 text-right font-bold text-gray-900 text-sm font-mono whitespace-nowrap">
+                                    {{ entry.totalAgreed ? Number(entry.totalAgreed).toLocaleString('uz-UZ') + " so'm" : '-' }}
                                 </td>
-                                <td class="p-4 text-right font-bold text-emerald-600 text-base">
-                                    {{ Number(entry.totalPaid || 0).toLocaleString() }} so'm
+                                <td class="px-4 py-3.5 text-right font-bold text-emerald-600 text-sm font-mono whitespace-nowrap">
+                                    {{ Number(entry.totalPaid || 0).toLocaleString('uz-UZ') }} so'm
                                 </td>
-                                <td class="p-4 text-right font-bold font-mono" :class="(entry.totalAgreed - entry.totalPaid) > 0 ? 'text-red-600' : 'text-gray-400'">
-                                    {{ entry.totalAgreed ? Number(Math.max(0, entry.totalAgreed - entry.totalPaid)).toLocaleString() + " so'm" : '-' }}
+                                <td class="px-4 py-3.5 text-right font-bold text-sm font-mono whitespace-nowrap" :class="(entry.totalAgreed - entry.totalPaid) > 0 ? 'text-red-600' : 'text-gray-400'">
+                                    {{ entry.totalAgreed ? Number(Math.max(0, entry.totalAgreed - entry.totalPaid)).toLocaleString('uz-UZ') + " so'm" : '-' }}
                                 </td>
-                                <td class="p-4 text-gray-500 text-xs font-mono text-center">
-                                    {{ entry.lastPaymentDate ? new Date(entry.lastPaymentDate).toLocaleDateString() : '-' }}
+                                <td class="px-4 py-3.5 text-gray-500 text-xs font-mono text-center whitespace-nowrap">
+                                    {{ entry.lastPaymentDate ? new Date(entry.lastPaymentDate).toLocaleDateString('uz-UZ') : '-' }}
                                 </td>
-                                <td class="p-4 text-center">
+                                <td class="px-4 py-3.5 text-center whitespace-nowrap">
                                     <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
                                         {{ entry.paymentsCount }} ta to'lov
                                     </span>
                                 </td>
-                                <td class="p-4 text-right">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <button @click="openClientLedgerFromGroup(entry)" class="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-sm flex items-center gap-1.5" title="Mijozning barcha to'lovlari va hisob-kitob jurnali (Shaxsiy varaqa)">
-                                            👤 Hisob-kitob jurnali
-                                        </button>
-                                    </div>
+                                <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                    <button @click.stop="openClientLedgerFromGroup(entry)" class="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-sm inline-flex items-center gap-1.5" title="Mijozning barcha to'lovlari va hisob-kitob jurnali (Shaxsiy varaqa)">
+                                        👤 Hisob-kitob jurnali
+                                    </button>
                                 </td>
                             </tr>
                             <tr v-if="!filteredClientPaymentsGrouped.length">
@@ -6684,62 +6681,65 @@ const ledgerReportData = computed(() => {
                 </div>
 
                 <!-- 2. ALL TRANSACTIONS JOURNAL VIEW -->
-                <div v-else class="overflow-x-auto border border-gray-150 rounded-2xl">
-                    <table class="w-full text-left text-sm font-sans">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                <div v-else class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
+                    <table class="w-full text-left text-xs font-sans border-collapse">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-[11px] font-bold tracking-wider border-b border-gray-200">
                             <tr>
-                                <th class="p-4 w-12 text-center font-bold">№</th>
-                                <th class="p-4">Ism</th>
-                                <th class="p-4 text-right">Summa</th>
-                                <th class="p-4">To'lov sanasi</th>
-                                <th class="p-4">To'lov turi</th>
-                                <th class="p-4">Hujjat raqami</th>
-                                <th class="p-4 text-center">To'lov kvitantsiyasi</th>
-                                <th class="p-4 text-right">Amallar</th>
+                                <th class="px-3 py-3 w-10 text-center">№</th>
+                                <th class="px-4 py-3 text-left">Mijoz (Ism & Telefon)</th>
+                                <th class="px-4 py-3 text-right whitespace-nowrap">Summa</th>
+                                <th class="px-4 py-3 text-center whitespace-nowrap">To'lov sanasi</th>
+                                <th class="px-4 py-3 text-center whitespace-nowrap">To'lov turi</th>
+                                <th class="px-4 py-3 text-center whitespace-nowrap">Hujjat №</th>
+                                <th class="px-4 py-3 text-center whitespace-nowrap">Kvitantsiya</th>
+                                <th class="px-4 py-3 text-right whitespace-nowrap">Amallar</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <tr v-for="(t, idx) in filteredClientPayments" :key="t.id" class="hover:bg-gray-50 transition-colors">
-                                <td class="p-4 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
-                                <td class="p-4">
-                                    <div @click="openClientLedgerFromPayment(t)" class="flex items-center gap-3 cursor-pointer group" title="Mijoz shaxsiy varaqasi va hisob-kitob jurnalini ko'rish">
-                                        <div class="w-10 h-10 rounded-full bg-blue-500 group-hover:bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0 uppercase transition-colors">
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                            <tr v-for="(t, idx) in filteredClientPayments" :key="t.id" class="hover:bg-blue-50/30 transition-colors">
+                                <td class="px-3 py-3.5 text-gray-400 font-bold text-center text-xs">{{ idx + 1 }}</td>
+                                <td class="px-4 py-3.5">
+                                    <div @click="openClientLedgerFromPayment(t)" class="flex items-center gap-3 cursor-pointer group" title="Mijoz shaxsiy varaqasini ochish">
+                                        <div class="w-9 h-9 rounded-full bg-blue-500 group-hover:bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0 uppercase transition-colors">
                                             {{ (getClientPaymentName(t).split(' ')[0]?.[0] || '') + (getClientPaymentName(t).split(' ')[1]?.[0] || '') || 'M' }}
                                         </div>
                                         <div>
-                                            <p class="font-bold text-gray-900 text-sm leading-tight group-hover:text-blue-600 transition-colors flex items-center gap-1">
+                                            <p class="font-bold text-gray-900 text-sm leading-snug group-hover:text-blue-600 transition-colors">
                                                 {{ getClientPaymentName(t) }}
-                                                <span class="text-[10px] text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">👁️</span>
                                             </p>
-                                            <span class="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono mt-1 inline-block">{{ getClientPaymentPhone(t) }}</span>
+                                            <span class="text-[11px] text-blue-600 font-mono">{{ getClientPaymentPhone(t) }}</span>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="p-4 text-right font-bold text-blue-600 text-base">{{ Number(t.amount || 0).toLocaleString() }} so'm</td>
-                                <td class="p-4 text-gray-500 text-xs font-mono">{{ new Date(t.transaction_date || t.created_at).toLocaleString() }}</td>
-                                <td class="p-4">
-                                    <span class="px-3 py-1 rounded-full text-xs font-bold border border-gray-200 bg-gray-50 font-sans">
+                                <td class="px-4 py-3.5 text-right font-bold text-blue-600 text-sm font-mono whitespace-nowrap">
+                                    {{ Number(t.amount || 0).toLocaleString('uz-UZ') }} so'm
+                                </td>
+                                <td class="px-4 py-3.5 text-gray-500 text-xs font-mono text-center whitespace-nowrap">
+                                    {{ new Date(t.transaction_date || t.created_at).toLocaleDateString('uz-UZ') }}
+                                </td>
+                                <td class="px-4 py-3.5 text-center whitespace-nowrap">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold border border-gray-200 bg-gray-50">
                                         {{ t.payment_method === 'cash' ? 'Naqd pul' : (t.payment_method === 'card' ? 'Plastik' : 'Bank transfer') }}
                                     </span>
                                 </td>
-                                <td class="p-4 text-gray-700 font-mono font-bold text-center">#{{ t.id }}</td>
-                                <td class="p-4 text-center">
-                                    <button @click="openReceipt(t)" class="inline-flex items-center gap-1.5 px-3 py-1 text-xs text-amber-600 hover:text-amber-700 font-bold transition-all hover:underline" title="To'lov kvitantsiyasi">
+                                <td class="px-4 py-3.5 text-gray-700 font-mono font-bold text-center whitespace-nowrap">#{{ t.id }}</td>
+                                <td class="px-4 py-3.5 text-center whitespace-nowrap">
+                                    <button @click.stop="openReceipt(t)" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-amber-600 hover:text-amber-700 font-bold transition-all hover:underline" title="To'lov kvitantsiyasi">
                                         Yuklab olish
                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                         </svg>
                                     </button>
                                 </td>
-                                <td class="p-4 text-right">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <button @click="openClientLedgerFromPayment(t)" class="px-2.5 py-1 text.xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex items-center gap-1 shrink-0" title="Mijoz shaxsiy varaqasi va hisob-kitob jurnali">
+                                <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <button @click.stop="openClientLedgerFromPayment(t)" class="px-2.5 py-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm shrink-0" title="Mijoz shaxsiy varaqasini alohida sahifada ochish">
                                             👤 Shaxsiy varaqa
                                         </button>
-                                        <button @click="openEditTransactionModal(t)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Tahrirlash">
+                                        <button @click.stop="openEditTransactionModal(t)" class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Tahrirlash">
                                             ✏️
                                         </button>
-                                        <button @click="deleteTransaction(t.id)" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm" title="O'chirish">
+                                        <button @click.stop="deleteTransaction(t.id)" class="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm" title="O'chirish">
                                             🗑️
                                         </button>
                                     </div>

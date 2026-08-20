@@ -201,13 +201,24 @@ class AdminController extends Controller
             });
             
             $totalUnits = $units->count();
+            $residentialUnits = $units->where('type', 'residential');
+            $commercialUnits = $units->where('type', 'commercial');
+            $parkingUnits = $units->where('type', 'parking');
+
+            $residentialCount = $residentialUnits->count();
+            $commercialCount = $commercialUnits->count();
+            $parkingCount = $parkingUnits->count();
+
             $reservedUnits = $units->where('status', 'reserved')->count();
             $availableUnits = $units->where('status', 'available')->count();
             
             $totalArea = $units->sum('area_sqm');
+            $residentialArea = $residentialUnits->sum('area_sqm');
+            $commercialArea = $commercialUnits->sum('area_sqm');
+            $parkingArea = $parkingUnits->sum('area_sqm');
             $availableArea = $units->where('status', 'available')->sum('area_sqm');
             
-            $roomsDistribution = $units->whereIn('status', ['sold', 'reserved'])
+            $roomsDistribution = $residentialUnits->where('rooms_count', '>', 0)
                 ->groupBy('rooms_count')
                 ->map(function($group, $roomsCount) {
                     return [
@@ -234,6 +245,12 @@ class AdminController extends Controller
                 'block_name' => $building->block_name ?? 'Asosiy Blok',
                 'photo_path' => $building->photo_path,
                 'total_units' => $totalUnits,
+                'residential_count' => $residentialCount,
+                'commercial_count' => $commercialCount,
+                'parking_count' => $parkingCount,
+                'residential_area' => round($residentialArea, 2),
+                'commercial_area' => round($commercialArea, 2),
+                'parking_area' => round($parkingArea, 2),
                 'sold_units' => $soldUnits,
                 'reserved_units' => $reservedUnits,
                 'available_units' => $availableUnits,

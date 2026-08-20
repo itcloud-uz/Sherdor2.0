@@ -73,10 +73,16 @@ const groupedBuildingsSummary = computed(() => {
                 name: name,
                 photo_path: b.photo_path,
                 total_units: 0,
+                residential_count: 0,
+                commercial_count: 0,
+                parking_count: 0,
                 sold_units: 0,
                 reserved_units: 0,
                 available_units: 0,
                 total_area: 0,
+                residential_area: 0,
+                commercial_area: 0,
+                parking_area: 0,
                 sold_area: 0,
                 available_area: 0,
                 rooms_distribution: {},
@@ -86,10 +92,16 @@ const groupedBuildingsSummary = computed(() => {
             };
         }
         groups[name].total_units += b.total_units || 0;
+        groups[name].residential_count += b.residential_count || 0;
+        groups[name].commercial_count += b.commercial_count || 0;
+        groups[name].parking_count += b.parking_count || 0;
         groups[name].sold_units += b.sold_units || 0;
         groups[name].reserved_units += b.reserved_units || 0;
         groups[name].available_units += b.available_units || 0;
         groups[name].total_area += b.total_area || 0;
+        groups[name].residential_area += b.residential_area || 0;
+        groups[name].commercial_area += b.commercial_area || 0;
+        groups[name].parking_area += b.parking_area || 0;
         groups[name].sold_area += b.sold_area || 0;
         groups[name].available_area += b.available_area || 0;
         groups[name].total_sum += Number(b.total_sum) || 0;
@@ -115,6 +127,9 @@ const groupedBuildingsSummary = computed(() => {
         return {
             ...g,
             total_area: Math.round(g.total_area * 100) / 100,
+            residential_area: Math.round(g.residential_area * 100) / 100,
+            commercial_area: Math.round(g.commercial_area * 100) / 100,
+            parking_area: Math.round(g.parking_area * 100) / 100,
             sold_area: Math.round(g.sold_area * 100) / 100,
             available_area: Math.round(g.available_area * 100) / 100,
             rooms_distribution: roomsArr
@@ -436,6 +451,32 @@ const monthlySalesSeries = computed(() => [{
                             </div>
                             <div class="w-full bg-gray-100 rounded-full h-2">
                                 <div class="bg-amber-500 h-2 rounded-full transition-all duration-500" :style="{ width: (building.total_units > 0 ? (building.sold_units / building.total_units * 100) : 0) + '%' }"></div>
+                            </div>
+                        </div>
+
+                        <!-- OBYEKTLAR TARKIBI (Toifalar bo'yicha aniq taqsimot) -->
+                        <div class="space-y-1.5 bg-slate-50/80 p-3 rounded-2xl border border-gray-100">
+                            <div class="flex justify-between items-center mb-1">
+                                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">OBYEKTLAR TARKIBI</p>
+                                <span class="text-[10px] font-black text-gray-800">{{ building.total_units }} ta jami</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-1.5">
+                                <div class="bg-white p-2 rounded-xl border border-gray-100 text-center shadow-2xs">
+                                    <span class="text-xs">🏠</span>
+                                    <p class="text-xs font-bold text-gray-900 leading-tight mt-0.5">{{ building.residential_count || 0 }}</p>
+                                    <p class="text-[9px] text-gray-400 font-semibold">Turar-joy</p>
+                                </div>
+                                <div class="bg-white p-2 rounded-xl border border-gray-100 text-center shadow-2xs">
+                                    <span class="text-xs">🏬</span>
+                                    <p class="text-xs font-bold text-gray-900 leading-tight mt-0.5">{{ building.commercial_count || 0 }}</p>
+                                    <p class="text-[9px] text-gray-400 font-semibold">Do'kon</p>
+                                </div>
+                                <div class="bg-white p-2 rounded-xl border border-gray-100 text-center shadow-2xs">
+                                    <span class="text-xs">🚗</span>
+                                    <p class="text-xs font-bold text-gray-900 leading-tight mt-0.5">{{ building.parking_count || 0 }}</p>
+                                    <p class="text-[9px] text-gray-400 font-semibold">Parking</p>
+                                </div>
                             </div>
                         </div>
 

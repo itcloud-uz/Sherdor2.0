@@ -3980,25 +3980,37 @@ const getClientPaymentPhone = (t) => {
     return '-';
 };
 
+function viewClientDetail(client, saveScroll = true, targetContract = null) {
+    if (!client) return;
+    selectClientForDetail(client, saveScroll, targetContract);
+}
+
 function openClientLedgerFromPayment(t) {
+    if (!t) return;
     let client = t.client || t.contract?.client;
     const clientId = t.client_id || t.contract?.client_id || t.counterparty?.customable_id || t.target_id;
     if (!client && clientId && props.clients) {
         client = props.clients.find(c => c.id == clientId);
     }
-    if (client) {
-        viewClientDetail(client, t.contract || null);
+    if (client && client.id) {
+        selectClientForDetail(client, true, t.contract || null);
+    } else if (t.contract) {
+        openScheduleModal(t.contract);
     } else if (t.contract_id) {
-        const ct = props.contracts?.find(c => c.id == t.contract_id);
-        if (ct && ct.client) {
-            viewClientDetail(ct.client, ct);
+        const ct = (props.contracts || []).find(c => c.id == t.contract_id);
+        if (ct) {
+            if (ct.client) {
+                selectClientForDetail(ct.client, true, ct);
+            } else {
+                openScheduleModal(ct);
+            }
         }
     } else if (clientId) {
         clientDetailLoading.value = true;
         axios.get(route('admin.crm.clients.details', clientId))
             .then(res => {
                 if (res.data.status === 'success' && res.data.client) {
-                    viewClientDetail(res.data.client, null);
+                    selectClientForDetail(res.data.client, true, null);
                 }
             })
             .catch(e => console.error('Mijoz ma\'lumotlarini yuklashda xatolik:', e))
@@ -4123,23 +4135,26 @@ const filteredClientPaymentsGrouped = computed(() => {
 });
 
 function openClientLedgerFromGroup(entry) {
+    if (!entry) return;
     if (entry.client && entry.client.id) {
-        viewClientDetail(entry.client, entry.contract || null);
+        selectClientForDetail(entry.client, true, entry.contract || null);
     } else if (entry.clientId) {
         const client = (props.clients || []).find(c => c.id == entry.clientId);
         if (client) {
-            viewClientDetail(client, entry.contract || null);
+            selectClientForDetail(client, true, entry.contract || null);
         } else {
             clientDetailLoading.value = true;
             axios.get(route('admin.crm.clients.details', entry.clientId))
                 .then(res => {
                     if (res.data.status === 'success' && res.data.client) {
-                        viewClientDetail(res.data.client, null);
+                        selectClientForDetail(res.data.client, true, null);
                     }
                 })
                 .catch(e => console.error(e))
                 .finally(() => clientDetailLoading.value = false);
         }
+    } else if (entry.contract) {
+        openScheduleModal(entry.contract);
     } else if (entry.lastTransaction) {
         openClientLedgerFromPayment(entry.lastTransaction);
     }
@@ -6579,7 +6594,7 @@ const ledgerReportData = computed(() => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="(entry, idx) in filteredClientPaymentsGrouped" :key="entry.key" class="hover:bg-gray-50 transition-colors">
+                            <tr v-for="(entry, idx) in filteredClientPaymentsGrouped" :key="entry.key" @click="openClientLedgerFromGroup(entry)" class="hover:bg-gray-50 cursor-pointer transition-colors">
                                 <td class="p-4 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
                                 <td class="p-4">
                                     <div @click="openClientLedgerFromGroup(entry)" class="flex items-center gap-3 cursor-pointer group" title="Mijoz hisob-kitob jurnalini (Shaxsiy varaqasini) ko'rish">

@@ -27,7 +27,7 @@ const showPassword = ref(false);
 </script>
 
 <template>
-    <Head title="Tizimga Kirish - SBE">
+    <Head title="Tizimga Kirish - IQS ERP">
         <link rel="preload" as="image" href="/images/futuristic-city.png" />
     </Head>
 
@@ -47,18 +47,20 @@ const showPassword = ref(false);
             <div class="hidden lg:flex flex-col justify-between p-12 lg:pr-6">
                 <!-- Logo Top Left -->
                 <div class="flex items-center gap-4">
-                    <img src="/images/itcloud-logo.png" alt="ITCloud Logo" class="h-12 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" @error="(e) => e.target.src='https://ui-avatars.com/api/?name=ITC&background=000&color=fff&rounded=true'" />
-                    <span class="text-xl font-bold tracking-widest text-white/90">ITCLOUD</span>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-purple-600 flex items-center justify-center font-black text-lg text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+                        IQS
+                    </div>
+                    <span class="text-xl font-bold tracking-widest text-white/90">IQS ERP</span>
                 </div>
 
                 <!-- Center Text -->
                 <div class="flex-1 flex flex-col justify-center items-start max-w-xl">
-                    <h1 class="text-5xl xl:text-6xl font-extrabold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-purple-300 drop-shadow-lg">
-                        SBE - Kelajak Arxitekturasi
+                    <h1 class="text-5xl xl:text-6xl font-extrabold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-purple-300 to-cyan-300 drop-shadow-lg">
+                        IQS ERP - Kelajak Arxitekturasi
                     </h1>
                     <p class="text-lg xl:text-xl text-gray-300 leading-relaxed font-medium drop-shadow-md">
-                        Qurilish, Moliya va CRM jarayonlarini yagona innovatsion platformada boshqaring. 
-                        Xavfsizlik, tezlik va to'liq nazorat sizning qo'lingizda.
+                        Qurilish, Smeta, Moliya va CRM jarayonlarini yagona innovatsion platformada boshqaring. 
+                        (Men Quraman va Sotaman!)
                     </p>
                 </div>
 
@@ -180,7 +182,7 @@ const showPassword = ref(false);
                     </form>
 
                     <div class="mt-8 text-center lg:hidden">
-                        <p class="text-xs text-gray-400">© 2026 ITCloud.uz | SBE</p>
+                        <p class="text-xs text-gray-400">© 2026 ITCloud.uz | IQS ERP</p>
                     </div>
                 </div>
                 

@@ -1413,8 +1413,15 @@ class FacilityController extends Controller
                 }
             }
 
+            $totalApartments = Unit::whereIn('podez_id', $requestedIds)->where('type', 'residential')->count();
+            $totalShops = Unit::whereIn('podez_id', $requestedIds)->where('type', 'commercial')->count();
+            $totalParking = Unit::whereIn('podez_id', $requestedIds)->where('type', 'parking')->count();
+
             $building->update([
                 'entrances_count' => count($requestedIds),
+                'total_apartments' => $totalApartments,
+                'total_shops' => $totalShops,
+                'total_parking' => $totalParking,
             ]);
         });
     }

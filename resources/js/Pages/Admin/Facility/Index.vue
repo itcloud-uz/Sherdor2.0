@@ -136,6 +136,51 @@ const buildingRoomStats = computed(() => {
     return stats;
 });
 
+const buildingApartmentsCount = computed(() => {
+    if (!selectedBuilding.value) return 0;
+    let count = 0;
+    if (selectedBuilding.value.floors) {
+        selectedBuilding.value.floors.forEach(f => {
+            if (f.units && f.units.length > 0) {
+                count += f.units.filter(u => u.type === 'residential').length;
+            } else {
+                count += (f.total_units || 0);
+            }
+        });
+    }
+    return count > 0 ? count : (selectedBuilding.value.total_apartments || 0);
+});
+
+const buildingShopsCount = computed(() => {
+    if (!selectedBuilding.value) return 0;
+    let count = 0;
+    if (selectedBuilding.value.floors) {
+        selectedBuilding.value.floors.forEach(f => {
+            if (f.units && f.units.length > 0) {
+                count += f.units.filter(u => u.type === 'commercial').length;
+            } else {
+                count += (f.total_commercial_units || 0);
+            }
+        });
+    }
+    return count > 0 ? count : (selectedBuilding.value.total_shops || 0);
+});
+
+const buildingParkingCount = computed(() => {
+    if (!selectedBuilding.value) return 0;
+    let count = 0;
+    if (selectedBuilding.value.floors) {
+        selectedBuilding.value.floors.forEach(f => {
+            if (f.units && f.units.length > 0) {
+                count += f.units.filter(u => u.type === 'parking').length;
+            } else {
+                count += (f.total_parking_units || 0);
+            }
+        });
+    }
+    return count > 0 ? count : (selectedBuilding.value.total_parking || 0);
+});
+
 // Dynamic room filters
 const availableRoomOptions = computed(() => {
     if (!selectedBuilding.value || !selectedBuilding.value.floors) return [1, 2, 3];
@@ -3755,11 +3800,15 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                     </div>
                                     <div class="flex justify-between border-b border-gray-100 py-1.5">
                                         <span class="text-gray-500">Kvartiralar</span>
-                                        <span class="text-gray-900 font-bold">{{ selectedBuilding.total_apartments || 0 }}</span>
+                                        <span class="text-gray-900 font-bold">{{ buildingApartmentsCount }}</span>
                                     </div>
                                     <div class="flex justify-between border-b border-gray-100 py-1.5">
                                         <span class="text-gray-500">Do'konlar</span>
-                                        <span class="text-gray-900 font-bold">{{ selectedBuilding.total_shops || 0 }}</span>
+                                        <span class="text-gray-900 font-bold">{{ buildingShopsCount }}</span>
+                                    </div>
+                                    <div v-if="buildingParkingCount > 0" class="flex justify-between border-b border-gray-100 py-1.5">
+                                        <span class="text-gray-500">Parkovkalar</span>
+                                        <span class="text-gray-900 font-bold">{{ buildingParkingCount }}</span>
                                     </div>
                                     <div class="flex justify-between border-b border-gray-100 py-1.5">
                                         <span class="text-gray-500">1-xonali</span>

@@ -1,6 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 
 defineProps({
     canResetPassword: {
@@ -27,215 +27,267 @@ const showPassword = ref(false);
 </script>
 
 <template>
-    <Head title="Tizimga Kirish - IQS ERP">
-        <link rel="preload" as="image" href="/images/futuristic-city.png" />
-    </Head>
+    <Head title="Tizimga Kirish - IQS ERP" />
 
-    <!-- Unified Full-Screen Background -->
-    <div class="min-h-screen w-full relative flex items-center font-sans text-white overflow-hidden selection:bg-purple-500/30 selection:text-white">
+    <!-- Ultra Minimalist Luxury Container -->
+    <div class="min-h-screen w-full relative flex items-center justify-center font-sans text-white overflow-hidden bg-[#06060a] selection:bg-amber-500 selection:text-black">
         
-        <!-- City Background Image -->
-        <div class="absolute inset-0 bg-[url('/images/futuristic-city.png')] bg-cover bg-center bg-no-repeat transform scale-105 animate-[slowZoom_20s_infinite_alternate] z-0"></div>
-        
-        <!-- Smooth Gradient Overlay -->
-        <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-black/60 z-0"></div>
-        
-        <!-- Grid Layout Content -->
-        <div class="w-full relative z-10 grid lg:grid-cols-2 min-h-screen">
+        <!-- Ambient Glowing Mesh Background -->
+        <div class="fixed top-[-15%] left-[-10%] w-[600px] h-[600px] rounded-full bg-amber-500/10 blur-[160px] pointer-events-none"></div>
+        <div class="fixed bottom-[-15%] right-[-10%] w-[650px] h-[650px] rounded-full bg-cyan-500/10 blur-[170px] pointer-events-none"></div>
+        <div class="fixed top-[30%] right-[30%] w-[450px] h-[450px] rounded-full bg-purple-600/10 blur-[150px] pointer-events-none"></div>
+
+        <!-- Subtle Tech Grid Lines Overlay -->
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none"></div>
+
+        <!-- Main Wrapper -->
+        <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 grid lg:grid-cols-12 gap-8 items-center min-h-screen">
             
-            <!-- Left Column: Atmosphere & Branding -->
-            <div class="hidden lg:flex flex-col justify-between p-12 lg:pr-6">
-                <!-- Logo Top Left -->
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-purple-600 flex items-center justify-center font-black text-lg text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]">
-                        IQS
-                    </div>
-                    <span class="text-xl font-bold tracking-widest text-white/90">IQS ERP</span>
+            <!-- Left Side: Brand Story & High-Tech Showcase (7 cols) -->
+            <div class="hidden lg:flex lg:col-span-7 flex-col justify-between h-full py-12 pr-6">
+                
+                <!-- Brand Header -->
+                <div class="flex items-center gap-3.5">
+                    <Link :href="route('landing')" class="flex items-center gap-3.5 group">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-purple-600 to-cyan-400 p-[1.5px] shadow-[0_0_25px_rgba(245,158,11,0.3)] group-hover:scale-105 transition-transform">
+                            <div class="w-full h-full bg-[#0a0a12] rounded-[14px] flex items-center justify-center font-black text-xl text-amber-400">
+                                IQS
+                            </div>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-2xl font-black tracking-tight text-white">IQS ERP</span>
+                            <span class="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">Qur va Sotish • Men Quraman va Sotaman!</span>
+                        </div>
+                    </Link>
                 </div>
 
-                <!-- Center Text -->
-                <div class="flex-1 flex flex-col justify-center items-start max-w-xl">
-                    <h1 class="text-5xl xl:text-6xl font-extrabold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-purple-300 to-cyan-300 drop-shadow-lg">
-                        IQS ERP - Kelajak Arxitekturasi
+                <!-- Main Pitch Headline -->
+                <div class="my-auto max-w-xl space-y-6">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.03] border border-white/10 backdrop-blur-md">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span class="text-xs font-semibold text-gray-300">Qurilish va Sotuv Jarayonlari Boshqaruvi</span>
+                    </div>
+
+                    <h1 class="text-4xl xl:text-5xl font-black tracking-tight leading-[1.15] text-white">
+                        Zamonaviy Qurilish <br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-purple-300 to-cyan-400">
+                            Innovatsion Arxitekturasi
+                        </span>
                     </h1>
-                    <p class="text-lg xl:text-xl text-gray-300 leading-relaxed font-medium drop-shadow-md">
-                        Qurilish, Smeta, Moliya va CRM jarayonlarini yagona innovatsion platformada boshqaring. 
-                        (Men Quraman va Sotaman!)
-                    </p>
-                </div>
 
-                <!-- Partners Bottom -->
-                <div class="mt-auto pt-8 border-t border-white/10">
-                    <p class="text-sm text-gray-400 mb-4 font-semibold uppercase tracking-wider">Ishonchli Hamkorlar</p>
-                    <div class="flex flex-wrap items-center gap-y-3 gap-x-5 opacity-80 drop-shadow-md">
-                        <div class="flex items-center gap-5">
-                            <span class="font-bold text-lg text-white tracking-wide">Sherdor</span>
-                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                    <p class="text-gray-400 text-base xl:text-lg leading-relaxed font-light">
+                        Ko'p qavatli bino va majmualarni boshqarish: 3D shaxmatka, shartnomalar, omborxona, smeta, kassa va to'liq moliyaviy hisobotlar yagona tizimda.
+                    </p>
+
+                    <!-- Feature Badges Grid -->
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <div class="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-base">
+                                🏢
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">3D Shaxmatka</h4>
+                                <p class="text-[10px] text-gray-400">Real vaqt nazorati</p>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-5">
-                            <span class="font-bold text-lg text-white tracking-wide">Delta</span>
-                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+
+                        <div class="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-base">
+                                📊
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">Smeta & Ombor</h4>
+                                <p class="text-[10px] text-gray-400">Materiallar balansi</p>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-5">
-                            <span class="font-bold text-lg text-white tracking-wide">Hakim O'g'lu</span>
-                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+
+                        <div class="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-base">
+                                🤝
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">CRM & Shartnoma</h4>
+                                <p class="text-[10px] text-gray-400">Avtomatlashtirilgan</p>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-5">
-                            <span class="font-bold text-lg text-white tracking-wide flex items-center gap-1.5">Göztepe Builder <span class="text-sm text-blue-300 font-medium">Global</span></span>
-                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                        </div>
-                        <div class="flex items-center gap-5">
-                            <span class="font-bold text-lg text-white tracking-wide">Hayot House</span>
+
+                        <div class="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-base">
+                                📱
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">SMS & Moliya</h4>
+                                <p class="text-[10px] text-gray-400">Eslatmalar va Kassa</p>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Footer Partners & Developer Link -->
+                <div class="pt-8 border-t border-white/10 flex items-center justify-between text-xs text-gray-400">
+                    <div class="flex items-center gap-4 flex-wrap">
+                        <span class="font-bold text-white">Sher-Dor</span>
+                        <span class="text-gray-600">•</span>
+                        <span class="font-bold text-white">Hayot House</span>
+                        <span class="text-gray-600">•</span>
+                        <span class="font-bold text-white">Baraka Residence</span>
+                    </div>
+
+                    <a href="https://itcloud.uz" target="_blank" class="text-cyan-400 font-semibold hover:underline flex items-center gap-1">
+                        ITCloud.uz tomonidan taqdim etiladi ↗
+                    </a>
+                </div>
+
             </div>
 
-            <!-- Right Column: The Cyber-Glass Login -->
-            <div class="w-full flex items-center justify-center p-6 sm:p-12 lg:pl-6">
-                <!-- Enhanced Glassmorphism Form -->
-                <div class="w-full max-w-md bg-white/5 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] rounded-3xl p-8 sm:p-10 animate-[fadeInUp_0.5s_ease-out]">
+            <!-- Right Side: Ultra Minimalist Glass Login Card (5 cols) -->
+            <div class="lg:col-span-5 flex flex-col items-center justify-center w-full">
+                
+                <div class="w-full max-w-md p-8 sm:p-10 rounded-3xl bg-[#0c0c16]/80 backdrop-blur-2xl border border-white/10 hover:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.7)] transition-all duration-300 relative overflow-hidden">
                     
-                    <div class="text-center mb-10">
-                        <h2 class="text-3xl font-extrabold text-white mb-2 drop-shadow-md">Xush kelibsiz</h2>
-                        <p class="text-gray-300 font-medium">Tizimga kirish uchun ma'lumotlaringizni kiriting</p>
+                    <!-- Decorative Top Glow Line -->
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-cyan-400"></div>
+
+                    <!-- Mobile Brand Icon (Visible only on mobile) -->
+                    <div class="lg:hidden flex items-center justify-center mb-6">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-purple-600 p-[1px] flex items-center justify-center shadow-lg">
+                            <div class="w-full h-full bg-[#0a0a12] rounded-[15px] flex items-center justify-center font-black text-xl text-amber-400">
+                                IQS
+                            </div>
+                        </div>
                     </div>
 
-                    <div v-if="status" class="mb-6 text-sm font-medium text-green-400 bg-green-400/10 border border-green-400/20 p-3 rounded-xl text-center">
+                    <!-- Card Header -->
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl sm:text-3xl font-black text-white mb-2">Tizimga Kirish</h2>
+                        <p class="text-gray-400 text-xs sm:text-sm font-light">Boshqaruv paneliga kirish uchun ma'lumotlaringizni kiriting</p>
+                    </div>
+
+                    <!-- Status Message -->
+                    <div v-if="status" class="mb-6 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs text-center font-medium">
                         {{ status }}
                     </div>
 
-                    <form @submit.prevent="submit" class="space-y-6">
+                    <!-- Form -->
+                    <form @submit.prevent="submit" class="space-y-5">
+                        
+                        <!-- Email Input -->
                         <div>
-                            <label for="email" class="block text-sm font-medium text-gray-200 mb-2 drop-shadow-sm">Email manzil</label>
-                            <input
-                                id="email"
-                                type="email"
-                                v-model="form.email"
-                                required
-                                autofocus
-                                autocomplete="username"
-                                class="w-full px-5 py-3.5 bg-black/20 border border-white/10 text-white rounded-xl focus:bg-black/40 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all outline-none placeholder-gray-400 backdrop-blur-sm"
-                                placeholder="admin@itcloud.uz"
-                            />
-                            <p v-if="form.errors.email" class="mt-2 text-sm text-red-400 font-medium">{{ form.errors.email }}</p>
+                            <label for="email" class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Email Manzil</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-3.5 text-gray-400 text-sm">✉️</span>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    v-model="form.email"
+                                    required
+                                    autofocus
+                                    autocomplete="username"
+                                    placeholder="admin@itcloud.uz"
+                                    class="w-full pl-11 pr-4 py-3.5 bg-black/40 border border-white/15 text-white placeholder-gray-500 rounded-xl focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 transition-all text-sm font-mono"
+                                />
+                            </div>
+                            <p v-if="form.errors.email" class="mt-1.5 text-xs text-red-400 font-medium">{{ form.errors.email }}</p>
                         </div>
 
+                        <!-- Password Input -->
                         <div>
-                            <label for="password" class="block text-sm font-medium text-gray-200 mb-2 drop-shadow-sm">Parol</label>
+                            <label for="password" class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2">Parol</label>
                             <div class="relative">
+                                <span class="absolute left-4 top-3.5 text-gray-400 text-sm">🔒</span>
                                 <input
                                     id="password"
                                     :type="showPassword ? 'text' : 'password'"
                                     v-model="form.password"
                                     required
                                     autocomplete="current-password"
-                                    class="w-full pl-5 pr-12 py-3.5 bg-black/20 border border-white/10 text-white rounded-xl focus:bg-black/40 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all outline-none placeholder-gray-400 backdrop-blur-sm"
                                     placeholder="••••••••"
+                                    class="w-full pl-11 pr-11 py-3.5 bg-black/40 border border-white/15 text-white placeholder-gray-500 rounded-xl focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 transition-all text-sm font-mono"
                                 />
                                 <button
                                     type="button"
                                     @click="showPassword = !showPassword"
-                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-400 transition-colors focus:outline-none p-1"
+                                    class="absolute right-3.5 top-3.5 text-gray-400 hover:text-white transition-colors"
                                     tabindex="-1"
                                 >
-                                    <svg v-if="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                    </svg>
+                                    <span class="text-xs">{{ showPassword ? '🙈' : '👁️' }}</span>
                                 </button>
                             </div>
-                            <p v-if="form.errors.password" class="mt-2 text-sm text-red-400 font-medium">{{ form.errors.password }}</p>
+                            <p v-if="form.errors.password" class="mt-1.5 text-xs text-red-400 font-medium">{{ form.errors.password }}</p>
                         </div>
 
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="checkbox" v-model="form.remember" class="w-4 h-4 rounded border-white/20 bg-black/20 text-purple-600 focus:ring-purple-500 focus:ring-offset-black/20 transition-all cursor-pointer">
-                                <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Eslab qolish</span>
+                        <!-- Remember Me & Forgot Password -->
+                        <div class="flex items-center justify-between text-xs pt-1">
+                            <label class="flex items-center gap-2 cursor-pointer select-none text-gray-400 hover:text-gray-300">
+                                <input 
+                                    type="checkbox" 
+                                    v-model="form.remember" 
+                                    class="w-4 h-4 rounded bg-black/40 border-white/20 text-amber-500 focus:ring-amber-400 focus:ring-offset-0 transition-all cursor-pointer"
+                                />
+                                <span>Eslab qolish</span>
                             </label>
 
                             <Link
                                 v-if="canResetPassword"
                                 :href="route('password.request')"
-                                class="text-sm text-gray-300 hover:text-purple-400 transition-colors hover:underline"
+                                class="text-gray-400 hover:text-amber-400 transition-colors hover:underline"
                             >
                                 Parolni unutdingizmi?
                             </Link>
                         </div>
 
+                        <!-- Submit Button -->
                         <div class="pt-2">
                             <button
                                 type="submit"
-                                class="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-lg rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:transform-none flex justify-center items-center gap-3 relative overflow-hidden"
                                 :disabled="form.processing"
+                                class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-sm sm:text-base uppercase tracking-wider shadow-[0_0_25px_rgba(245,158,11,0.4)] hover:shadow-[0_0_35px_rgba(245,158,11,0.6)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2.5"
                             >
-                                <svg v-if="form.processing" class="animate-spin -ml-1 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                TIZIMGA KIRISH
+                                <span v-if="form.processing" class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                                <span>Tizimga Kirish</span>
+                                <span v-if="!form.processing">→</span>
                             </button>
                         </div>
+
                     </form>
 
-                    <div class="mt-8 text-center lg:hidden">
-                        <p class="text-xs text-gray-400">© 2026 ITCloud.uz | IQS ERP</p>
+                    <!-- Navigation Shortcuts -->
+                    <div class="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-gray-400">
+                        <Link :href="route('landing')" class="hover:text-amber-400 transition-colors flex items-center gap-1">
+                            <span>←</span> Bosh sahifa
+                        </Link>
+                        <Link :href="route('promo.offers')" class="text-cyan-400 hover:underline flex items-center gap-1 font-semibold">
+                            Uy sotib olish ↗
+                        </Link>
                     </div>
+
                 </div>
-                
-                <!-- Mobile partners list (Only visible on mobile) -->
-                <div class="absolute bottom-4 left-0 w-full text-center lg:hidden px-4">
-                    <div class="flex items-center justify-center gap-3 flex-wrap opacity-70 text-xs">
-                        <span>Sherdor</span>•<span>Delta</span>•<span>Hakim O'g'lu</span>•<span>Göztepe Builder</span>•<span>Hayot House</span>
-                    </div>
-                </div>
+
+                <!-- Footer Tag -->
+                <p class="mt-6 text-[11px] text-gray-500 text-center font-mono">
+                    © 2026 ITCloud.uz • IQS ERP Platform
+                </p>
+
             </div>
+
         </div>
+
     </div>
 </template>
 
 <style scoped>
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes slowZoom {
-    from {
-        transform: scale(1.05);
-    }
-    to {
-        transform: scale(1.15);
-    }
-}
-
 /* Chrome, Safari, Edge autofill style override */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
 input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px rgba(0,0,0,0.5) inset !important;
+    -webkit-box-shadow: 0 0 0 1000px rgba(10, 10, 18, 0.95) inset !important;
     -webkit-text-fill-color: #ffffff !important;
     transition: background-color 5000s ease-in-out 0s;
 }
 
 input:autofill {
-    background-color: rgba(0,0,0,0.5) !important;
+    background-color: rgba(10, 10, 18, 0.95) !important;
     color: #ffffff !important;
-}
-
-input[type="checkbox"]:checked {
-    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%23ffffff' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
-    background-color: #9333ea !important; /* purple-600 */
-    border-color: #9333ea !important;
 }
 </style>

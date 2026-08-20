@@ -13,12 +13,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Find or create Baraka Residence building
+        // Find Baraka Residence building ONLY
         $building = Building::where('name', 'LIKE', '%Baraka%')->first();
-        if (!$building) {
-            $building = Building::first();
-        }
-
         if (!$building) {
             return;
         }

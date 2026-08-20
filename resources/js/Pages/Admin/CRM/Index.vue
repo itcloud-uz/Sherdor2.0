@@ -4041,6 +4041,110 @@ const filteredClientPayments = computed(() => {
     });
 });
 
+const clientPaymentsViewMode = ref('grouped');
+
+const filteredClientPaymentsGrouped = computed(() => {
+    const rawTxns = filteredClientPayments.value || [];
+    const clientMap = new Map();
+
+    rawTxns.forEach(t => {
+        let clientObj = t.client || t.contract?.client;
+        const clientId = t.client_id || t.contract?.client_id || t.counterparty?.customable_id || t.target_id;
+
+        if (!clientObj && clientId && props.clients) {
+            clientObj = props.clients.find(c => c.id == clientId);
+        }
+
+        let key = null;
+        if (clientObj && clientObj.id) {
+            key = 'client_' + clientObj.id;
+        } else if (clientId) {
+            key = 'client_' + clientId;
+        } else if (t.counterparty_id) {
+            key = 'cp_' + t.counterparty_id;
+        } else {
+            const name = getClientPaymentName(t);
+            key = 'name_' + name;
+        }
+
+        if (!clientMap.has(key)) {
+            let fullClientObj = clientObj;
+            if (!fullClientObj && clientId && props.clients) {
+                fullClientObj = props.clients.find(c => c.id == clientId);
+            }
+            clientMap.set(key, {
+                key,
+                clientId: clientId || clientObj?.id || null,
+                client: fullClientObj || {
+                    id: clientId,
+                    first_name: getClientPaymentName(t),
+                    phone: getClientPaymentPhone(t)
+                },
+                name: getClientPaymentName(t),
+                phone: getClientPaymentPhone(t),
+                totalPaid: 0,
+                totalAgreed: 0,
+                paymentsCount: 0,
+                lastPaymentDate: null,
+                lastTransaction: t,
+                transactions: [],
+                contract: t.contract || null
+            });
+        }
+
+        const entry = clientMap.get(key);
+        entry.totalPaid += Number(t.amount || 0);
+        entry.paymentsCount += 1;
+        entry.transactions.push(t);
+
+        const txDate = t.transaction_date || t.created_at;
+        if (!entry.lastPaymentDate || new Date(txDate) > new Date(entry.lastPaymentDate)) {
+            entry.lastPaymentDate = txDate;
+            entry.lastTransaction = t;
+        }
+    });
+
+    clientMap.forEach(entry => {
+        let agreedSum = 0;
+        if (entry.client && entry.client.contracts && entry.client.contracts.length > 0) {
+            agreedSum = entry.client.contracts.reduce((sum, ct) => sum + Number(ct.total_amount || 0), 0);
+        } else if (entry.contract?.total_amount) {
+            agreedSum = Number(entry.contract.total_amount);
+        } else if (props.clients && entry.clientId) {
+            const cObj = props.clients.find(c => c.id == entry.clientId);
+            if (cObj && cObj.contracts) {
+                agreedSum = cObj.contracts.reduce((sum, ct) => sum + Number(ct.total_amount || 0), 0);
+            }
+        }
+        entry.totalAgreed = agreedSum;
+    });
+
+    return Array.from(clientMap.values()).sort((a, b) => new Date(b.lastPaymentDate || 0) - new Date(a.lastPaymentDate || 0));
+});
+
+function openClientLedgerFromGroup(entry) {
+    if (entry.client && entry.client.id) {
+        viewClientDetail(entry.client, entry.contract || null);
+    } else if (entry.clientId) {
+        const client = (props.clients || []).find(c => c.id == entry.clientId);
+        if (client) {
+            viewClientDetail(client, entry.contract || null);
+        } else {
+            clientDetailLoading.value = true;
+            axios.get(route('admin.crm.clients.details', entry.clientId))
+                .then(res => {
+                    if (res.data.status === 'success' && res.data.client) {
+                        viewClientDetail(res.data.client, null);
+                    }
+                })
+                .catch(e => console.error(e))
+                .finally(() => clientDetailLoading.value = false);
+        }
+    } else if (entry.lastTransaction) {
+        openClientLedgerFromPayment(entry.lastTransaction);
+    }
+}
+
 const filteredClientDebts = computed(() => {
     const list = [];
     const processedClientIds = new Set();
@@ -6433,21 +6537,98 @@ const ledgerReportData = computed(() => {
 
             <!-- Subtab 1: Mijoz to'lovlari (Image 1 Style) -->
             <div v-if="paymentsSubTab === 'payments'" class="space-y-6 bg-white p-6 rounded-b-2xl border-x border-b border-gray-150 shadow-sm">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div class="relative flex-1 max-w-md">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="relative flex-1 max-w-md w-full">
                         <span class="absolute left-3.5 top-2.5 text-gray-400">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </span>
-                        <input v-model="clientPaymentsSearch" type="text" placeholder="Qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pl-10 pr-4 py-2 text-sm w-full">
+                        <input v-model="clientPaymentsSearch" type="text" placeholder="Qidirish (Ism, telefon, izoh)..." class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pl-10 pr-4 py-2 text-sm w-full">
                     </div>
-                    <button @click="openQuickTransaction('income')" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm">
-                        + To'lov qilish
-                    </button>
+                    
+                    <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+                            <button @click="clientPaymentsViewMode = 'grouped'" class="px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all flex items-center gap-1.5" :class="clientPaymentsViewMode === 'grouped' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                                <span>👥</span> Mijozlar bo'yicha
+                            </button>
+                            <button @click="clientPaymentsViewMode = 'all'" class="px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all flex items-center gap-1.5" :class="clientPaymentsViewMode === 'all' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                                <span>📋</span> Barcha to'lovlar jurnali
+                            </button>
+                        </div>
+                        
+                        <button @click="openQuickTransaction('income')" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-sm shrink-0">
+                            + To'lov qilish
+                        </button>
+                    </div>
                 </div>
 
-                <div class="overflow-x-auto border border-gray-150 rounded-2xl">
+                <!-- 1. GROUPED VIEW BY CLIENT (Default) -->
+                <div v-if="clientPaymentsViewMode === 'grouped'" class="overflow-x-auto border border-gray-150 rounded-2xl">
+                    <table class="w-full text-left text-sm font-sans">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
+                            <tr>
+                                <th class="p-4 w-12 text-center font-bold">№</th>
+                                <th class="p-4">Mijoz (Ism & Telefon)</th>
+                                <th class="p-4 text-right">Jami shartnoma summasi</th>
+                                <th class="p-4 text-right">Jami to'langan summa</th>
+                                <th class="p-4 text-right">Qolgan qarzdorlik</th>
+                                <th class="p-4 text-center">Oxirgi to'lov sanasi</th>
+                                <th class="p-4 text-center">To'lovlar soni</th>
+                                <th class="p-4 text-right">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="(entry, idx) in filteredClientPaymentsGrouped" :key="entry.key" class="hover:bg-gray-50 transition-colors">
+                                <td class="p-4 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
+                                <td class="p-4">
+                                    <div @click="openClientLedgerFromGroup(entry)" class="flex items-center gap-3 cursor-pointer group" title="Mijoz hisob-kitob jurnalini (Shaxsiy varaqasini) ko'rish">
+                                        <div class="w-10 h-10 rounded-full bg-orange-500 group-hover:bg-orange-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0 uppercase transition-colors">
+                                            {{ (entry.name.split(' ')[0]?.[0] || '') + (entry.name.split(' ')[1]?.[0] || '') || 'M' }}
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-900 text-sm leading-tight group-hover:text-orange-600 transition-colors flex items-center gap-1">
+                                                {{ entry.name }}
+                                                <span class="text-[10px] text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">👁️</span>
+                                            </p>
+                                            <span class="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono mt-1 inline-block">{{ entry.phone }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-right font-bold text-gray-900 text-base">
+                                    {{ entry.totalAgreed ? Number(entry.totalAgreed).toLocaleString() + " so'm" : '-' }}
+                                </td>
+                                <td class="p-4 text-right font-bold text-emerald-600 text-base">
+                                    {{ Number(entry.totalPaid || 0).toLocaleString() }} so'm
+                                </td>
+                                <td class="p-4 text-right font-bold font-mono" :class="(entry.totalAgreed - entry.totalPaid) > 0 ? 'text-red-600' : 'text-gray-400'">
+                                    {{ entry.totalAgreed ? Number(Math.max(0, entry.totalAgreed - entry.totalPaid)).toLocaleString() + " so'm" : '-' }}
+                                </td>
+                                <td class="p-4 text-gray-500 text-xs font-mono text-center">
+                                    {{ entry.lastPaymentDate ? new Date(entry.lastPaymentDate).toLocaleDateString() : '-' }}
+                                </td>
+                                <td class="p-4 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                        {{ entry.paymentsCount }} ta to'lov
+                                    </span>
+                                </td>
+                                <td class="p-4 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button @click="openClientLedgerFromGroup(entry)" class="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-sm flex items-center gap-1.5" title="Mijozning barcha to'lovlari va hisob-kitob jurnali (Shaxsiy varaqa)">
+                                            👤 Hisob-kitob jurnali
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="!filteredClientPaymentsGrouped.length">
+                                <td colspan="8" class="p-8 text-center text-gray-400">Mijozlar to'lovlari topilmadi.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 2. ALL TRANSACTIONS JOURNAL VIEW -->
+                <div v-else class="overflow-x-auto border border-gray-150 rounded-2xl">
                     <table class="w-full text-left text-sm font-sans">
                         <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
                             <tr>

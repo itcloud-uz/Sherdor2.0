@@ -3,14 +3,53 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 
 defineProps({
-    canLogin: { type: Boolean },
-    canRegister: { type: Boolean },
-    laravelVersion: { type: String },
-    phpVersion: { type: String },
+    canLogin: { type: Boolean, default: true },
+    canRegister: { type: Boolean, default: false },
+    laravelVersion: { type: String, default: '' },
+    phpVersion: { type: String, default: '' },
 });
 
 const showDemo = ref(false);
-const activeTab = ref('dashboard');
+const demoSubmitted = ref(false);
+const demoForm = ref({
+    name: '',
+    company: '',
+    phone: '',
+    message: ''
+});
+
+const submitDemo = () => {
+    if (!demoForm.value.phone || !demoForm.value.name) return;
+    demoSubmitted.value = true;
+    setTimeout(() => {
+        // can redirect or close
+    }, 2000);
+};
+
+// FAQ Accordion State
+const activeFaq = ref(0);
+const toggleFaq = (index) => {
+    activeFaq.value = activeFaq.value === index ? null : index;
+};
+
+const faqs = [
+    {
+        q: "IQS ERP qaysi sohalarga mos keladi?",
+        a: "IQS ERP ko'p qavatli turar-joy binolari, tijorat obyektlari va kottej majmualarini quruvchi hamda sotuvini amalga oshiruvchi har qanday qurilish kompaniyasi, developer va pudratchilar uchun maxsus ishlab chiqilgan."
+    },
+    {
+        q: "Tizimdan foydalanish uchun texnik bilim kerakmi?",
+        a: "Tizimdan foydalanish uchun maxsus dasturchilik bilimi talab qilinmaydi. Intuitiv sodda interfeys tufayli kompyuterdan boshlang'ich foydalana olish yetarli. Tizim joriy etilgach, kompaniyangiz xodimlariga bepul amaliy treninglar va barcha foydalanuvchilar uchun videodarsliklar taqdim etiladi."
+    },
+    {
+        q: "Ma’lumotlar xavfsizligi qanday ta’minlanadi?",
+        a: "IQS tizimida har bir korxona ma'lumotlari alohida xavfsiz serverda, 256-bitli SSL shifrlash va kunlik avtomatlashtirilgan zaxira nusxalari (backup) bilan himoyalangan. Sizning barcha tijorat sirlaringiz va mijozlar bazangiz 100% daxlsiz saqlanadi."
+    },
+    {
+        q: "IQS ERP boshqa dasturlar bilan integratsiyalanadimi?",
+        a: "Ha! IQS tizimi Didox elektron hujjat aylanishi, 1C buxgalteriya, Bank to'lov tizimlari, SMS Gateway va Telegram botlar bilan to'liq integratsiya qilingan bo'lib, barcha ma'lumotlar avtomatik sinxronlashadi."
+    }
+];
 
 // Warp Speed Starfield Animation Logic
 const canvasRef = ref(null);
@@ -25,7 +64,7 @@ onMounted(() => {
     let height = canvas.height = window.innerHeight;
     
     const stars = [];
-    const numStars = 800; // 1000 flying stars roughly
+    const numStars = 600;
     
     const centerX = width / 2;
     const centerY = height / 2;
@@ -39,10 +78,10 @@ onMounted(() => {
         });
     }
     
-    let speed = 2.5;
+    let speed = 2.0;
 
     function draw() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillStyle = 'rgba(5, 5, 8, 0.25)';
         ctx.fillRect(0, 0, width, height);
         
         const cx = width / 2;
@@ -67,20 +106,19 @@ onMounted(() => {
             
             star.pz = star.z;
             
-            const radius = (1 - star.z / width) * 2.5;
+            const radius = (1 - star.z / width) * 2.2;
             
-            // Randomly color some stars for cyber feel
-            if (i % 10 === 0) ctx.fillStyle = '#8b5cf6'; // purple
-            else if (i % 15 === 0) ctx.fillStyle = '#3b82f6'; // blue
-            else ctx.fillStyle = '#ffffff'; // white
+            if (i % 8 === 0) ctx.fillStyle = '#f59e0b'; // Amber
+            else if (i % 12 === 0) ctx.fillStyle = '#8b5cf6'; // Purple
+            else if (i % 15 === 0) ctx.fillStyle = '#10b981'; // Emerald
+            else ctx.fillStyle = '#ffffff'; // White
             
             ctx.beginPath();
             ctx.arc(sx, sy, radius, 0, Math.PI * 2);
             ctx.fill();
             
-            // Star trails
             ctx.strokeStyle = ctx.fillStyle;
-            ctx.lineWidth = radius;
+            ctx.lineWidth = radius * 0.8;
             ctx.beginPath();
             ctx.moveTo(px, py);
             ctx.lineTo(sx, sy);
@@ -100,539 +138,579 @@ onMounted(() => {
     window.addEventListener('resize', handleResize);
     
     onBeforeUnmount(() => {
-        cancelAnimationFrame(animationFrameId);
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
         window.removeEventListener('resize', handleResize);
     });
 });
 </script>
 
 <template>
-    <Head title="SBE - Sales & Build ERP" />
-    <div class="min-h-screen bg-black text-white relative overflow-hidden font-sans">
+    <Head title="IQS ERP - Qurilish va Sotuv Jarayonlarini Avtomatlashtirish Tizimi" />
+    
+    <div class="min-h-screen bg-[#07070a] text-white relative overflow-hidden font-sans selection:bg-amber-500 selection:text-black">
         
-        <!-- Warp Speed Starfield Canvas (Base Layer) -->
-        <canvas ref="canvasRef" class="absolute inset-0 z-[-1] pointer-events-none"></canvas>
+        <!-- Warp Speed Starfield Canvas Background -->
+        <canvas ref="canvasRef" class="fixed inset-0 z-0 pointer-events-none"></canvas>
         
-        <!-- Radial Gradient Overlay (For Readability) -->
-        <div class="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-900/20 via-black/40 to-black/80 pointer-events-none"></div>
+        <!-- Ambient Glowing Orbs -->
+        <div class="fixed top-[-15%] left-[20%] w-[500px] h-[500px] rounded-full bg-amber-500/10 blur-[140px] pointer-events-none z-0"></div>
+        <div class="fixed bottom-[-10%] right-[10%] w-[600px] h-[600px] rounded-full bg-purple-600/10 blur-[160px] pointer-events-none z-0"></div>
+        <div class="fixed top-[40%] left-[-10%] w-[450px] h-[450px] rounded-full bg-blue-600/10 blur-[130px] pointer-events-none z-0"></div>
 
-        <!-- Content Wrapper (Strictly above stars) -->
-        <div class="relative z-50">
-            <!-- Glassmorphism Navbar -->
-            <nav class="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto backdrop-blur-md bg-white/5 border-b border-white/10 rounded-b-3xl mb-8 shadow-lg sticky top-0 z-50">
+        <!-- Sticky Header / Navbar -->
+        <header class="sticky top-0 z-50 backdrop-blur-xl bg-[#07070a]/75 border-b border-white/10 transition-all duration-300">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                
+                <!-- Logo -->
+                <a href="#home" class="flex items-center gap-3 group">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 via-purple-600 to-blue-500 flex items-center justify-center p-0.5 shadow-[0_0_20px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-transform">
+                        <div class="w-full h-full bg-[#0d0d12] rounded-[14px] flex items-center justify-center font-black text-xl tracking-tighter text-amber-400">
+                            IQS
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
+                            IQS <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold uppercase">ERP</span>
+                        </span>
+                        <span class="text-[10px] text-gray-400 font-medium tracking-wider uppercase">Qur & Sot • Men Quraman va Sotaman</span>
+                    </div>
+                </a>
+
+                <!-- Nav Links (Desktop) -->
+                <nav class="hidden md:flex items-center space-x-8 text-sm font-medium">
+                    <a href="#home" class="text-gray-300 hover:text-amber-400 transition-colors">Bosh sahifa</a>
+                    <a href="#modules" class="text-gray-300 hover:text-amber-400 transition-colors">Modullar</a>
+                    <a href="#benefits" class="text-gray-300 hover:text-amber-400 transition-colors">Afzalliklar</a>
+                    <a href="#services" class="text-gray-300 hover:text-amber-400 transition-colors">Qadamlar</a>
+                    <a href="#testimonials" class="text-gray-300 hover:text-amber-400 transition-colors">Fikrlar</a>
+                    <a href="#faq" class="text-gray-300 hover:text-amber-400 transition-colors">FAQ</a>
+                </nav>
+
+                <!-- Actions -->
                 <div class="flex items-center gap-3">
-                    <img src="/sbe-logo.png" alt="SBE Logo" class="h-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]" @error="(e) => e.target.src='https://ui-avatars.com/api/?name=SBE&background=1e1e1e&color=fff&rounded=true'" />
-                    <span class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-purple-600 drop-shadow-sm tracking-tight">SBE</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <Link :href="route('promo.offers')" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white transition-all text-sm font-bold shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transform hover:scale-105 whitespace-nowrap">
-                        Uy sotib olish
+                    <Link :href="route('promo.offers')" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-sm font-semibold transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                        <span>🏢</span> Uy sotib olish
                     </Link>
-                    <Link :href="route('login')" class="px-6 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 transition-all text-sm font-semibold backdrop-blur-sm shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+
+                    <Link :href="route('login')" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-sm shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:shadow-[0_0_30px_rgba(245,158,11,0.6)] transition-all transform hover:scale-[1.02]">
                         Kirish
                     </Link>
                 </div>
-            </nav>
+            </div>
+        </header>
 
-            <!-- Hero Section -->
-            <main class="max-w-7xl mx-auto px-6 py-16 flex flex-col items-center text-center relative z-50">
-                <div class="inline-block mb-6 px-4 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 backdrop-blur-md shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-                    <span class="text-sm font-medium text-purple-300 tracking-wide uppercase">Yangi Avlod ERP Tizimi</span>
-                </div>
+        <!-- Main Content -->
+        <main class="relative z-10">
+
+            <!-- HERO SECTION -->
+            <section id="home" class="pt-16 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col items-center text-center">
                 
-                <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-8" style="text-shadow: 0 4px 20px rgba(0,0,0,0.8);">
-                    SBE – Qurilish va Savdo Kompaniyalari Uchun <br/>
-                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500" style="text-shadow: none;">Yagona Boshqaruv Ekosistemasi</span>
+                <!-- Trust Badge -->
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 backdrop-blur-md mb-8 shadow-[0_0_20px_rgba(245,158,11,0.2)] animate-pulse">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                    </span>
+                    <span class="text-xs sm:text-sm font-semibold text-amber-300">Bizga 20+ yirik qurilish kompaniyasi ishonmoqda</span>
+                </div>
+
+                <!-- Hero Title -->
+                <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight max-w-5xl leading-[1.15] mb-8 drop-shadow-2xl">
+                    Ko’p Qavatli Turar-joy Binolari Qurilishini <br class="hidden sm:block" />
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-purple-400 to-cyan-400">
+                        Avtomatlashtiring!
+                    </span>
                 </h1>
-                
-                <p class="text-lg md:text-xl text-gray-300 max-w-3xl mb-12 leading-relaxed font-medium" style="text-shadow: 0 2px 10px rgba(0,0,0,0.9);">
-                    Moliya, CRM, Qurilish ob'ektlari va Kadrlar bo'limini bitta oynadan boshqaring. Ma'lumotlaringiz xavfsizligi va biznesingizning to'liq nazorati sizning qo'lingizda.
+
+                <!-- Hero Subtitle -->
+                <p class="text-base sm:text-xl text-gray-300 max-w-3xl mb-10 leading-relaxed font-normal">
+                    <strong class="text-white font-semibold">IQS ERP</strong> (Men Quraman va Sotaman) — bu yangi avlod ekotizimi bo‘lib, ko'p qavatli turar-joy binolari qurilishi, smeta hisob-kitobi, omborxona, moliya va sotuv bo‘limlari uchun barcha jarayonlarni yagona tizimda boshqarish imkonini beradi.
                 </p>
-                
-                <div class="flex flex-col sm:flex-row gap-6 w-full justify-center px-4">
-                    <!-- Glowing Primary Cyber-Button -->
-                    <Link :href="route('login')" class="px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-lg shadow-[0_0_30px_rgba(124,58,253,0.5)] hover:shadow-[0_0_40px_rgba(124,58,253,0.8)] hover:scale-105 transition-all transform duration-300">
-                        Tizim bilan tanishish
-                    </Link>
-                    
-                    <Link :href="route('promo.offers')" class="px-8 py-4 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-lg shadow-[0_0_30px_rgba(16,185,129,0.5)] hover:shadow-[0_0_40px_rgba(16,185,129,0.8)] hover:scale-105 transition-all transform duration-300">
-                        Uy sotib olish
-                    </Link>
-                    
-                    <!-- Secondary Glass Button -->
-                    <button @click="showDemo = true" class="group px-8 py-4 rounded-full bg-white/5 backdrop-blur-md border border-white/20 hover:bg-purple-900/30 transition-all font-bold text-lg text-purple-200 shadow-[0_0_20px_rgba(168,85,247,0.1)] hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:-translate-y-1 transform duration-300 flex items-center justify-center gap-2">
-                        <span class="relative flex h-3 w-3">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
-                        </span>
-                        Demo rejimda sinab ko'rish
+
+                <!-- Hero CTA Buttons -->
+                <div class="flex flex-wrap items-center justify-center gap-4 sm:gap-6 w-full max-w-2xl mb-16">
+                    <button @click="showDemo = true" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-black font-extrabold text-lg shadow-[0_0_30px_rgba(245,158,11,0.5)] hover:shadow-[0_0_45px_rgba(245,158,11,0.8)] hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2">
+                        <span>⚡ Demo rejimda sinab ko'rish</span>
                     </button>
-                </div>
-            </main>
 
-            <!-- Features Section -->
-            <section class="max-w-7xl mx-auto px-6 py-24 relative z-10">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-blue-500/30 transition-all duration-500 group relative overflow-hidden backdrop-blur-md">
-                        <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div class="relative z-10">
-                            <div class="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]">💡</div>
-                            <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">Aklli CRM va Shartnomalar</h3>
-                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-200 transition-colors">Mijozlar bazasini (Lead) boshqarish, shartnomalarni avtomatlashtirilgan PDF formatida generatsiya qilish, SMS xabarnomalar va to'lov grafigini (shaxmatka) real vaqt rejimida kuzatish.</p>
-                        </div>
-                    </div>
+                    <Link :href="route('promo.offers')" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-bold text-lg backdrop-blur-md shadow-[0_0_25px_rgba(16,185,129,0.2)] hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2">
+                        <span>🏢 Uy sotib olish</span>
+                    </Link>
+
+                    <Link :href="route('login')" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-lg backdrop-blur-md hover:scale-105 transition-all duration-300">
+                        Tizimga kirish
+                    </Link>
+                </div>
+
+                <!-- Hero Interactive Dashboard Visual Mockup -->
+                <div class="w-full max-w-5xl relative group perspective-1000">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-amber-500 via-purple-600 to-blue-600 rounded-3xl blur-xl opacity-30 group-hover:opacity-60 transition duration-1000"></div>
                     
-                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-orange-500/30 transition-all duration-500 group relative overflow-hidden backdrop-blur-md">
-                        <div class="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div class="relative z-10">
-                            <div class="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.2)]">💰</div>
-                            <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">Moliya va Kassa Nazorati</h3>
-                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-200 transition-colors">Ko'p valyutali hisob-kitoblar, daromad va xarajatlarni toifalar bo'yicha tahlil qilish, investorlar o'rtasida foyda (divident) taqsimotini avtomatik hisoblash va tasdiqlash tizimi (Multi-sig).</p>
+                    <div class="relative bg-[#0e0e14]/90 border border-white/15 rounded-3xl p-4 sm:p-8 shadow-2xl backdrop-blur-2xl text-left overflow-hidden">
+                        
+                        <!-- Top mockup bar -->
+                        <div class="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+                                <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+                                <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+                                <span class="ml-3 text-xs font-mono text-gray-400">iqs-erp.cloud/dashboard • Real-time Monitoring</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Server 200 OK
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Grid Mockup Stats -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <div class="text-xs text-gray-400 mb-1">Jami Sotuvlar</div>
+                                <div class="text-xl sm:text-2xl font-black text-amber-400">85.35 млрд</div>
+                                <div class="text-[11px] text-emerald-400 mt-1 font-medium">↑ +24.8% bu oy</div>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <div class="text-xs text-gray-400 mb-1">Mavjud Xonadonlar</div>
+                                <div class="text-xl sm:text-2xl font-black text-cyan-400">328 ta</div>
+                                <div class="text-[11px] text-gray-400 mt-1 font-medium">Shaxmatka sinxron</div>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <div class="text-xs text-gray-400 mb-1">Smeta va Xarajatlar</div>
+                                <div class="text-xl sm:text-2xl font-black text-purple-400">100% Nazorat</div>
+                                <div class="text-[11px] text-purple-300 mt-1 font-medium">Avtomat ekspertiza</div>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <div class="text-xs text-gray-400 mb-1">Mijozlar Boshqaruvi</div>
+                                <div class="text-xl sm:text-2xl font-black text-emerald-400">CRM + SMS</div>
+                                <div class="text-[11px] text-emerald-300 mt-1 font-medium">2-Ilova Parkovka</div>
+                            </div>
+                        </div>
+
+                        <!-- Visual Bars Preview -->
+                        <div class="p-4 sm:p-6 rounded-2xl bg-black/40 border border-white/5 flex flex-col gap-3">
+                            <div class="flex items-center justify-between text-xs text-gray-400">
+                                <span>Qurilish Obyektlari (A-1, B-1 Bloklar & Podval Savdo Do'konlari)</span>
+                                <span class="text-amber-400 font-mono font-bold">92% Bajarildi</span>
+                            </div>
+                            <div class="w-full h-3 rounded-full bg-white/10 overflow-hidden flex">
+                                <div class="h-full bg-gradient-to-r from-amber-500 via-purple-500 to-cyan-400 w-[92%] rounded-full"></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- MODULLAR (FEATURES) SECTION -->
+            <section id="modules" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-6">
+                        Obyektlar, Moliya, Omborxona Va Sotuvni <br />
+                        <span class="bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-purple-400 to-blue-400">
+                            Yagona Tizimda Boshqaring!
+                        </span>
+                    </h2>
+                    <p class="text-gray-400 text-base sm:text-lg">
+                        Endi barcha ma'lumotlar bir joyda jamlanib, nazorat qilish yanada oson, shaffof va samarali bo‘ladi.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    
+                    <!-- Module 1: CRM -->
+                    <div class="p-8 sm:p-10 rounded-3xl bg-white/[0.03] border border-white/10 hover:border-amber-500/40 hover:bg-white/[0.05] transition-all duration-300 group">
+                        <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                            💼
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-3 flex items-center gap-2">
+                            CRM va Shartnomalar
+                        </h3>
+                        <p class="text-gray-400 leading-relaxed mb-6">
+                            Mijozlar bilan ishlashni to'liq avtomatlashtiring: lidlar, 11-bo'limli rasmiy shartnomalar, avtoturargoh 2-ilovalari va sotuv jarayonlarini yagona tizimda boshqaring.
+                        </p>
+                        <div class="flex flex-wrap gap-2 text-xs font-semibold text-amber-300">
+                            <span class="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">Lidlar bazasi</span>
+                            <span class="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">PDF/DOCX Generator</span>
+                            <span class="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20">SMS Eslatmalar</span>
                         </div>
                     </div>
 
-                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-purple-500/30 transition-all duration-500 group relative overflow-hidden backdrop-blur-md">
-                        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div class="relative z-10">
-                            <div class="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]">🏗️</div>
-                            <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">Qurilish va Omborxona</h3>
-                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-200 transition-colors">Ob'ektlardagi qurilish jarayonlarini bosqichma-bosqich nazorat qilish, ombordagi materiallar (kirim-chiqim) hisobi, ta'minotchilar bilan hisob-kitoblar va texnikalar ijarasi monitoringi.</p>
+                    <!-- Module 2: Dashboard -->
+                    <div class="p-8 sm:p-10 rounded-3xl bg-white/[0.03] border border-white/10 hover:border-purple-500/40 hover:bg-white/[0.05] transition-all duration-300 group">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                            📊
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-3 flex items-center gap-2">
+                            Analitik Dashboard
+                        </h3>
+                        <p class="text-gray-400 leading-relaxed mb-6">
+                            Loyihalar, tushumlar, qarzdorliklar, smeta xarajatlari va sotuvlar bo‘yicha barcha asosiy moliyaviy ko‘rsatkichlarni real vaqt rejimida grafiklarda kuzatib boring.
+                        </p>
+                        <div class="flex flex-wrap gap-2 text-xs font-semibold text-purple-300">
+                            <span class="px-3 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20">Real-vaqt grafiklar</span>
+                            <span class="px-3 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20">Kassa & Bank</span>
+                            <span class="px-3 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20">KPI tahlil</span>
                         </div>
                     </div>
 
-                    <div class="glass-card p-10 rounded-3xl border border-white/5 hover:border-pink-500/30 transition-all duration-500 group relative overflow-hidden backdrop-blur-md">
-                        <div class="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div class="relative z-10">
-                            <div class="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center text-pink-400 mb-6 text-3xl group-hover:scale-110 transition-transform duration-500 border border-pink-500/20 shadow-[0_0_15px_rgba(236,72,153,0.2)]">👥</div>
-                            <h3 class="text-2xl font-bold mb-4 text-white drop-shadow-md">HR, Oyliklar va Face ID</h3>
-                            <p class="text-gray-400 leading-relaxed group-hover:text-gray-200 transition-colors">Ishchilarni yuzni tanish texnologiyasi (Face ID) orqali davomat qilish, brigadalar ishi, KPI va oylik maoshlarni avtomatlashtirilgan hisob-kitobi.</p>
+                    <!-- Module 3: Obyektlar -->
+                    <div class="p-8 sm:p-10 rounded-3xl bg-white/[0.03] border border-white/10 hover:border-cyan-500/40 hover:bg-white/[0.05] transition-all duration-300 group">
+                        <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(6,182,212,0.2)]">
+                            🏗️
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-3 flex items-center gap-2">
+                            Obyektlar va Shaxmatka
+                        </h3>
+                        <p class="text-gray-400 leading-relaxed mb-6">
+                            Yangi uy-joy majmualari, bloklar (A-1, B-1), qavatlar, xonadonlar, savdo do‘konlari va yerosti/yerusti parkovkalarni interaktiv shaxmatkada onlayn nazorat qiling.
+                        </p>
+                        <div class="flex flex-wrap gap-2 text-xs font-semibold text-cyan-300">
+                            <span class="px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20">Interaktiv Shaxmatka</span>
+                            <span class="px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20">Do'kon & Parkovka</span>
+                            <span class="px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20">Band qilish</span>
                         </div>
                     </div>
+
+                    <!-- Module 4: Omborxona -->
+                    <div class="p-8 sm:p-10 rounded-3xl bg-white/[0.03] border border-white/10 hover:border-emerald-500/40 hover:bg-white/[0.05] transition-all duration-300 group">
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                            📦
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-3 flex items-center gap-2">
+                            Ombor (Sklad) va Smeta
+                        </h3>
+                        <p class="text-gray-400 leading-relaxed mb-6">
+                            Qurilish materiallari (armatura, beton, g'isht) kirim-chiqimi, texnikalar ijarasi, ta'minotchilar hisobi va tasdiqlangan ekspertiza smetasini aniq nazorat qiling.
+                        </p>
+                        <div class="flex flex-wrap gap-2 text-xs font-semibold text-emerald-300">
+                            <span class="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">Materiallar hisobi</span>
+                            <span class="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">Loyiha smetasi</span>
+                            <span class="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">Ta'minotchilar</span>
+                        </div>
+                    </div>
+
                 </div>
             </section>
 
-            <!-- Partners Section -->
-            <section class="max-w-7xl mx-auto px-6 py-24 text-center relative z-10">
-                <h2 class="text-3xl md:text-4xl font-extrabold mb-14 drop-shadow-lg">
-                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-400">Xalqaro va Mahalliy Qurilish Gigantlari Bizni Tanlaydi</span>
-                </h2>
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-6 items-stretch justify-center">
-                    <div class="glass-card py-8 px-4 rounded-2xl border border-white/5 flex items-center justify-center font-bold text-xl text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 shadow-lg">Sherdor</div>
-                    <div class="glass-card py-8 px-4 rounded-2xl border border-white/5 flex items-center justify-center font-bold text-xl text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 shadow-lg">Delta</div>
-                    <div class="glass-card py-8 px-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center font-bold text-lg text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 shadow-lg">
-                        <span>Hakim O'g'lu</span>
-                        <span class="text-xs text-blue-400 mt-1.5 font-medium tracking-wider uppercase">(Turkiya)</span>
+            <!-- AFZALLIKLAR (BENEFITS) SECTION -->
+            <section id="benefits" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <div class="inline-block px-4 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-4">
+                        Afzalliklar
                     </div>
-                    <div class="glass-card py-8 px-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center font-bold text-lg text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 text-center shadow-lg">
-                        <span>Göztepe Builder Global</span>
-                    </div>
-                    <div class="glass-card py-8 px-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center font-bold text-lg text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 text-center shadow-lg">
-                        <span>Hayot House</span>
-                        <span class="text-[10px] text-blue-400 mt-1.5 font-medium tracking-wider uppercase">(Toshkent & Samarqand)</span>
-                    </div>
+                    <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-6">
+                        Nega Aynan IQS ERP?
+                    </h2>
+                    <p class="text-gray-400 text-base sm:text-lg">
+                        Bizning tizim ko'p qavatli turar-joy binolari qurilishini va sotuv jarayonlarini yanada samarali boshqaradi. Real vaqt rejimidagi nazorat va moliyaviy shaffoflik orqali biznesingizni yangi bosqichga olib chiqing.
+                    </p>
                 </div>
-            </section>
 
-            <!-- Footer -->
-            <footer class="mt-12 border-t border-white/10 pt-16 pb-8 glass-card bg-black/40 relative z-10">
-                <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-                    <div class="col-span-1 md:col-span-2">
-                        <div class="flex items-center gap-3 mb-6">
-                            <img src="/sbe-logo.png" alt="SBE" class="h-10 opacity-90" @error="(e) => e.target.src='https://ui-avatars.com/api/?name=SBE&background=1e1e1e&color=fff&rounded=true'" />
-                            <span class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">SBE</span>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <div class="p-6 rounded-2xl bg-[#0e0e14] border border-white/10 hover:border-amber-500/40 transition-all flex flex-col gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl">
+                            🏛️
                         </div>
-                        <p class="text-gray-400 text-sm max-w-sm leading-relaxed">
-                            SBE – Sales & Build ERP tizimi orqali biznesingizni yangi bosqichga olib chiqing. Barcha murakkab jarayonlar endi bitta aqlli va xavfsiz tizimda.
+                        <h4 class="text-xl font-bold text-white">Obyektlar ustidan to‘liq nazorat</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            Qurilish obyektlari, bloklar, qavatlar va xonadonlarning sotuv jarayonini real vaqt rejimida shaxmatka orqali kuzatish.
                         </p>
                     </div>
-                    <div>
-                        <h4 class="font-bold text-lg mb-6 text-white drop-shadow-sm">Kontaktlar</h4>
-                        <ul class="text-gray-400 space-y-4 text-sm font-medium">
-                            <li class="flex items-center gap-3 hover:text-blue-400 transition-colors"><span class="text-lg">📞</span> +998 33 518 00 05</li>
-                            <li class="flex items-center gap-3 hover:text-blue-400 transition-colors"><span class="text-lg">📞</span> +998 91 187 37 30</li>
-                            <li class="flex items-center gap-3 hover:text-blue-400 transition-colors"><span class="text-lg">✉️</span> itclouduz@gmail.com</li>
-                        </ul>
+
+                    <div class="p-6 rounded-2xl bg-[#0e0e14] border border-white/10 hover:border-purple-500/40 transition-all flex flex-col gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl">
+                            🤝
+                        </div>
+                        <h4 class="text-xl font-bold text-white">CRM va mijozlar bilan ishlash</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            Lidlar, mijozlar, bo'lib to'lash grafiki va rasmiy 11-bo'limli shartnomalarni yagona tizimda boshqarib, sotuvlarni oshirish.
+                        </p>
                     </div>
-                    <div>
-                        <h4 class="font-bold text-lg mb-6 text-white drop-shadow-sm">Ijtimoiy tarmoqlar</h4>
-                        <ul class="text-gray-400 space-y-4 text-sm font-medium">
-                            <li><a href="#" class="flex items-center gap-3 hover:text-blue-400 transition-colors"><span class="text-lg">✈️</span> @ITcloud_me</a></li>
-                            <li><a href="#" class="flex items-center gap-3 hover:text-pink-400 transition-colors"><span class="text-lg">📸</span> Shodiyor_kholmurodov</a></li>
-                        </ul>
+
+                    <div class="p-6 rounded-2xl bg-[#0e0e14] border border-white/10 hover:border-emerald-500/40 transition-all flex flex-col gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-2xl">
+                            💵
+                        </div>
+                        <h4 class="text-xl font-bold text-white">Moliyaviy shaffoflik</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            Mijoz to‘lovlari, kassa tushumlari, bank hisobotlari, kontragentlar va xarajatlarni bir joyda 100% aniqlikda nazorat qilish.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-[#0e0e14] border border-white/10 hover:border-cyan-500/40 transition-all flex flex-col gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-2xl">
+                            👥
+                        </div>
+                        <h4 class="text-xl font-bold text-white">Xodimlarni boshqarish</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            Xodimlar, maoshlar, KPI ko'rsatkichlari va rollarni (menedjerlar, buxgalterlar, kassa va omborxona mudiri) samarali taqsimlash.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-[#0e0e14] border border-white/10 hover:border-blue-500/40 transition-all flex flex-col gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-2xl">
+                            🚚
+                        </div>
+                        <h4 class="text-xl font-bold text-white">Ombor va materiallar</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            Qurilish materiallari buyurtmasi, kirim-chiqim aktlari va zaxiralarni har bir bino va blok bo'yicha aniq hisobda yuritish.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-[#0e0e14] border border-white/10 hover:border-pink-500/40 transition-all flex flex-col gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-2xl">
+                            📈
+                        </div>
+                        <h4 class="text-xl font-bold text-white">Hisobotlar va KPI</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            Barcha loyihalar bo'yicha yig'ma moliyaviy aktlar, tahliliy hisobotlar va ekspert xulosalari orqali tezkor boshqaruv qarorlarini qabul qilish.
+                        </p>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- 3 QADAMDA SODDALASHTIRILGAN AVTOMATLASHTIRISH -->
+            <section id="services" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-6">
+                        Soddalashtirilgan Avtomatlashtirish 3 Qadamda
+                    </h2>
+                    <p class="text-gray-400 text-base sm:text-lg">
+                        Qurilish va sotuv jarayonlarini tez va oson boshqarishni boshlang — IQS ERP yordamida barchasi bir necha qadamda.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    
+                    <div class="p-8 rounded-3xl bg-[#0e0e14] border border-white/10 flex flex-col justify-between">
+                        <div>
+                            <div class="text-5xl font-black text-amber-400/30 mb-4 font-mono">01</div>
+                            <h3 class="text-2xl font-bold text-white mb-3">Tizimni ulash</h3>
+                            <p class="text-gray-400 text-sm leading-relaxed">
+                                IQS ERP’ni kompaniyangiz jarayonlariga ulash — obyektlar, bloklar va xonadonlar bazasini import qilib, qo‘shimcha murakkab sozlamalarsiz tezkor start oling.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="p-8 rounded-3xl bg-[#0e0e14] border border-white/10 flex flex-col justify-between">
+                        <div>
+                            <div class="text-5xl font-black text-purple-400/30 mb-4 font-mono">02</div>
+                            <h3 class="text-2xl font-bold text-white mb-3">Jarayonlarni kuzatish</h3>
+                            <p class="text-gray-400 text-sm leading-relaxed">
+                                CRM, obyektlar, to‘lovlar grafigi, shartnomalar va omborxona materiallar harakatini real vaqt rejimida to'liq nazorat qiling.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="p-8 rounded-3xl bg-[#0e0e14] border border-white/10 flex flex-col justify-between">
+                        <div>
+                            <div class="text-5xl font-black text-cyan-400/30 mb-4 font-mono">03</div>
+                            <h3 class="text-2xl font-bold text-white mb-3">Qarorlarni amalga oshiring</h3>
+                            <p class="text-gray-400 text-sm leading-relaxed">
+                                Avtomatik hisobotlar va KPI ko'rsatkichlari orqali xarajatlarni tejang, sotuvlarni oshiring va foydani ko'paytiring.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- TESTIMONIALS (FIKRLAR) -->
+            <section id="testimonials" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <div class="inline-block px-4 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-4">
+                        Mijozlarimizning fikri
+                    </div>
+                    <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-6">
+                        Biz Haqimizda Boshqalar Nima Deyishmoqda?
+                    </h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <div class="p-8 rounded-3xl bg-[#0e0e14] border border-white/10 flex flex-col justify-between">
+                        <p class="text-gray-300 text-sm leading-relaxed mb-6 italic">
+                            “Boshida IQS tizimini o'rnatishga ikkilangan edik. Tavakkal qilib o'rnatishga qaror qildik va bu qaror kompaniyamizning o'sishi, xarajatlar miqdorining keskin pasayishi, xodimlar ustidan to'liq nazorat va adolat o'rnatuvchi poydevor vazifasini o'tadi!”
+                        </p>
+                        <div class="flex items-center gap-3 border-t border-white/10 pt-4">
+                            <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center">AR</div>
+                            <div>
+                                <h5 class="text-sm font-bold text-white">Azizbek R.</h5>
+                                <span class="text-xs text-gray-400">Qurilish kompaniyasi rahbari</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-8 rounded-3xl bg-[#0e0e14] border border-white/10 flex flex-col justify-between">
+                        <p class="text-gray-300 text-sm leading-relaxed mb-6 italic">
+                            “Oldin qurilishimizning har bir qismi uchun alohida dasturlardan foydalanar edik va ko’p chalkashliklar bo'lardi. IQS ni o’rnatganimizdan so’ng bu muammo bartaraf etildi. Endi omborni ham, moliyani ham, sotuvni ham bitta tizimda ko'ryapmiz!”
+                        </p>
+                        <div class="flex items-center gap-3 border-t border-white/10 pt-4">
+                            <div class="w-10 h-10 rounded-full bg-purple-500/20 text-purple-400 font-bold flex items-center justify-center">OM</div>
+                            <div>
+                                <h5 class="text-sm font-bold text-white">O‘tkir M.</h5>
+                                <span class="text-xs text-gray-400">Sotuv bo‘limi rahbari</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-8 rounded-3xl bg-[#0e0e14] border border-white/10 flex flex-col justify-between">
+                        <p class="text-gray-300 text-sm leading-relaxed mb-6 italic">
+                            “Hozirgi kunda qarzdorliklar bo'yicha hech qanday muammo bo'lmayapti, barcha mijozlar o'z vaqtida to'lamoqda. IQS orqali har bir mijozga to'lov muddati yaqinlashganda avtomatik SMS yuboriladi. Ishimizni 2x ga tezlashtirdi!”
+                        </p>
+                        <div class="flex items-center gap-3 border-t border-white/10 pt-4">
+                            <div class="w-10 h-10 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center">AS</div>
+                            <div>
+                                <h5 class="text-sm font-bold text-white">Ahmad S.</h5>
+                                <span class="text-xs text-gray-400">Ombor va ta'minot menejeri</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- PARTNERS / OBJECKLAR -->
+            <section class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10 text-center">
+                <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-10">
+                    Bizning Tizim Orqali Boshqarilayotgan Loyihalar
+                </h4>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                    <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5 font-bold text-gray-400 hover:text-white transition-colors">Sher-Dor Residence</div>
+                    <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5 font-bold text-gray-400 hover:text-white transition-colors">Hayot House</div>
+                    <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5 font-bold text-gray-400 hover:text-white transition-colors">Baraka Residence</div>
+                    <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5 font-bold text-gray-400 hover:text-white transition-colors">Delta Construction</div>
+                    <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5 font-bold text-gray-400 hover:text-white transition-colors">Hakim O'g'lu</div>
+                    <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5 font-bold text-gray-400 hover:text-white transition-colors">Göztepe Global</div>
+                </div>
+            </section>
+
+            <!-- FAQ SECTION -->
+            <section id="faq" class="py-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto border-t border-white/10">
+                <div class="text-center mb-16">
+                    <div class="inline-block px-4 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-4">
+                        Savollar
+                    </div>
+                    <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4">
+                        Tez-Tez So‘raladigan Savollar
+                    </h2>
+                    <p class="text-gray-400">
+                        IQS ERP bo‘yicha eng ko‘p beriladigan savollarga aniq javoblar.
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+                    <div v-for="(faq, i) in faqs" :key="i" class="rounded-2xl bg-[#0e0e14] border border-white/10 overflow-hidden transition-all">
+                        <button @click="toggleFaq(i)" class="w-full px-6 py-5 text-left font-semibold text-lg flex items-center justify-between gap-4 hover:text-amber-400 transition-colors">
+                            <span>{{ faq.q }}</span>
+                            <span class="text-xl font-mono text-amber-400 transition-transform duration-200" :class="{ 'rotate-45': activeFaq === i }">+</span>
+                        </button>
+                        <div v-show="activeFaq === i" class="px-6 pb-5 text-sm text-gray-400 leading-relaxed border-t border-white/5 pt-4">
+                            {{ faq.a }}
+                        </div>
                     </div>
                 </div>
-                <div class="text-center text-gray-500 text-xs border-t border-white/5 pt-8 font-medium">
-                    <p>Dasturchi: Shodiyor Xolmurodov &nbsp;|&nbsp; © 2026 ITCloud.uz &nbsp;|&nbsp; SBE - Sales & Build ERP v2.0</p>
-                </div>
-            </footer>
-        </div>
+            </section>
 
-        <!-- Demo Modal -->
-        <div v-if="showDemo" class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-xl bg-black/70 transition-all duration-300">
-            <div class="relative w-full max-w-6xl h-[85vh] rounded-3xl border border-white/10 bg-[#0a0a0a]/80 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-fade-in-up ring-1 ring-white/5">
-                
-                <!-- Mac-like Header -->
-                <div class="flex justify-between items-center px-5 py-3 border-b border-white/10 bg-white/5 backdrop-blur-md">
-                    <div class="flex items-center gap-4">
-                        <div class="flex gap-2">
-                            <div class="w-3.5 h-3.5 rounded-full bg-red-500 border border-red-600 cursor-pointer hover:bg-red-600 transition-colors shadow-sm" @click="showDemo = false"></div>
-                            <div class="w-3.5 h-3.5 rounded-full bg-yellow-500 border border-yellow-600 shadow-sm"></div>
-                            <div class="w-3.5 h-3.5 rounded-full bg-green-500 border border-green-600 shadow-sm"></div>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="border-t border-white/10 bg-[#050508] py-16 px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+                <div class="md:col-span-2">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-purple-600 flex items-center justify-center font-black text-lg text-black">
+                            IQS
                         </div>
-                        <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest ml-4">SBE Dashboard Demo</span>
+                        <span class="text-2xl font-black text-white">IQS ERP</span>
                     </div>
-                    <button @click="showDemo = false" class="text-gray-400 hover:text-white transition-colors text-sm font-medium bg-white/5 hover:bg-white/10 px-3 py-1 rounded-md">
-                        Yopish
-                    </button>
+                    <p class="text-gray-400 text-sm leading-relaxed max-w-md mb-6">
+                        <strong>IQS</strong> (Qur va Sotish — Men quraman va sotaman!) — Ko'p qavatli turar-joy binolari qurilishini va sotuv jarayonlarini avtomatlashtirish uchun yagona tizim. Hisobotlar, mijozlar, sotuv, moliya va omborxona boshqaruvi — barchasi bir joyda.
+                    </p>
+                    <div class="text-xs text-gray-500 font-mono">
+                        Server: Multi-tenant Cloud Infrastructure • 200 OK
+                    </div>
                 </div>
 
-                <!-- Dashboard Mockup -->
-                <div class="flex flex-1 overflow-hidden backdrop-blur-3xl">
-                    <!-- Sidebar -->
-                    <div class="w-64 border-r border-white/5 bg-black/40 p-5 flex flex-col gap-3">
-                        <div class="mb-6 px-2 flex items-center gap-2">
-                            <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">SBE ERP</span>
-                        </div>
-                        <div @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-400 border-blue-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
-                            📊 <span class="font-medium text-sm">Boshqaruv Paneli</span>
-                        </div>
-                        <div @click="activeTab = 'finance'" :class="activeTab === 'finance' ? 'bg-gradient-to-r from-green-600/20 to-green-500/10 text-green-400 border-green-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
-                            💼 <span class="font-medium text-sm">Moliya</span>
-                        </div>
-                        <div @click="activeTab = 'crm'" :class="activeTab === 'crm' ? 'bg-gradient-to-r from-orange-600/20 to-orange-500/10 text-orange-400 border-orange-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
-                            🤝 <span class="font-medium text-sm">CRM va Mijozlar</span>
-                        </div>
-                        <div @click="activeTab = 'construction'" :class="activeTab === 'construction' ? 'bg-gradient-to-r from-purple-600/20 to-purple-500/10 text-purple-400 border-purple-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
-                            🏢 <span class="font-medium text-sm">Qurilish Ob'ektlari</span>
-                        </div>
-                        <div @click="activeTab = 'inventory'" :class="activeTab === 'inventory' ? 'bg-gradient-to-r from-yellow-600/20 to-yellow-500/10 text-yellow-400 border-yellow-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
-                            📦 <span class="font-medium text-sm">Omborxona</span>
-                        </div>
-                        <div @click="activeTab = 'hr'" :class="activeTab === 'hr' ? 'bg-gradient-to-r from-pink-600/20 to-pink-500/10 text-pink-400 border-pink-500/20 shadow-inner' : 'hover:bg-white/5 text-gray-400 hover:text-gray-200 border-transparent'" class="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer border">
-                            👥 <span class="font-medium text-sm">HR va Oyliklar</span>
-                        </div>
-                    </div>
+                <div>
+                    <h5 class="text-white font-bold text-sm uppercase tracking-wider mb-4">Bo'limlar</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#home" class="hover:text-amber-400 transition-colors">Bosh sahifa</a></li>
+                        <li><a href="#modules" class="hover:text-amber-400 transition-colors">Modullar</a></li>
+                        <li><a href="#benefits" class="hover:text-amber-400 transition-colors">Afzalliklar</a></li>
+                        <li><a href="#faq" class="hover:text-amber-400 transition-colors">FAQ</a></li>
+                        <li><Link :href="route('promo.offers')" class="text-emerald-400 hover:underline">Uy sotib olish</Link></li>
+                    </ul>
+                </div>
 
-                    <!-- Main Content -->
-                    <div class="flex-1 bg-gradient-to-br from-gray-900/40 to-black/60 p-8 overflow-y-auto relative">
-                        
-                        <!-- Topbar -->
-                        <div class="flex justify-between items-center mb-10">
-                            <div class="relative w-96">
-                                <input type="text" placeholder="Qidirish..." class="w-full bg-white/5 border border-white/10 rounded-full py-2.5 px-5 pl-12 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all shadow-inner">
-                                <span class="absolute left-4 top-2.5 text-gray-400">🔍</span>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <button class="text-gray-400 hover:text-white">🔔</button>
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center font-bold shadow-lg border border-white/10">A</div>
-                            </div>
-                        </div>
-
-                        <!-- TAB: Dashboard -->
-                        <div v-if="activeTab === 'dashboard'" class="animate-fade-in-up">
-                            <!-- Stats -->
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
-                                    <div class="absolute right-0 top-0 w-24 h-24 bg-green-500/10 rounded-bl-full"></div>
-                                    <div class="text-gray-400 text-sm font-medium mb-3">Umumiy Daromad</div>
-                                    <div class="text-3xl font-bold text-green-400 drop-shadow-sm">$2,450,000</div>
-                                    <div class="mt-2 text-xs text-green-500 flex items-center gap-1">↑ +12.5% o'tgan oydan</div>
-                                </div>
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
-                                    <div class="absolute right-0 top-0 w-24 h-24 bg-blue-500/10 rounded-bl-full"></div>
-                                    <div class="text-gray-400 text-sm font-medium mb-3">Faol Shartnomalar</div>
-                                    <div class="text-3xl font-bold text-blue-400 drop-shadow-sm">142</div>
-                                    <div class="mt-2 text-xs text-blue-500 flex items-center gap-1">↑ +8 ta yangi</div>
-                                </div>
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 hover:bg-white/10 transition-colors shadow-lg relative overflow-hidden">
-                                    <div class="absolute right-0 top-0 w-24 h-24 bg-orange-500/10 rounded-bl-full"></div>
-                                    <div class="text-gray-400 text-sm font-medium mb-3">Qurilish Bosqichi</div>
-                                    <div class="text-3xl font-bold text-orange-400 drop-shadow-sm">68%</div>
-                                    <div class="mt-3 w-full bg-gray-700/50 rounded-full h-1.5">
-                                        <div class="bg-orange-400 h-1.5 rounded-full" style="width: 68%"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Chart & Transactions -->
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <!-- Dummy Chart -->
-                                <div class="col-span-2 bg-white/5 border border-white/5 rounded-2xl p-6 h-80 flex flex-col justify-end relative overflow-hidden shadow-lg">
-                                    <div class="absolute top-6 left-6 font-bold text-gray-200 text-lg">Sotuvlar Grafigi (Yillik)</div>
-                                    
-                                    <!-- Chart Lines -->
-                                    <div class="absolute inset-0 flex flex-col justify-between pt-20 pb-6 px-6 pointer-events-none opacity-20">
-                                        <div class="border-b border-white border-dashed w-full"></div>
-                                        <div class="border-b border-white border-dashed w-full"></div>
-                                        <div class="border-b border-white border-dashed w-full"></div>
-                                        <div class="border-b border-white border-dashed w-full"></div>
-                                    </div>
-                                    
-                                    <div class="flex items-end justify-between h-48 gap-3 mt-4 relative z-10 w-full px-2">
-                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-white/10 px-2 py-1 rounded text-xs transition-opacity">$12k</div></div>
-                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[60%]"></div>
-                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[50%]"></div>
-                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[80%]"></div>
-                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[70%]"></div>
-                                        <div class="w-full bg-gradient-to-t from-blue-600/80 to-blue-400/40 rounded-t-md h-[90%]"></div>
-                                        <div class="w-full bg-gradient-to-t from-purple-500/90 to-purple-400/50 rounded-t-md h-[100%] shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
-                                    </div>
-                                    <div class="flex justify-between text-xs text-gray-500 mt-3 px-2">
-                                        <span>Yan</span><span>Fev</span><span>Mar</span><span>Apr</span><span>May</span><span>Iyun</span><span class="text-purple-400 font-bold">Iyul</span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Transactions -->
-                                <div class="col-span-1 bg-white/5 border border-white/5 rounded-2xl p-6 shadow-lg flex flex-col h-80">
-                                    <div class="font-bold text-gray-200 text-lg mb-5">So'nggi Tranzaksiyalar</div>
-                                    <div class="space-y-4 overflow-y-auto flex-1 pr-2 custom-scrollbar">
-                                        <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-10 h-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center">↓</div>
-                                                <div>
-                                                    <div class="text-sm font-semibold text-gray-200">Aliyev Vali</div>
-                                                    <div class="text-xs text-gray-500">Kvartira to'lovi</div>
-                                                </div>
-                                            </div>
-                                            <div class="text-green-400 font-bold">+$12,500</div>
-                                        </div>
-                                        <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">↑</div>
-                                                <div>
-                                                    <div class="text-sm font-semibold text-gray-200">Delta Cement</div>
-                                                    <div class="text-xs text-gray-500">Material xaridi</div>
-                                                </div>
-                                            </div>
-                                            <div class="text-red-400 font-bold">-$4,200</div>
-                                        </div>
-                                        <div class="flex justify-between items-center p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">↑</div>
-                                                <div>
-                                                    <div class="text-sm font-semibold text-gray-200">Ish haqi</div>
-                                                    <div class="text-xs text-gray-500">1-brigada</div>
-                                                </div>
-                                            </div>
-                                            <div class="text-red-400 font-bold">-$8,900</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- TAB: Finance -->
-                        <div v-else-if="activeTab === 'finance'" class="animate-fade-in-up">
-                            <h2 class="text-2xl font-bold mb-6">Moliya Bo'limi</h2>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                                <div class="bg-white/5 p-5 rounded-2xl border border-white/5">
-                                    <div class="text-gray-400 text-sm mb-1">Kassa qoldig'i</div>
-                                    <div class="text-2xl font-bold text-white">$450,200</div>
-                                </div>
-                                <div class="bg-white/5 p-5 rounded-2xl border border-white/5">
-                                    <div class="text-gray-400 text-sm mb-1">Xarajatlar (Oy)</div>
-                                    <div class="text-2xl font-bold text-red-400">-$34,500</div>
-                                </div>
-                                <div class="bg-white/5 p-5 rounded-2xl border border-white/5">
-                                    <div class="text-gray-400 text-sm mb-1">Kutilayotgan to'lovlar</div>
-                                    <div class="text-2xl font-bold text-yellow-400">$128,000</div>
-                                </div>
-                                <div class="bg-white/5 p-5 rounded-2xl border border-white/5">
-                                    <div class="text-gray-400 text-sm mb-1">Sof foyda</div>
-                                    <div class="text-2xl font-bold text-green-400">$89,400</div>
-                                </div>
-                            </div>
-                            <div class="bg-white/5 rounded-2xl p-6 border border-white/5 h-64 flex items-center justify-center">
-                                <span class="text-gray-500">Moliya hisobotlari jadvali va kassa operatsiyalari shu yerda aks etadi.</span>
-                            </div>
-                        </div>
-
-                        <!-- TAB: CRM -->
-                        <div v-else-if="activeTab === 'crm'" class="animate-fade-in-up">
-                            <div class="flex justify-between items-center mb-6">
-                                <h2 class="text-2xl font-bold">CRM va Mijozlar</h2>
-                                <button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">+ Yangi Mijoz</button>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-5">
-                                    <h3 class="text-lg font-bold text-gray-300 mb-4 border-b border-white/10 pb-2">Yangi (Leadlar) <span class="bg-white/10 px-2 py-0.5 rounded text-xs ml-2">24</span></h3>
-                                    <div class="space-y-3">
-                                        <div class="bg-black/30 p-3 rounded-xl border border-white/5">
-                                            <div class="font-bold">Azizov B.</div>
-                                            <div class="text-xs text-gray-400">+998 90 123 45 67</div>
-                                        </div>
-                                        <div class="bg-black/30 p-3 rounded-xl border border-white/5">
-                                            <div class="font-bold">Umarov S.</div>
-                                            <div class="text-xs text-gray-400">+998 99 876 54 32</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-5">
-                                    <h3 class="text-lg font-bold text-orange-300 mb-4 border-b border-white/10 pb-2">Muzokarada <span class="bg-white/10 px-2 py-0.5 rounded text-xs ml-2">8</span></h3>
-                                    <div class="space-y-3">
-                                        <div class="bg-black/30 p-3 rounded-xl border border-white/5 border-l-2 border-l-orange-500">
-                                            <div class="font-bold">Karimova D.</div>
-                                            <div class="text-xs text-gray-400">3-xona kvartira sora...</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-5">
-                                    <h3 class="text-lg font-bold text-green-300 mb-4 border-b border-white/10 pb-2">Shartnoma <span class="bg-white/10 px-2 py-0.5 rounded text-xs ml-2">142</span></h3>
-                                    <div class="space-y-3">
-                                        <div class="bg-black/30 p-3 rounded-xl border border-white/5 border-l-2 border-l-green-500">
-                                            <div class="font-bold">MCHJ "Biznes Qurilish"</div>
-                                            <div class="text-xs text-gray-400">100% to'lov tasdiqlandi</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- TAB: Construction -->
-                        <div v-else-if="activeTab === 'construction'" class="animate-fade-in-up">
-                            <h2 class="text-2xl font-bold mb-6">Qurilish Ob'ektlari</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 relative overflow-hidden">
-                                    <div class="absolute right-0 top-0 bg-green-500/20 text-green-400 px-3 py-1 rounded-bl-xl text-xs font-bold">Faol</div>
-                                    <h3 class="text-xl font-bold mb-2 text-purple-300">Hayot House - A Blok</h3>
-                                    <p class="text-sm text-gray-400 mb-4">Manzil: Toshkent sh., Chilonzor tumani</p>
-                                    <div class="mb-2 flex justify-between text-sm">
-                                        <span class="text-gray-300">Bajarilish holati</span>
-                                        <span class="font-bold">75%</span>
-                                    </div>
-                                    <div class="w-full bg-gray-700/50 rounded-full h-2 mb-4">
-                                        <div class="bg-purple-500 h-2 rounded-full" style="width: 75%"></div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <span class="text-xs bg-white/10 px-2 py-1 rounded text-gray-300">Monolit tugadi</span>
-                                        <span class="text-xs bg-white/10 px-2 py-1 rounded text-gray-300">G'isht terish</span>
-                                    </div>
-                                </div>
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 relative overflow-hidden">
-                                    <div class="absolute right-0 top-0 bg-blue-500/20 text-blue-400 px-3 py-1 rounded-bl-xl text-xs font-bold">Yangi</div>
-                                    <h3 class="text-xl font-bold mb-2 text-blue-300">Göztepe Premium</h3>
-                                    <p class="text-sm text-gray-400 mb-4">Manzil: Samarqand sh., So'g'diyona</p>
-                                    <div class="mb-2 flex justify-between text-sm">
-                                        <span class="text-gray-300">Bajarilish holati</span>
-                                        <span class="font-bold">12%</span>
-                                    </div>
-                                    <div class="w-full bg-gray-700/50 rounded-full h-2 mb-4">
-                                        <div class="bg-blue-500 h-2 rounded-full" style="width: 12%"></div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <span class="text-xs bg-white/10 px-2 py-1 rounded text-gray-300">Kotlovan qazish</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- TAB: Inventory -->
-                        <div v-else-if="activeTab === 'inventory'" class="animate-fade-in-up">
-                            <div class="flex justify-between items-center mb-6">
-                                <h2 class="text-2xl font-bold">Omborxona</h2>
-                                <button class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">+ Material Kirim</button>
-                            </div>
-                            <div class="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
-                                <table class="w-full text-left text-sm text-gray-400">
-                                    <thead class="text-xs text-gray-200 uppercase bg-white/5">
-                                        <tr>
-                                            <th class="px-6 py-4">Mahsulot nomi</th>
-                                            <th class="px-6 py-4">Kategoriya</th>
-                                            <th class="px-6 py-4">Qoldiq</th>
-                                            <th class="px-6 py-4">O'lchov birligi</th>
-                                            <th class="px-6 py-4">Holati</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr class="border-b border-white/5 hover:bg-white/5">
-                                            <td class="px-6 py-4 font-bold text-white">M-400 Sement</td>
-                                            <td class="px-6 py-4">Qurilish materiallari</td>
-                                            <td class="px-6 py-4">120</td>
-                                            <td class="px-6 py-4">Tonna</td>
-                                            <td class="px-6 py-4"><span class="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">Yetarli</span></td>
-                                        </tr>
-                                        <tr class="border-b border-white/5 hover:bg-white/5">
-                                            <td class="px-6 py-4 font-bold text-white">Armatura 12 talik</td>
-                                            <td class="px-6 py-4">Metall</td>
-                                            <td class="px-6 py-4">5</td>
-                                            <td class="px-6 py-4">Tonna</td>
-                                            <td class="px-6 py-4"><span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs">Kam qoldi</span></td>
-                                        </tr>
-                                        <tr class="hover:bg-white/5">
-                                            <td class="px-6 py-4 font-bold text-white">G'isht (Pishgan)</td>
-                                            <td class="px-6 py-4">Qurilish materiallari</td>
-                                            <td class="px-6 py-4">45,000</td>
-                                            <td class="px-6 py-4">Dona</td>
-                                            <td class="px-6 py-4"><span class="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">Yetarli</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- TAB: HR -->
-                        <div v-else-if="activeTab === 'hr'" class="animate-fade-in-up">
-                            <h2 class="text-2xl font-bold mb-6">HR, FaceID va Oyliklar</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-lg relative overflow-hidden flex flex-col items-center justify-center text-center">
-                                    <div class="w-16 h-16 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400 text-2xl mb-4">👥</div>
-                                    <div class="text-3xl font-bold text-white">124 ta</div>
-                                    <div class="text-sm text-gray-400 mt-1">Umumiy xodimlar</div>
-                                </div>
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-lg relative overflow-hidden flex flex-col items-center justify-center text-center">
-                                    <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-2xl mb-4">✓</div>
-                                    <div class="text-3xl font-bold text-white">118 ta</div>
-                                    <div class="text-sm text-gray-400 mt-1">Bugun ishga kelgan (FaceID)</div>
-                                </div>
-                                <div class="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-lg relative overflow-hidden flex flex-col items-center justify-center text-center">
-                                    <div class="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 text-2xl mb-4">✗</div>
-                                    <div class="text-3xl font-bold text-white">6 ta</div>
-                                    <div class="text-sm text-gray-400 mt-1">Kelmaganlar</div>
-                                </div>
-                            </div>
-                            <div class="bg-white/5 rounded-2xl p-6 border border-white/5 text-center py-12">
-                                <span class="text-gray-500 text-lg">Bu yerda xodimlarni boshqarish, oylik hisoblash va KPI nazorati olib boriladi.</span>
-                            </div>
-                        </div>
-
-                    </div>
+                <div>
+                    <h5 class="text-white font-bold text-sm uppercase tracking-wider mb-4">Aloqa</h5>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="tel:+998977084444" class="hover:text-amber-400 transition-colors">+998 (97) 708-44-44</a></li>
+                        <li><a href="tel:+998935732929" class="hover:text-amber-400 transition-colors">+998 (93) 573-29-29</a></li>
+                        <li class="text-gray-500">Urgut shahar, Navoiy ko'chasi 83-uy</li>
+                    </ul>
                 </div>
             </div>
+
+            <div class="max-w-7xl mx-auto border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-4">
+                <p>© 2026 IQS (Qur va Sot). Barcha huquqlar himoyalangan.</p>
+                <p class="text-gray-400">Developed with Advanced Architecture</p>
+            </div>
+        </footer>
+
+        <!-- DEMO REQUEST MODAL -->
+        <div v-if="showDemo" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div class="relative w-full max-w-lg p-8 rounded-3xl bg-[#0f0f17] border border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.2)] text-left">
+                
+                <button @click="showDemo = false" class="absolute top-5 right-5 text-gray-400 hover:text-white text-xl">✕</button>
+
+                <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl mb-4">
+                    ⚡
+                </div>
+
+                <h3 class="text-2xl font-black text-white mb-2">IQS ERP Demo Olish</h3>
+                <p class="text-sm text-gray-400 mb-6">Kompaniyangiz uchun IQS tizimining to'liq imkoniyatlarini bepul sinab ko'ring.</p>
+
+                <div v-if="demoSubmitted" class="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-center">
+                    <div class="text-3xl mb-2">✅</div>
+                    <div class="font-bold text-lg mb-1">So'rovingiz qabul qilindi!</div>
+                    <p class="text-xs text-gray-300">Tez orada mutaxassislarimiz siz bilan bog'lanishadi.</p>
+                </div>
+
+                <form v-else @submit.prevent="submitDemo" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Ismingiz *</label>
+                        <input v-model="demoForm.name" required type="text" placeholder="Azizbek Rahimov" class="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/15 text-white placeholder-gray-500 focus:border-amber-400 focus:outline-none text-sm" />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Kompaniya nomi</label>
+                        <input v-model="demoForm.company" type="text" placeholder="Sher-Dor Qurilish MCHJ" class="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/15 text-white placeholder-gray-500 focus:border-amber-400 focus:outline-none text-sm" />
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Telefon raqam *</label>
+                        <input v-model="demoForm.phone" required type="tel" placeholder="+998 (90) 123-45-67" class="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/15 text-white placeholder-gray-500 focus:border-amber-400 focus:outline-none text-sm" />
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-sm shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all">
+                        So'rov yuborish
+                    </button>
+                </form>
+
+            </div>
         </div>
+
     </div>
 </template>
 
 <style scoped>
-.glass-card {
-    background: rgba(255, 255, 255, 0.02);
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-.animate-fade-in-up {
-    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Custom Scrollbar for Demo */
-.custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+.perspective-1000 {
+    perspective: 1000px;
 }
 </style>

@@ -975,11 +975,12 @@ class CrmController extends Controller
                 $installmentCount = count($validated['schedules']);
             }
 
-            // Sync contract totals & installment term count so 2-ilova and contract header match custom schedule
+            // Sync contract totals, installment term count, and set is_custom_schedule flag
             $contract->update([
                 'total_amount' => $totalSum > 0 ? $totalSum : $contract->total_amount,
                 'down_payment' => $downPaymentSum,
                 'term_months' => $installmentCount,
+                'is_custom_schedule' => true,
             ]);
 
             // Reconcile payments

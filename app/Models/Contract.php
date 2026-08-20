@@ -31,7 +31,8 @@ class Contract extends Model
         'user_id',
         'contract_template_id',
         'selected_variants',
-        'custom_monthly_amount'
+        'custom_monthly_amount',
+        'is_custom_schedule'
     ];
 
     protected $casts = [
@@ -39,6 +40,7 @@ class Contract extends Model
         'is_down_payment_split' => 'boolean',
         'selected_variants' => 'array',
         'custom_monthly_amount' => 'float',
+        'is_custom_schedule' => 'boolean',
     ];
 
     protected static function boot()
@@ -260,22 +262,33 @@ class Contract extends Model
 
     public function rebuildPaymentSchedules()
     {
+        // If contract schedule was manually customized, leave it as is
+        if ($this->is_custom_schedule) {
+            return;
+        }
+
         $paidSchedules = $this->paymentSchedules()->where('paid_amount', '>', 0)->get();
         if ($paidSchedules->count() === 0) {
             $this->paymentSchedules()->delete();
+            $this->unsetRelation('paymentSchedules');
             $this->generatePaymentSchedules();
         } else {
+            $baseDate = $this->created_at ? \Carbon\Carbon::parse($this->created_at) : now();
             $totalPaid = $paidSchedules->sum('paid_amount');
             $remainingTotal = max(0, $this->total_amount - $totalPaid);
             
-            $unpaidSchedules = $this->paymentSchedules()->where('paid_amount', '<=', 0)->orderBy('due_date')->get();
+            $unpaidSchedules = $this->paymentSchedules()->where('paid_amount', '<=', 0)->orderBy('id')->get();
             if ($unpaidSchedules->count() > 0 && $remainingTotal > 0) {
                 $monthly = $remainingTotal / $unpaidSchedules->count();
+                $startOffset = $this->is_down_payment_split ? (int)($this->down_payment_split_months ?? 1) : 0;
+                
                 foreach ($unpaidSchedules as $idx => $sch) {
                     $amt = ($idx === $unpaidSchedules->count() - 1) ? ($remainingTotal - ($monthly * $idx)) : $monthly;
+                    $newDueDate = $baseDate->copy()->addMonths($startOffset + $idx + 1)->format('Y-m-d');
                     $sch->update([
                         'expected_amount' => $amt,
                         'remaining_debt' => $amt,
+                        'due_date' => $newDueDate
                     ]);
                 }
             }

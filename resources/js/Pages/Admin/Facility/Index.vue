@@ -465,8 +465,15 @@ function openBlueprintFullscreen() {
     showBlueprintFullscreen.value = true;
 }
 
+const selectedTypeFilter = ref('');
+
 function isUnitMatchingFilters(unit) {
     if (!unit) return false;
+    
+    // 0. Joy Turi filter
+    if (selectedTypeFilter.value && unit.type !== selectedTypeFilter.value) {
+        return false;
+    }
     
     // 1. Search Query Match
     if (searchQuery.value) {
@@ -1554,7 +1561,7 @@ function openSellUnit(unit) {
         employee_id: '',
         unit_id: unit.id,
         contract_number: '',
-        contract_type: unit.type === 'commercial' ? 'commercial' : 'residential',
+        contract_type: unit.type === 'commercial' ? 'commercial' : (unit.type === 'parking' ? 'parking' : 'residential'),
         price_per_sqm: '',
         total_amount: unit.price || '',
         down_payment: '',
@@ -2010,7 +2017,7 @@ function submitUnifiedSell() {
             partner_id: null,
             unit_id: currentSellingUnit.value.id,
             contract_number: contractForm.value.contract_number || quickClientForm.value.contract_id,
-            contract_type: currentSellingUnit.value.type === 'commercial' ? 'commercial' : 'residential',
+            contract_type: currentSellingUnit.value.type === 'commercial' ? 'commercial' : (currentSellingUnit.value.type === 'parking' ? 'parking' : 'residential'),
             price_per_sqm: contractForm.value.price_per_sqm,
             total_amount: contractForm.value.total_amount,
             down_payment: contractForm.value.down_payment || contractForm.value.total_amount,
@@ -3939,7 +3946,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </div>
 
                                 <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
-                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5">
                                         <!-- Bino tanlash -->
                                         <div>
                                             <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Bino (Blok) tanlang</label>
@@ -3949,9 +3956,19 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 </option>
                                             </select>
                                         </div>
+                                        <!-- Joy Turi -->
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Joy Turi</label>
+                                            <select v-model="selectedTypeFilter" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-amber-500 focus:border-amber-500 font-sans shadow-sm">
+                                                <option value="">Barchasi</option>
+                                                <option value="residential">Turar-joy (Uy)</option>
+                                                <option value="commercial">Tijorat (Do'kon)</option>
+                                                <option value="parking">Avtoturarjoy (Parkovka)</option>
+                                            </select>
+                                        </div>
                                         <!-- Xonadon qidirish -->
                                         <div>
-                                            <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Xonadon qidirish</label>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Qidirish</label>
                                             <div class="relative">
                                                 <input v-model="searchQuery" type="text" placeholder="Raqam..." class="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-900 focus:ring-amber-500 focus:border-amber-500 font-sans shadow-sm" />
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -3980,8 +3997,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="mt-4 flex justify-end" v-if="searchQuery || selectedStatusFilter || selectedRoomsFilter">
-                                        <button @click="searchQuery = ''; selectedStatusFilter = ''; selectedRoomsFilter = ''" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded flex items-center gap-2 transition-colors">
+                                    <div class="mt-4 flex justify-end" v-if="searchQuery || selectedStatusFilter || selectedRoomsFilter || selectedTypeFilter">
+                                        <button @click="searchQuery = ''; selectedStatusFilter = ''; selectedRoomsFilter = ''; selectedTypeFilter = '';" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded flex items-center gap-2 transition-colors">
                                             Filtrlarni tozalash
                                         </button>
                                     </div>
@@ -4118,6 +4135,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 <option value="">Barchasi</option>
                                                 <option value="residential">Turar joy (Uy)</option>
                                                 <option value="commercial">Tijorat (Do'kon)</option>
+                                                <option value="parking">Avtoturarjoy (Parkovka)</option>
                                             </select>
                                         </div>
                                         <div>
@@ -4857,6 +4875,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                     <select v-model="unitForm.type" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans bg-white">
                                                         <option value="residential">Turar joy (Xonadon)</option>
                                                         <option value="commercial">Tijorat (Do'kon)</option>
+                                                        <option value="parking">Avtoturarjoy (Parkovka)</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -5133,6 +5152,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <select v-model="unitForm.type" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all" required>
                                 <option value="residential">Turar joy (Xonadon)</option>
                                 <option value="commercial">Tijorat (Do'kon)</option>
+                                <option value="parking">Avtoturarjoy (Parkovka)</option>
                             </select>
                         </div>
                     </div>

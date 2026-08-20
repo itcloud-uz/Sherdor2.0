@@ -18,6 +18,13 @@ servers = [
         'password': 'clone2026',
         'path': '/var/www/sellerarp',
         'update_cmd': "echo 'clone2026' | sudo -S bash update.sh"
+    },
+    {
+        'hostname': '100.119.224.69',
+        'username': 'baraka',
+        'password': 'clone2026',
+        'path': '/var/www/barakaresidence.uz',
+        'update_cmd': "echo 'clone2026' | sudo -S bash update.sh"
     }
 ]
 

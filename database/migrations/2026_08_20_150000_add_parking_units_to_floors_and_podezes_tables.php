@@ -22,6 +22,12 @@ return new class extends Migration
                 $table->integer('total_parking')->default(0)->after('total_commercial');
             });
         }
+
+        if (!Schema::hasColumn('buildings', 'total_parking')) {
+            Schema::table('buildings', function (Blueprint $table) {
+                $table->integer('total_parking')->default(0)->after('total_shops');
+            });
+        }
     }
 
     /**

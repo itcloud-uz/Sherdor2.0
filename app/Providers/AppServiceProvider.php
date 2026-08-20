@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Self-healing check for currency_rates table
-        if (!app()->runningUnitTests() && !\Illuminate\Support\Facades\Schema::hasTable('currency_rates')) {
+        if (!app()->runningInConsole() && !app()->runningUnitTests() && !\Illuminate\Support\Facades\Schema::hasTable('currency_rates')) {
             try {
                 \Illuminate\Support\Facades\Schema::create('currency_rates', function (\Illuminate\Database\Schema\Blueprint $table) {
                     $table->id();

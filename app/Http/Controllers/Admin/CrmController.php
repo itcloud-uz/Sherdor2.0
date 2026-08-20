@@ -170,7 +170,7 @@ class CrmController extends Controller
         }
 
         // 9. Client Payments Tab
-        if ($tab === 'client_payments') {
+        if (in_array($tab, ['client_payments', 'dashboard', 'clients', 'contracts']) || empty($tab)) {
             $transactions = \App\Models\Transaction::with([
                 'creator', 
                 'approver', 

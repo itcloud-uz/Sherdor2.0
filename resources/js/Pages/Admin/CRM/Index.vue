@@ -3835,12 +3835,57 @@ const getClientPaymentPhone = (t) => {
     return '-';
 };
 
+function openClientLedgerFromPayment(t) {
+    let client = t.client || t.contract?.client;
+    const clientId = t.client_id || t.contract?.client_id || t.counterparty?.customable_id || t.target_id;
+    if (!client && clientId && props.clients) {
+        client = props.clients.find(c => c.id == clientId);
+    }
+    if (client) {
+        viewClientDetail(client, t.contract || null);
+    } else if (t.contract_id) {
+        const ct = props.contracts?.find(c => c.id == t.contract_id);
+        if (ct && ct.client) {
+            viewClientDetail(ct.client, ct);
+        }
+    } else if (clientId) {
+        clientDetailLoading.value = true;
+        axios.get(route('admin.crm.clients.details', clientId))
+            .then(res => {
+                if (res.data.status === 'success' && res.data.client) {
+                    viewClientDetail(res.data.client, null);
+                }
+            })
+            .catch(e => console.error('Mijoz ma\'lumotlarini yuklashda xatolik:', e))
+            .finally(() => clientDetailLoading.value = false);
+    }
+}
+
 const filteredClientPayments = computed(() => {
-    const txns = (props.transactions || []).filter(t => {
+    let txns = (props.transactions || []).filter(t => {
         const isClient = t.counterparty?.type === 'client' || 
                          Boolean(t.contract_id || t.contract || t.client_id || t.client || t.target_type === 'client');
         return isClient && t.type === 'income' && (t.status === 'approved' || !t.status);
     });
+
+    if (!txns.length && props.clients) {
+        const extracted = [];
+        (props.clients || []).forEach(c => {
+            (c.contracts || []).forEach(ct => {
+                (ct.transactions || []).forEach(t => {
+                    if (t.type === 'income' && (t.status === 'approved' || !t.status)) {
+                        extracted.push({
+                            ...t,
+                            client: c,
+                            contract: ct
+                        });
+                    }
+                });
+            });
+        });
+        txns = extracted;
+    }
+
     if (!clientPaymentsSearch.value) return txns;
     const q = clientPaymentsSearch.value.toLowerCase();
     return txns.filter(t => {
@@ -6275,12 +6320,15 @@ const ledgerReportData = computed(() => {
                             <tr v-for="(t, idx) in filteredClientPayments" :key="t.id" class="hover:bg-gray-50 transition-colors">
                                 <td class="p-4 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
                                 <td class="p-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0 uppercase">
+                                    <div @click="openClientLedgerFromPayment(t)" class="flex items-center gap-3 cursor-pointer group" title="Mijoz shaxsiy varaqasi va hisob-kitob jurnalini ko'rish">
+                                        <div class="w-10 h-10 rounded-full bg-blue-500 group-hover:bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0 uppercase transition-colors">
                                             {{ (getClientPaymentName(t).split(' ')[0]?.[0] || '') + (getClientPaymentName(t).split(' ')[1]?.[0] || '') || 'M' }}
                                         </div>
                                         <div>
-                                            <p class="font-bold text-gray-900 text-sm leading-tight">{{ getClientPaymentName(t) }}</p>
+                                            <p class="font-bold text-gray-900 text-sm leading-tight group-hover:text-blue-600 transition-colors flex items-center gap-1">
+                                                {{ getClientPaymentName(t) }}
+                                                <span class="text-[10px] text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">👁️</span>
+                                            </p>
                                             <span class="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono mt-1 inline-block">{{ getClientPaymentPhone(t) }}</span>
                                         </div>
                                     </div>
@@ -6303,6 +6351,9 @@ const ledgerReportData = computed(() => {
                                 </td>
                                 <td class="p-4 text-right">
                                     <div class="flex items-center justify-end gap-2">
+                                        <button @click="openClientLedgerFromPayment(t)" class="px-2.5 py-1 text.xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex items-center gap-1 shrink-0" title="Mijoz shaxsiy varaqasi va hisob-kitob jurnali">
+                                            👤 Shaxsiy varaqa
+                                        </button>
                                         <button @click="openEditTransactionModal(t)" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Tahrirlash">
                                             ✏️
                                         </button>

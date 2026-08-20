@@ -9,6 +9,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from 'axios';
 import { regionsData } from '@/locations.js';
+import * as XLSX from 'xlsx-js-style';
 
 const { t, locale } = useI18n();
 const page = usePage();
@@ -125,10 +126,65 @@ const selectedDebtClient = ref(null);
 const debtLedgerStartDate = ref('');
 const debtLedgerEndDate = ref('');
 
+const getDebtContractDate = (client) => {
+    if (!client) return '-';
+    const ct = client.contract || client.customable?.contracts?.[0] || (client.customable?.contracts && client.customable.contracts[0]);
+    if (ct && ct.created_at) {
+        return new Date(ct.created_at).toLocaleDateString('uz-UZ');
+    }
+    return '-';
+};
+
+const getDebtContractNumber = (client) => {
+    if (!client) return '-';
+    return client.contract_number || client.contract?.contract_number || client.customable?.contracts?.[0]?.contract_number || '-';
+};
+
+const getDebtUnitNumber = (client) => {
+    if (!client) return '-';
+    const unit = client.unit || client.contract?.unit || client.customable?.contracts?.[0]?.unit;
+    return unit ? unit.unit_number : '-';
+};
+
+const getDebtFloorNumber = (client) => {
+    if (!client) return '-';
+    const unit = client.unit || client.contract?.unit || client.customable?.contracts?.[0]?.unit;
+    return unit && unit.floor ? unit.floor.floor_number : (client.contract?.floor || '-');
+};
+
 const openDebtLedger = (client) => {
-    selectedDebtClient.value = client;
+    if (!client) return;
+    selectedDebtClient.value = { ...client };
     debtLedgerStartDate.value = '';
     debtLedgerEndDate.value = '';
+
+    const clientId = client.client_id || client.customable_id || client.customable?.id || client.id;
+    const counterpartyId = client.counterparty_id || client.id;
+    const contractId = client.contract_id || client.contract?.id || client.customable?.contracts?.[0]?.id;
+
+    let allTxns = [];
+    if (client.transactions && client.transactions.length > 0) {
+        allTxns = [...client.transactions];
+    }
+    if (client.customable && client.customable.transactions && client.customable.transactions.length > 0) {
+        client.customable.transactions.forEach(t => {
+            if (!allTxns.some(x => x.id === t.id)) allTxns.push(t);
+        });
+    }
+
+    (props.transactions || []).forEach(t => {
+        const matchesClient = clientId && (t.client_id == clientId || t.client?.id == clientId || t.contract?.client_id == clientId);
+        const matchesCounterparty = counterpartyId && (t.counterparty_id == counterpartyId);
+        const matchesContract = contractId && (t.contract_id == contractId);
+
+        if (matchesClient || matchesCounterparty || matchesContract) {
+            if (!allTxns.some(existing => existing.id === t.id)) {
+                allTxns.push(t);
+            }
+        }
+    });
+
+    selectedDebtClient.value.all_transactions = allTxns;
     isDebtLedgerOpen.value = true;
 };
 
@@ -139,7 +195,8 @@ const closeDebtLedger = () => {
 
 const debtLedgerIncomes = computed(() => {
     if (!selectedDebtClient.value) return [];
-    let txns = (selectedDebtClient.value.transactions || []).filter(t => t.type === 'income' && t.status === 'approved');
+    const list = selectedDebtClient.value.all_transactions || selectedDebtClient.value.transactions || [];
+    let txns = list.filter(t => t.type === 'income' && (t.status === 'approved' || !t.status));
     
     if (debtLedgerStartDate.value) {
         txns = txns.filter(t => new Date(t.transaction_date || t.created_at) >= new Date(debtLedgerStartDate.value));
@@ -155,7 +212,8 @@ const debtLedgerIncomes = computed(() => {
 
 const debtLedgerExpenses = computed(() => {
     if (!selectedDebtClient.value) return [];
-    let txns = (selectedDebtClient.value.transactions || []).filter(t => t.type === 'expense' && t.status === 'approved');
+    const list = selectedDebtClient.value.all_transactions || selectedDebtClient.value.transactions || [];
+    let txns = list.filter(t => t.type === 'expense' && (t.status === 'approved' || !t.status));
     
     if (debtLedgerStartDate.value) {
         txns = txns.filter(t => new Date(t.transaction_date || t.created_at) >= new Date(debtLedgerStartDate.value));
@@ -181,22 +239,20 @@ const exportDebtClientExcel = () => {
     
     const data = [];
     data.push([name, "", "", "", "", "", ""]);
-    data.push(["Shartnoma sanasi", "Shartnoma ?", "Uy ?", "Qavat", "Tel raqam", "Umumiy qoldiq", "Izoh"]);
+    data.push(["Shartnoma sanasi", "Shartnoma №", "Uy №", "Qavat", "Tel raqam", "Umumiy qoldiq", "Izoh"]);
     
-    const contract = client.customable?.contracts?.[0] || {};
-    const unit = contract?.unit || {};
     data.push([
-        contract.created_at ? new Date(contract.created_at).toLocaleDateString('uz-UZ') : '-',
-        contract.contract_number || '-',
-        unit.unit_number || '-',
-        unit.floor?.floor_number || '-',
+        getDebtContractDate(client),
+        getDebtContractNumber(client),
+        getDebtUnitNumber(client),
+        getDebtFloorNumber(client),
         client.phone || '-',
         Number(client.balance || 0),
         ""
     ]);
     
     data.push([]);
-    data.push(["To'langan", "", "", "Qaytarilgan", "", "", ""]);
+    data.push(["To'langan", "", "", "Qaytarilgan", "", "", "Izoh"]);
     data.push(["Sana", "Bank orqali", "Naqt", "Sana", "Bank orqali", "Naqt", ""]);
     
     const incomes = debtLedgerIncomes.value;
@@ -233,20 +289,21 @@ const exportDebtClientExcel = () => {
             }
         }
         
+        const note = inc?.description || exp?.description || inc?.notes || exp?.notes || '';
         if (inc || exp || i === 0) {
-            data.push([incDate, incBank, incCash, expDate, expBank, expCash, ""]);
+            data.push([incDate, incBank, incCash, expDate, expBank, expCash, note]);
         }
     }
     
-    data.push(["Jami", sumIncomeBank || "", sumIncomeCash || "", "", sumExpenseBank || "", sumExpenseCash || "", ""]);
+    data.push(["Jami", sumIncomeBank || "", sumIncomeCash || "", "", sumExpenseBank || "", sumExpenseCash || "", Number(client.balance || 0)]);
     
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(data);
     
     if(!ws['!merges']) ws['!merges'] = [];
     ws['!merges'].push({s:{r:0,c:0}, e:{r:0,c:6}});
-    ws['!merges'].push({s:{r:3,c:0}, e:{r:3,c:2}});
-    ws['!merges'].push({s:{r:3,c:3}, e:{r:3,c:5}});
+    ws['!merges'].push({s:{r:4,c:0}, e:{r:4,c:2}});
+    ws['!merges'].push({s:{r:4,c:3}, e:{r:4,c:5}});
     
     wb.SheetNames.push("Jurnal");
     wb.Sheets["Jurnal"] = ws;
@@ -261,7 +318,7 @@ const exportDebtClientExcel = () => {
         }
     });
     
-    XLSX.writeFile(wb, name + "_Jurnal.xlsx");
+    XLSX.writeFile(wb, name.replace(/\s+/g, '_') + "_Hisob_Kitob_Jurnali.xlsx");
 };
 
 const showCreateClientModal = ref(false);
@@ -10892,7 +10949,7 @@ const ledgerReportData = computed(() => {
                         <span class="text-gray-500">-</span>
                         <input v-model="debtLedgerEndDate" type="date" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500" title="Tugash sanasi">
                         
-                        <button @click="exportDebtClientExcel" class="px-4 py-2 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white rounded-lg font-bold transition-colors flex items-center text-sm shadow-sm border border-green-200 ml-2">
+                        <button @click="exportDebtClientExcel" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all flex items-center text-xs shadow-sm border border-emerald-600 ml-2 gap-1.5 uppercase tracking-wider">
                             ⬇ Excel
                         </button>
                         <button @click="closeDebtLedger" class="text-gray-400 hover:text-gray-600 ml-1">
@@ -10901,70 +10958,78 @@ const ledgerReportData = computed(() => {
                     </div>
                 </div>
                 
-                <div class="overflow-x-auto border rounded-lg mb-6 shadow-sm">
-                    <table class="w-full text-sm text-center">
-                        <thead class="bg-gray-50 border-b text-gray-700">
+                <!-- TOP HEADER SUMMARY TABLE (Exact Image 1 layout) -->
+                <div class="overflow-x-auto border border-gray-300 rounded-xl mb-6 shadow-sm">
+                    <table class="w-full text-xs text-center border-collapse">
+                        <thead class="bg-gray-100 text-gray-800 font-bold border-b border-gray-300">
                             <tr>
-                                <th class="p-3 border-r">Shartnoma sanasi</th>
-                                <th class="p-3 border-r">Shartnoma №</th>
-                                <th class="p-3 border-r">Uy №</th>
-                                <th class="p-3 border-r">Qavat</th>
-                                <th class="p-3 border-r">Tel raqam</th>
-                                <th class="p-3 border-r">Umumiy qoldiq</th>
-                                <th class="p-3">Izoh</th>
+                                <th class="p-2.5 border-r border-gray-300">Shartnoma sanasi</th>
+                                <th class="p-2.5 border-r border-gray-300">Shartnoma №</th>
+                                <th class="p-2.5 border-r border-gray-300">Uy №</th>
+                                <th class="p-2.5 border-r border-gray-300">Qavat</th>
+                                <th class="p-2.5 border-r border-gray-300">Tel raqam</th>
+                                <th class="p-2.5 border-r border-gray-300">Umumiy qoldiq</th>
+                                <th class="p-2.5">Izoh</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="bg-white font-semibold text-gray-900">
                             <tr>
-                                <td class="p-3 border-r">{{ selectedDebtClient.customable?.contracts?.[0]?.created_at ? new Date(selectedDebtClient.customable.contracts[0].created_at).toLocaleDateString('uz-UZ') : '-' }}</td>
-                                <td class="p-3 border-r">{{ selectedDebtClient.customable?.contracts?.[0]?.contract_number || '-' }}</td>
-                                <td class="p-3 border-r">{{ selectedDebtClient.customable?.contracts?.[0]?.unit?.unit_number || '-' }}</td>
-                                <td class="p-3 border-r">{{ selectedDebtClient.customable?.contracts?.[0]?.unit?.floor?.floor_number || '-' }}</td>
-                                <td class="p-3 border-r">{{ selectedDebtClient.phone || '-' }}</td>
-                                <td class="p-3 border-r font-bold" :class="selectedDebtClient.balance > 0 ? 'text-emerald-600' : 'text-red-600'">{{ Number(selectedDebtClient.balance).toLocaleString('uz-UZ') }}</td>
-                                <td class="p-3"></td>
+                                <td class="p-2.5 border-r border-gray-300 font-mono">{{ getDebtContractDate(selectedDebtClient) }}</td>
+                                <td class="p-2.5 border-r border-gray-300 font-mono">{{ getDebtContractNumber(selectedDebtClient) }}</td>
+                                <td class="p-2.5 border-r border-gray-300 font-mono">{{ getDebtUnitNumber(selectedDebtClient) }}</td>
+                                <td class="p-2.5 border-r border-gray-300 font-mono">{{ getDebtFloorNumber(selectedDebtClient) }}</td>
+                                <td class="p-2.5 border-r border-gray-300 font-mono">{{ selectedDebtClient.phone || '-' }}</td>
+                                <td class="p-2.5 border-r border-gray-300 font-mono font-bold" :class="selectedDebtClient.balance > 0 ? 'text-emerald-600' : 'text-red-600'">
+                                    {{ Number(selectedDebtClient.balance || 0).toLocaleString('uz-UZ') }} so'm
+                                </td>
+                                <td class="p-2.5 text-gray-500 text-[11px]">{{ selectedDebtClient.notes || '-' }}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 
-                <div class="overflow-x-auto border rounded-lg shadow-sm">
-                    <table class="w-full text-sm text-center">
-                        <thead class="bg-gray-50 text-gray-700">
-                            <tr class="border-b">
-                                <th colspan="3" class="p-3 border-r bg-blue-50 text-blue-800">To'langan</th>
-                                <th colspan="3" class="p-3 border-r bg-emerald-50 text-emerald-800">Qaytarilgan</th>
-                                <th rowspan="2" class="p-3 bg-gray-50">Izoh</th>
+                <!-- TRANSACTIONS LEDGER TABLE (Exact Image 1 layout) -->
+                <div class="overflow-x-auto border border-gray-300 rounded-xl shadow-sm">
+                    <table class="w-full text-xs text-center border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-300 font-bold">
+                                <th colspan="3" class="p-2.5 border-r border-gray-300 bg-blue-100/80 text-blue-900 text-sm">To'langan</th>
+                                <th colspan="3" class="p-2.5 border-r border-gray-300 bg-emerald-100/80 text-emerald-900 text-sm">Qaytarilgan</th>
+                                <th rowspan="2" class="p-2.5 bg-gray-100 text-gray-800 text-xs border-l border-gray-300">Izoh</th>
                             </tr>
-                            <tr class="border-b">
-                                <th class="p-2 border-r">Sana</th>
-                                <th class="p-2 border-r">Bank orqali</th>
-                                <th class="p-2 border-r">Naqt</th>
-                                <th class="p-2 border-r">Sana</th>
-                                <th class="p-2 border-r">Bank orqali</th>
-                                <th class="p-2 border-r">Naqt</th>
+                            <tr class="border-b border-gray-300 bg-gray-50 font-bold text-gray-700">
+                                <th class="p-2 border-r border-gray-300">Sana</th>
+                                <th class="p-2 border-r border-gray-300">Bank orqali</th>
+                                <th class="p-2 border-r border-gray-300">Naqt</th>
+                                <th class="p-2 border-r border-gray-300">Sana</th>
+                                <th class="p-2 border-r border-gray-300">Bank orqali</th>
+                                <th class="p-2 border-r border-gray-300">Naqt</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y">
-                            <tr v-for="i in debtLedgerMaxLength" :key="i">
-                                <td class="p-2 border-r text-gray-600">{{ debtLedgerIncomes[i-1] ? new Date(debtLedgerIncomes[i-1].transaction_date || debtLedgerIncomes[i-1].created_at).toLocaleDateString('uz-UZ') : '' }}</td>
-                                <td class="p-2 border-r">{{ debtLedgerIncomes[i-1] && (debtLedgerIncomes[i-1].payment_method === 'bank_transfer' || debtLedgerIncomes[i-1].payment_method === 'card') ? Number(debtLedgerIncomes[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
-                                <td class="p-2 border-r">{{ debtLedgerIncomes[i-1] && debtLedgerIncomes[i-1].payment_method === 'cash' ? Number(debtLedgerIncomes[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
+                        <tbody class="divide-y divide-gray-200 bg-white">
+                            <tr v-for="i in debtLedgerMaxLength" :key="i" class="hover:bg-gray-50/80">
+                                <td class="p-2 border-r border-gray-200 text-gray-600 font-mono">{{ debtLedgerIncomes[i-1] ? new Date(debtLedgerIncomes[i-1].transaction_date || debtLedgerIncomes[i-1].created_at).toLocaleDateString('uz-UZ') : '' }}</td>
+                                <td class="p-2 border-r border-gray-200 font-mono font-bold text-blue-700">{{ debtLedgerIncomes[i-1] && (debtLedgerIncomes[i-1].payment_method === 'bank_transfer' || debtLedgerIncomes[i-1].payment_method === 'card') ? Number(debtLedgerIncomes[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
+                                <td class="p-2 border-r border-gray-200 font-mono font-bold text-blue-700">{{ debtLedgerIncomes[i-1] && (debtLedgerIncomes[i-1].payment_method === 'cash' || !debtLedgerIncomes[i-1].payment_method) ? Number(debtLedgerIncomes[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
                                 
-                                <td class="p-2 border-r text-gray-600">{{ debtLedgerExpenses[i-1] ? new Date(debtLedgerExpenses[i-1].transaction_date || debtLedgerExpenses[i-1].created_at).toLocaleDateString('uz-UZ') : '' }}</td>
-                                <td class="p-2 border-r">{{ debtLedgerExpenses[i-1] && (debtLedgerExpenses[i-1].payment_method === 'bank_transfer' || debtLedgerExpenses[i-1].payment_method === 'card') ? Number(debtLedgerExpenses[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
-                                <td class="p-2 border-r">{{ debtLedgerExpenses[i-1] && debtLedgerExpenses[i-1].payment_method === 'cash' ? Number(debtLedgerExpenses[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
+                                <td class="p-2 border-r border-gray-200 text-gray-600 font-mono">{{ debtLedgerExpenses[i-1] ? new Date(debtLedgerExpenses[i-1].transaction_date || debtLedgerExpenses[i-1].created_at).toLocaleDateString('uz-UZ') : '' }}</td>
+                                <td class="p-2 border-r border-gray-200 font-mono font-bold text-emerald-700">{{ debtLedgerExpenses[i-1] && (debtLedgerExpenses[i-1].payment_method === 'bank_transfer' || debtLedgerExpenses[i-1].payment_method === 'card') ? Number(debtLedgerExpenses[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
+                                <td class="p-2 border-r border-gray-200 font-mono font-bold text-emerald-700">{{ debtLedgerExpenses[i-1] && (debtLedgerExpenses[i-1].payment_method === 'cash' || !debtLedgerExpenses[i-1].payment_method) ? Number(debtLedgerExpenses[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
                                 
-                                <td class="p-2"></td>
+                                <td class="p-2 text-gray-600 text-left text-[11px]">
+                                    {{ debtLedgerIncomes[i-1]?.description || debtLedgerExpenses[i-1]?.description || debtLedgerIncomes[i-1]?.notes || debtLedgerExpenses[i-1]?.notes || '' }}
+                                </td>
                             </tr>
-                            <tr class="bg-gray-50 border-t font-bold">
-                                <td class="p-3 border-r">Jami</td>
-                                <td class="p-3 border-r text-blue-700">{{ Number(debtLedgerIncomes.filter(t => t.payment_method === 'bank_transfer' || t.payment_method === 'card').reduce((sum, t) => sum + Number(t.amount || 0), 0)).toLocaleString('uz-UZ') }}</td>
-                                <td class="p-3 border-r text-blue-700">{{ Number(debtLedgerIncomes.filter(t => t.payment_method === 'cash').reduce((sum, t) => sum + Number(t.amount || 0), 0)).toLocaleString('uz-UZ') }}</td>
-                                <td class="p-3 border-r"></td>
-                                <td class="p-3 border-r text-emerald-700">{{ Number(debtLedgerExpenses.filter(t => t.payment_method === 'bank_transfer' || t.payment_method === 'card').reduce((sum, t) => sum + Number(t.amount || 0), 0)).toLocaleString('uz-UZ') }}</td>
-                                <td class="p-3 border-r text-emerald-700">{{ Number(debtLedgerExpenses.filter(t => t.payment_method === 'cash').reduce((sum, t) => sum + Number(t.amount || 0), 0)).toLocaleString('uz-UZ') }}</td>
-                                <td class="p-3"></td>
+                            <tr class="bg-slate-100 border-t-2 border-gray-400 font-bold text-xs text-gray-900">
+                                <td class="p-2.5 border-r border-gray-300 uppercase">Jami</td>
+                                <td class="p-2.5 border-r border-gray-300 font-mono text-blue-800">{{ Number(debtLedgerIncomes.filter(t => t.payment_method === 'bank_transfer' || t.payment_method === 'card').reduce((sum, t) => sum + Number(t.amount || 0), 0)).toLocaleString('uz-UZ') }}</td>
+                                <td class="p-2.5 border-r border-gray-300 font-mono text-blue-800">{{ Number(debtLedgerIncomes.filter(t => t.payment_method === 'cash' || !t.payment_method).reduce((sum, t) => sum + Number(t.amount || 0), 0)).toLocaleString('uz-UZ') }}</td>
+                                <td class="p-2.5 border-r border-gray-300"></td>
+                                <td class="p-2.5 border-r border-gray-300 font-mono text-emerald-800">{{ Number(debtLedgerExpenses.filter(t => t.payment_method === 'bank_transfer' || t.payment_method === 'card').reduce((sum, t) => sum + Number(t.amount || 0), 0)).toLocaleString('uz-UZ') }}</td>
+                                <td class="p-2.5 border-r border-gray-300 font-mono text-emerald-800">{{ Number(debtLedgerExpenses.filter(t => t.payment_method === 'cash' || !t.payment_method).reduce((sum, t) => sum + Number(t.amount || 0), 0)).toLocaleString('uz-UZ') }}</td>
+                                <td class="p-2.5 font-mono text-right font-bold text-sm text-slate-900">
+                                    {{ Number(selectedDebtClient.balance || 0).toLocaleString('uz-UZ') }} so'm
+                                </td>
                             </tr>
                         </tbody>
                     </table>

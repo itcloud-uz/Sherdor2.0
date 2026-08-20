@@ -319,7 +319,7 @@ const exportDebtClientExcel = () => {
     const name = client.name || 'Mijoz';
     
     const data = [];
-    data.push([name, "", "", "", "", "", ""]);
+    data.push([`${name} - HISOB-KITOB JURNALI`, "", "", "", "", "", ""]);
     data.push(["Shartnoma sanasi", "Shartnoma №", "Uy №", "Qavat", "Tel raqam", "Umumiy qoldiq", "Izoh"]);
     
     data.push([
@@ -329,10 +329,9 @@ const exportDebtClientExcel = () => {
         getDebtFloorNumber(client),
         client.phone || '-',
         Number(client.balance || 0),
-        ""
+        client.notes || '-'
     ]);
     
-    data.push([]);
     data.push(["To'langan", "", "", "Qaytarilgan", "", "", "Izoh"]);
     data.push(["Sana", "Bank orqali", "Naqt", "Sana", "Bank orqali", "Naqt", ""]);
     
@@ -376,18 +375,28 @@ const exportDebtClientExcel = () => {
         }
     }
     
-    data.push(["Jami", sumIncomeBank || "", sumIncomeCash || "", "", sumExpenseBank || "", sumExpenseCash || "", Number(client.balance || 0)]);
+    data.push(["Jami", sumIncomeBank || 0, sumIncomeCash || 0, "", sumExpenseBank || 0, sumExpenseCash || 0, Number(client.balance || 0)]);
     
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(data);
     
-    if(!ws['!merges']) ws['!merges'] = [];
+    if (!ws['!merges']) ws['!merges'] = [];
     ws['!merges'].push({s:{r:0,c:0}, e:{r:0,c:6}});
-    ws['!merges'].push({s:{r:4,c:0}, e:{r:4,c:2}});
-    ws['!merges'].push({s:{r:4,c:3}, e:{r:4,c:5}});
+    ws['!merges'].push({s:{r:3,c:0}, e:{r:3,c:2}});
+    ws['!merges'].push({s:{r:3,c:3}, e:{r:3,c:5}});
+
+    ws['!cols'] = [
+        { wch: 18 }, // Sana / Shartnoma sanasi
+        { wch: 22 }, // Bank orqali / Shartnoma №
+        { wch: 20 }, // Naqt / Uy №
+        { wch: 18 }, // Qaytarilgan Sana / Qavat
+        { wch: 22 }, // Bank orqali / Tel raqam
+        { wch: 22 }, // Naqt / Umumiy qoldiq
+        { wch: 35 }  // Izoh
+    ];
     
-    wb.SheetNames.push("Jurnal");
-    wb.Sheets["Jurnal"] = ws;
+    wb.SheetNames.push("Hisob-kitob jurnali");
+    wb.Sheets["Hisob-kitob jurnali"] = ws;
     
     wb.SheetNames.forEach(sheetName => {
         let sheet = wb.Sheets[sheetName];

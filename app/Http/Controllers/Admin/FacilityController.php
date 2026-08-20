@@ -43,6 +43,24 @@ class FacilityController extends Controller
 
         $reportData = $this->getReportData($buildings, $startDate, $endDate);
 
+        $smetaItems = \App\Models\SmetaItem::with(['building:id,name', 'creator:id,name'])->latest()->get();
+
+        $actualExpenses = \App\Models\Transaction::where('type', 'expense')
+            ->where('status', 'approved')
+            ->whereNotNull('building_id')
+            ->with('category:id,name')
+            ->get()
+            ->map(function ($tx) {
+                return [
+                    'id' => $tx->id,
+                    'building_id' => $tx->building_id,
+                    'category_name' => $tx->category ? $tx->category->name : ($tx->work_category ?: 'Boshqa Xarajatlar'),
+                    'amount' => (float)$tx->amount,
+                    'notes' => $tx->notes ?: $tx->description,
+                    'transaction_date' => $tx->transaction_date ?: ($tx->created_at ? $tx->created_at->toDateTimeString() : null),
+                ];
+            });
+
         return Inertia::render('Admin/Facility/Index', [
             'buildings' => $buildings,
             'clients' => $clients,
@@ -50,6 +68,8 @@ class FacilityController extends Controller
             'users' => \App\Models\User::select('id', 'name')->orderBy('name', 'asc')->get(),
             'registers' => \App\Models\CashRegister::where('is_active', true)->get(),
             'reportData' => $reportData,
+            'smetaItems' => $smetaItems,
+            'actualExpenses' => $actualExpenses,
             'contractTemplates' => \App\Models\ContractTemplate::with('variantGroups.variants')->latest()->get(),
             'filters' => [
                 'start_month' => $request->input('start_month'),
@@ -1630,5 +1650,62 @@ class FacilityController extends Controller
         });
 
         return redirect()->back()->with('message', 'Podez o\'chirildi!');
+    }
+
+    public function storeSmetaItem(Request $request)
+    {
+        $validated = $request->validate([
+            'building_id' => 'required|exists:buildings,id',
+            'block_name' => 'nullable|string|max:255',
+            'category_name' => 'required|string|max:255',
+            'item_name' => 'required|string|max:255',
+            'unit_type' => 'required|string|max:50',
+            'planned_quantity' => 'required|numeric|min:0',
+            'planned_price' => 'required|numeric|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        $validated['planned_total'] = (float)$validated['planned_quantity'] * (float)$validated['planned_price'];
+        $validated['created_by'] = auth()->id();
+        if (empty($validated['block_name'])) {
+            $validated['block_name'] = 'Umumiy';
+        }
+
+        \App\Models\SmetaItem::create($validated);
+
+        return redirect()->back()->with('message', 'Smeta pozitsiyasi muvaffaqiyatli qo\'shildi!');
+    }
+
+    public function updateSmetaItem(Request $request, $id)
+    {
+        $item = \App\Models\SmetaItem::findOrFail($id);
+
+        $validated = $request->validate([
+            'building_id' => 'required|exists:buildings,id',
+            'block_name' => 'nullable|string|max:255',
+            'category_name' => 'required|string|max:255',
+            'item_name' => 'required|string|max:255',
+            'unit_type' => 'required|string|max:50',
+            'planned_quantity' => 'required|numeric|min:0',
+            'planned_price' => 'required|numeric|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        $validated['planned_total'] = (float)$validated['planned_quantity'] * (float)$validated['planned_price'];
+        if (empty($validated['block_name'])) {
+            $validated['block_name'] = 'Umumiy';
+        }
+
+        $item->update($validated);
+
+        return redirect()->back()->with('message', 'Smeta pozitsiyasi yangilandi!');
+    }
+
+    public function destroySmetaItem($id)
+    {
+        $item = \App\Models\SmetaItem::findOrFail($id);
+        $item->delete();
+
+        return redirect()->back()->with('message', 'Smeta pozitsiyasi o\'chirildi!');
     }
 }

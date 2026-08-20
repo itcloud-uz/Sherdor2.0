@@ -136,6 +136,12 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::put('/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateUnit'])->name('facility.units.update');
     Route::delete('/facility/podezes/{podez}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyPodez'])->name('facility.podezes.destroy');
 
+    // Smeta Routes
+    Route::post('/facility/smeta', [\App\Http\Controllers\Admin\FacilityController::class, 'storeSmetaItem'])->name('facility.smeta.store');
+    Route::put('/facility/smeta/{id}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateSmetaItem'])->name('facility.smeta.update');
+    Route::delete('/facility/smeta/{id}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroySmetaItem'])->name('facility.smeta.destroy');
+    Route::get('/facility/smeta/export', [\App\Http\Controllers\Admin\FacilityController::class, 'exportSmeta'])->name('facility.smeta.export');
+
     // Developer Settings
     Route::get('/developer/settings', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'index'])->name('developer.settings');
     Route::post('/developer/lock', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'lock'])->name('developer.lock');

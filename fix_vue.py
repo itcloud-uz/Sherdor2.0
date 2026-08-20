@@ -1,47 +1,27 @@
-import sys
+﻿import re
 
-file_path = 'resources/js/Pages/Admin/HR/QurilishIshHaqi.vue'
+file_path = 'resources/js/Pages/Admin/CRM/Index.vue'
 with open(file_path, 'r', encoding='utf-8') as f:
     content = f.read()
 
-target = '''        const header = [["Sana", "Turi", "Izoh", "Summa (UZS)"]];
-        const rows = selectedBrigade.value.transactions.map(txn => {
-            let type = txn.type;
-            if (type === 'payment') type = "To'lov / Avans";
-            else if (type === 'salary_accrual') type = "Xizmat yozildi";
-            else if (type === 'penalty') type = "Jarima";
-            
-            return [
-                txn.date,
-                type,
-                txn.description || '',
-                parseFloat(txn.amount)
-            ];
-        });'''
+replacement = '''<div v-if="selectedContract.payment_type !== 'full'" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-200 bg-gray-500/50">
+                            <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">{{ ('monthly_schedule_payment') }}</p>
+                            <p class="text-lg font-bold text-blue-600 font-mono">{{ selectedContract.payment_schedules?.length ? (selectedContract.payment_schedules[0].expected_amount) : '0' }}</p>
+                        </div>
+                        <div v-else class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-200 bg-gray-500/50">
+                            <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">To'lov turi</p>
+                            <p class="text-lg font-bold text-emerald-600 font-mono">Bir martalik (100%)</p>
+                        </div>'''
 
-replacement = '''        const header = [["Sana", "Turi", "Izoh", "To'lov turi", "Summa (UZS)"]];
-        const rows = selectedBrigade.value.transactions.map(txn => {
-            let type = txn.type;
-            if (type === 'payment') type = "To'lov / Avans";
-            else if (type === 'salary_accrual') type = "Xizmat yozildi";
-            else if (type === 'penalty') type = "Jarima";
-            
-            let payment_method = '-';
-            if (txn.payment_method === 'cash') payment_method = 'Naqd';
-            else if (txn.payment_method === 'card') payment_method = 'Plastik';
-            else if (txn.payment_method === 'bank_transfer') payment_method = 'Bank';
+target = '''<div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-200 bg-gray-500/50">
+                            <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">{{ ('monthly_schedule_payment') }}</p>
+                            <p class="text-lg font-bold text-blue-600 font-mono">{{ selectedContract.payment_schedules?.length ? (selectedContract.payment_schedules[0].expected_amount) : '0' }}</p>
+                        </div>'''
 
-            return [
-                txn.date,
-                type,
-                txn.description || '',
-                payment_method,
-                parseFloat(txn.amount)
-            ];
-        });'''
-
-content = content.replace(target, replacement)
-
-with open(file_path, 'w', encoding='utf-8') as f:
-    f.write(content)
-print('Success QurilishIshHaqi')
+if target in content:
+    content = content.replace(target, replacement)
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print("Updated Index.vue")
+else:
+    print("Target not found in Index.vue")

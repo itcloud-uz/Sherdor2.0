@@ -54,4 +54,9 @@ class Building extends Model
     {
         return $this->hasMany(ConstructionStage::class);
     }
+
+    public function smetaItems()
+    {
+        return $this->hasMany(SmetaItem::class);
+    }
 }

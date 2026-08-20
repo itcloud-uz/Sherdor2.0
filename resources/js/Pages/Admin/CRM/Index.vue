@@ -7789,9 +7789,13 @@ const ledgerReportData = computed(() => {
                             <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">{{ $t('down_payment') }}</p>
                             <p class="text-lg font-bold text-gray-900 font-mono">{{ $currency(selectedContract.down_payment) }}</p>
                         </div>
-                        <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-200 bg-gray-500/50">
+                        <div v-if="selectedContract.payment_type !== 'full'" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-200 bg-gray-500/50">
                             <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">{{ $t('monthly_schedule_payment') }}</p>
                             <p class="text-lg font-bold text-blue-600 font-mono">{{ selectedContract.payment_schedules?.length ? $currency(selectedContract.payment_schedules[0].expected_amount) : '0' }}</p>
+                        </div>
+                        <div v-else class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-gray-200 bg-gray-500/50">
+                            <p class="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-1">To'lov turi</p>
+                            <p class="text-lg font-bold text-emerald-600 font-mono">Bir martalik (100%)</p>
                         </div>
                         <div v-if="selectedContract.status === 'cancelled' || selectedContract.refunded_amount > 0" class="bg-white border border-gray-200 shadow-sm rounded-xl p-4 rounded-xl border border-red-200 bg-gray-500/50">
                             <p class="text-[10px] font-mono text-red-600 uppercase tracking-widest mb-1">Qaytarilgan</p>

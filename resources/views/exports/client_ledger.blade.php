@@ -239,6 +239,65 @@
     </table>
 
     <!-- MAIN SCHEDULE & PAYMENTS TABLE -->
+    @if($contract->payment_type === 'full')
+        <div style="text-align: center; margin-top: 20px; font-size: 14px; font-weight: bold;">
+            Ushbu shartnoma bo'yicha to'lov to'liq (bir martalik) belgilangan.<br>Umumiy summa: {{ number_format($contract->total_amount, 0, ',', ' ') }} so'm.
+        </div>
+        <br>
+        <table class="ledger-table">
+            <thead>
+                <tr>
+                    <th colspan="3" style="width: 50%;">Haqiqatda qilingan to'lov</th>
+                    <th colspan="2" style="width: 30%;">Mijozga qaytarilgan</th>
+                    <th rowspan="2" style="width: 20%;">Qoldiq</th>
+                </tr>
+                <tr>
+                    <th>Sana</th>
+                    <th>So'mma</th>
+                    <th>Turi</th>
+                    <th>Sana</th>
+                    <th>So'mma</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php 
+                    $runningBalance = $totalPrice;
+                @endphp
+                @foreach($transactions as $tx)
+                    @php
+                        $runningBalance -= $tx->amount;
+                        $pmStr = $tx->payment_method === 'bank_transfer' ? 'Bank' : ($tx->payment_method === 'card' ? 'Plastik' : 'Naqt');
+                    @endphp
+                    <tr>
+                        <td class="text-center">{{ \Carbon\Carbon::parse($tx->transaction_date ?: $tx->created_at)->format('d.m.Y') }}</td>
+                        <td class="text-right font-bold">{{ number_format($tx->amount, 0, ',', ' ') }}</td>
+                        <td class="text-center">{{ $pmStr }}</td>
+                        <td class="text-center"></td>
+                        <td class="text-right"></td>
+                        <td class="text-right font-bold">{{ number_format(max(0, $runningBalance), 0, ',', ' ') }}</td>
+                    </tr>
+                @endforeach
+                @foreach($refunds as $ref)
+                    @php
+                        $runningBalance += $ref->amount;
+                    @endphp
+                    <tr>
+                        <td class="text-center"></td>
+                        <td class="text-right"></td>
+                        <td class="text-center"></td>
+                        <td class="text-center">{{ \Carbon\Carbon::parse($ref->transaction_date ?: $ref->created_at)->format('d.m.Y') }}</td>
+                        <td class="text-right font-bold">{{ number_format($ref->amount, 0, ',', ' ') }}</td>
+                        <td class="text-right font-bold">{{ number_format(max(0, $runningBalance), 0, ',', ' ') }}</td>
+                    </tr>
+                @endforeach
+                @if($transactions->count() === 0 && $refunds->count() === 0)
+                    <tr>
+                        <td colspan="6" class="text-center">To'lovlar mavjud emas</td>
+                    </tr>
+                @endif
+            </tbody>
+        </table>
+    @else
     <table class="ledger-table">
         <thead>
             <tr>
@@ -353,6 +412,7 @@
             </tr>
         </tbody>
     </table>
+    @endif
 
     <!-- SUMMARY TOTALS BOX -->
     <table class="summary-table">

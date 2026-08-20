@@ -476,6 +476,19 @@ class ContractTemplate extends Model
         $context['schedules_total'] = number_format($sumAll, 0, ',', ' ');
         $context['schedules_count'] = count($allSchedulesList);
 
+        if ($contract->payment_type === 'full') {
+            $context['installments'] = [];
+            $context['schedules'] = [];
+            $context['payment_schedules'] = [];
+            $context['all_schedules'] = [];
+            $context['ilova_2'] = [];
+            $context['ilova2'] = [];
+            $context['grafik'] = [];
+            $context['tolov_jadvali'] = [];
+            $context['installments_count'] = 0;
+            $context['schedules_count'] = 0;
+        }
+
         $selectedVariants = $contract->selected_variants ?? [];
         if (isset($selectedVariants['custom_placeholders']) && is_array($selectedVariants['custom_placeholders'])) {
             foreach ($selectedVariants['custom_placeholders'] as $customKey => $customVal) {

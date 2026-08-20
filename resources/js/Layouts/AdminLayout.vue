@@ -791,6 +791,22 @@ const formattedDate = computed(() => {
                                     </Link>
                                 </div>
                             </div>
+
+                            <!-- Smeta bo'limi -->
+                            <div class="space-y-1 mt-1">
+                                <div
+                                    class="flex items-center justify-between rounded-lg hover:bg-blue-50/50 transition-colors"
+                                    :class="isFacilityViewActive('smeta') ? 'bg-blue-50/50 border border-blue-100/30' : ''"
+                                >
+                                    <Link
+                                        :href="route('admin.facility', { view: 'smeta' })"
+                                        class="flex-1 flex items-center gap-2 py-2 px-3 text-xs font-medium text-gray-500 hover:text-blue-600 transition-colors"
+                                        :class="isFacilityViewActive('smeta') ? 'text-blue-600 font-semibold' : ''"
+                                    >
+                                        📑 Smeta bo'limi
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

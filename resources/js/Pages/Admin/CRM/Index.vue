@@ -258,6 +258,7 @@ const exportDebtClientExcel = () => {
             if (sheet[cell].t === 'n') {
                 sheet[cell].z = '#,##0';
             }
+        }
     });
     
     XLSX.writeFile(wb, name + "_Jurnal.xlsx");

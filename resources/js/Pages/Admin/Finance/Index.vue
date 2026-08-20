@@ -1732,6 +1732,14 @@ function handleEditFileUpload(e) {
 }
 
 function openEditTransactionModal(txn) {
+    if (txn.money_transfer_id) {
+        const transfer = (props.moneyTransfers || []).find(mt => mt.id === txn.money_transfer_id) || txn.moneyTransfer || txn.money_transfer;
+        if (transfer) {
+            openEditTransferModal(transfer);
+            return;
+        }
+    }
+
     let paymentPurpose = txn.notes || '';
     let extraNotes = txn.description || '';
     if (!extraNotes && paymentPurpose.includes('\n[Izoh]: ')) {
@@ -3099,52 +3107,48 @@ function submitTransfer() {
 }
 
 function openEditTransferModal(t) {
-    let txn = null;
-    if (t.transactions && t.transactions.length > 0) {
-        txn = t.transactions[0];
-    } else {
-        txn = (sortedTransactions.value || props.transactions || []).find(tx => tx.money_transfer_id === t.id);
-    }
-    
-    if (txn) {
-        openEditTransactionModal(txn);
-        return;
-    }
+    if (!t) return;
+
+    isEditingTransfer.value = true;
+    editingTransferId.value = t.id;
+    isTransferFromLocked.value = false;
+    transferError.value = '';
 
     let transferTxDate = '';
-    if (t.transactions && t.transactions.length > 0 && t.transactions[0].transaction_date) {
-        transferTxDate = String(t.transactions[0].transaction_date).slice(0, 10);
-    } else if (t.transaction_date) {
+    if (t.transaction_date) {
         transferTxDate = String(t.transaction_date).slice(0, 10);
+    } else if (t.transactions && t.transactions.length > 0 && t.transactions[0].transaction_date) {
+        transferTxDate = String(t.transactions[0].transaction_date).slice(0, 10);
     } else if (t.created_at) {
         transferTxDate = String(t.created_at).slice(0, 10);
+    } else {
+        transferTxDate = new Date().toLocaleString('sv').slice(0, 10);
     }
-    let transferCategory = (props.allCategories || props.categories || []).find(c => c.name === "Ichki O'tkazma");
 
-    editTransactionForm.value = {
-        id: null,
-        money_transfer_id: t.id,
-        amount: parseFloat(t.sent_amount || 0),
-        notes: t.description || "Ichki o'tkazma",
-        extra_notes: '',
-        attachment: null,
-        category_id: transferCategory ? transferCategory.id : '',
-        building_id: '',
-        account_id: t.from_account_id,
-        payment_method: 'cash',
-        transaction_date: transferTxDate,
-        counterparty_id: '',
-        partner_id: '',
-        worker_id: '',
-        brigade_id: '',
-        machinery_id: '',
-        supplier_id: '',
-        fixed_asset_id: '',
+    let notesVal = t.notes || '';
+    let descVal = t.description || '';
+
+    if (!notesVal && descVal) {
+        if (descVal.includes(" - ")) {
+            const parts = descVal.split(" - ");
+            notesVal = parts[0];
+            descVal = parts.slice(1).join(" - ");
+        } else {
+            notesVal = descVal;
+        }
+    }
+
+    transferForm.value = {
+        from_account_id: t.from_account_id || t.fromAccount?.id || (t.from_account ? t.from_account.id : ''),
+        to_account_id: t.to_account_id || t.toAccount?.id || (t.to_account ? t.to_account.id : ''),
+        sent_amount: parseFloat(t.sent_amount || t.amount || 0),
         exchange_rate: parseFloat(t.exchange_rate || 1.0),
-        converted_amount: '',
-        type: 'expense'
+        transaction_date: transferTxDate,
+        notes: notesVal,
+        description: descVal
     };
-    showEditTransactionModal.value = true;
+
+    showQuickTransferModal.value = true;
 }
 
 function deleteTransferItem(id) {

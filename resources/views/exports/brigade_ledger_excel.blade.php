@@ -2,13 +2,13 @@
 <table>
     <thead>
         <tr>
-            <th colspan="9" style="font-weight: bold; font-size: 16px; text-align: center;">{{ strtoupper($brigade->name) }} (UMUMIY XISOBOT)</th>
+            <th colspan="10" style="font-weight: bold; font-size: 16px; text-align: center;">{{ strtoupper($brigade->name) }} (UMUMIY XISOBOT)</th>
         </tr>
         <tr>
             <th rowspan="2" style="font-weight: bold; border: 1px solid #000000; text-align: center; vertical-align: middle;">№</th>
             <th rowspan="2" style="font-weight: bold; border: 1px solid #000000; text-align: center; vertical-align: middle;">Sana</th>
             <th colspan="4" style="font-weight: bold; border: 1px solid #000000; text-align: center;">BAJARILGAN ISHLAR</th>
-            <th colspan="2" style="font-weight: bold; border: 1px solid #000000; text-align: center;">TO'LANDI / USHLANDI</th>
+            <th colspan="3" style="font-weight: bold; border: 1px solid #000000; text-align: center;">TO'LANDI / USHLANDI</th>
             <th rowspan="2" style="font-weight: bold; border: 1px solid #000000; text-align: center; vertical-align: middle;">Qoldiq</th>
         </tr>
         <tr>
@@ -17,6 +17,7 @@
             <th style="font-weight: bold; border: 1px solid #000000; text-align: center;">Narxi</th>
             <th style="font-weight: bold; border: 1px solid #000000; text-align: center;">Jami yozildi (Kirim)</th>
             <th style="font-weight: bold; border: 1px solid #000000; text-align: center;">To'landi / Avans</th>
+            <th style="font-weight: bold; border: 1px solid #000000; text-align: center;">To'lov turi</th>
             <th style="font-weight: bold; border: 1px solid #000000; text-align: center;">Ushlanma (Jarima)</th>
         </tr>
     </thead>
@@ -64,6 +65,7 @@
                     <td style="border: 1px solid #000000; text-align: right;">{{ number_format($narxi, 0, '.', ' ') }}</td>
                     <td style="border: 1px solid #000000; text-align: right;">{{ number_format($jami, 0, '.', ' ') }}</td>
                     <td style="border: 1px solid #000000; text-align: right;"></td>
+                    <td style="border: 1px solid #000000; text-align: center;"></td>
                     <td style="border: 1px solid #000000; text-align: right;">{{ $ushlanma > 0 ? number_format($ushlanma, 0, '.', ' ') : '' }}</td>
                     <td style="border: 1px solid #000000; text-align: right; color: {{ $qoldiqRow > 0 ? 'green' : 'red' }}">
                         {{ $qoldiqRow > 0 ? '+ ' : '- ' }}{{ number_format(abs($qoldiqRow), 0, '.', ' ') }}
@@ -74,6 +76,15 @@
                     <td style="border: 1px solid #000000; text-align: right;"></td>
                     <td style="border: 1px solid #000000; text-align: right;">{{ $item->type === 'salary_accrual' ? number_format($item->amount, 0, '.', ' ') : '' }}</td>
                     <td style="border: 1px solid #000000; text-align: right;">{{ in_array($item->type, ['payment', 'advance_payment']) ? number_format($item->amount, 0, '.', ' ') : '' }}</td>
+                    <td style="border: 1px solid #000000; text-align: center;">
+                        @if(in_array($item->type, ['payment', 'advance_payment']) && $item->financeTransaction)
+                            @if($item->financeTransaction->payment_method == 'cash') Naqd
+                            @elseif($item->financeTransaction->payment_method == 'card') Plastik
+                            @elseif($item->financeTransaction->payment_method == 'bank_transfer') Bank
+                            @else {{ ucfirst($item->financeTransaction->payment_method) }}
+                            @endif
+                        @endif
+                    </td>
                     <td style="border: 1px solid #000000; text-align: right;">{{ $item->type === 'penalty' ? number_format($item->amount, 0, '.', ' ') : '' }}</td>
                     <td style="border: 1px solid #000000; text-align: right; color: {{ $qoldiqRow > 0 ? 'green' : 'red' }}">
                         {{ $qoldiqRow > 0 ? '+ ' : '- ' }}{{ number_format(abs($qoldiqRow), 0, '.', ' ') }}
@@ -87,6 +98,7 @@
             <td style="border: 1px solid #000000;"></td>
             <td style="font-weight: bold; border: 1px solid #000000; text-align: right;">{{ number_format($totalJami, 0, '.', ' ') }}</td>
             <td style="font-weight: bold; border: 1px solid #000000; text-align: right;">{{ number_format($totalTlandi, 0, '.', ' ') }}</td>
+            <td style="border: 1px solid #000000;"></td>
             <td style="font-weight: bold; border: 1px solid #000000; text-align: right;">{{ number_format($totalUshlanma, 0, '.', ' ') }}</td>
             <td style="font-weight: bold; border: 1px solid #000000; text-align: right; color: {{ $brigade->balance > 0 ? 'green' : 'red' }}">
                 {{ $brigade->balance > 0 ? '+ ' : '- ' }}{{ number_format(abs($brigade->balance), 0, '.', ' ') }}

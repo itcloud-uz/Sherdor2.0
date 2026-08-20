@@ -51,10 +51,21 @@ class FacilityController extends Controller
             ->with('category:id,name')
             ->get()
             ->map(function ($tx) {
+                $catName = 'Boshqa Xarajatlar';
+                if ($tx->relationLoaded('category') && $tx->getRelation('category')) {
+                    $catName = $tx->getRelation('category')->name;
+                } elseif (isset($tx->category_display) && !empty($tx->category_display)) {
+                    $catName = $tx->category_display;
+                } elseif (is_string($tx->category) && !empty($tx->category)) {
+                    $catName = $tx->category;
+                } elseif (!empty($tx->work_category)) {
+                    $catName = $tx->work_category;
+                }
+
                 return [
                     'id' => $tx->id,
                     'building_id' => $tx->building_id,
-                    'category_name' => $tx->category ? $tx->category->name : ($tx->work_category ?: 'Boshqa Xarajatlar'),
+                    'category_name' => $catName,
                     'amount' => (float)$tx->amount,
                     'notes' => $tx->notes ?: $tx->description,
                     'transaction_date' => $tx->transaction_date ?: ($tx->created_at ? $tx->created_at->toDateTimeString() : null),

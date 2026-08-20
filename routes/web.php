@@ -28,17 +28,25 @@ Route::get('/promo/offers', function () {
         ->where('status', 'available')
         ->where('type', 'residential')
         ->orderBy('id', 'desc')
-        ->limit(20) // Show up to 20 available units to not overwhelm the page
+        ->limit(60)
         ->get()
         ->map(function ($unit) {
             return [
                 'id' => $unit->id,
-                'building_name' => $unit->floor->building->name ?? 'Noma\'lum bino',
-                'floor_level' => $unit->floor->floor_number ?? '?',
+                'building_name' => $unit->floor->building->name ?? ($unit->floor->building->corpus_name ?? 'Majmua'),
+                'block_name' => $unit->floor->building->block_name ?? ($unit->floor->building->corpus_name ?? 'A'),
+                'floor_level' => $unit->floor->floor_number ?? '1',
                 'unit_number' => $unit->unit_number,
-                'rooms' => $unit->rooms_count,
-                'area' => $unit->area_sqm,
-                'price' => $unit->price,
+                'rooms' => $unit->rooms_count ?? 2,
+                'area' => $unit->area_sqm ?? 65.0,
+                'price' => $unit->price ?? 0,
+                'kitchens_count' => $unit->kitchens_count ?? 1,
+                'bathrooms_count' => $unit->bathrooms_count ?? 1,
+                'has_balcony' => (bool)($unit->has_balcony ?? true),
+                'orientation' => $unit->orientation ?? 'Janub-Sharq',
+                'podyezd' => $unit->podyezd ?? 1,
+                'blueprint_path' => $unit->blueprint_path ? '/storage/' . $unit->blueprint_path : null,
+                'model_3d_path' => $unit->model_3d_path ? '/storage/' . $unit->model_3d_path : null,
             ];
         });
 

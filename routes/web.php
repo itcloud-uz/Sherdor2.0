@@ -142,6 +142,9 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::delete('/facility/smeta/{id}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroySmetaItem'])->name('facility.smeta.destroy');
     Route::get('/facility/smeta/export', [\App\Http\Controllers\Admin\FacilityController::class, 'exportSmeta'])->name('facility.smeta.export');
 
+    // Parking Block Creation Route
+    Route::post('/facility/parking-block', [\App\Http\Controllers\Admin\FacilityController::class, 'storeParkingBlock'])->name('facility.parking.store');
+
     // Developer Settings
     Route::get('/developer/settings', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'index'])->name('developer.settings');
     Route::post('/developer/lock', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'lock'])->name('developer.lock');

@@ -32,7 +32,9 @@ class Contract extends Model
         'contract_template_id',
         'selected_variants',
         'custom_monthly_amount',
-        'is_custom_schedule'
+        'is_custom_schedule',
+        'parking_unit_id',
+        'parking_price'
     ];
 
     protected $casts = [
@@ -41,6 +43,7 @@ class Contract extends Model
         'selected_variants' => 'array',
         'custom_monthly_amount' => 'float',
         'is_custom_schedule' => 'boolean',
+        'parking_price' => 'float',
     ];
 
     protected static function boot()
@@ -99,6 +102,11 @@ class Contract extends Model
     public function partner()
     {
         return $this->belongsTo(Partner::class);
+    }
+
+    public function parkingUnit()
+    {
+        return $this->belongsTo(Unit::class, 'parking_unit_id');
     }
 
     public function getBuyerAttribute()

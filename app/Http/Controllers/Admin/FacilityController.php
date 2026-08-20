@@ -1719,4 +1719,82 @@ class FacilityController extends Controller
 
         return redirect()->back()->with('message', 'Smeta pozitsiyasi o\'chirildi!');
     }
+
+    public function storeParkingBlock(Request $request)
+    {
+        $validated = $request->validate([
+            'object_id' => 'required',
+            'parking_type' => 'required|string|in:surface,underground,existing_block',
+            'block_name' => 'required|string|max:255',
+            'total_slots' => 'required|integer|min:1|max:500',
+            'prefix' => 'nullable|string|max:10',
+            'slot_price' => 'nullable|numeric|min:0',
+            'target_building_id' => 'nullable|exists:buildings,id',
+            'floor_number' => 'nullable|integer',
+        ]);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($validated) {
+            $objectContainer = Building::find($validated['object_id']);
+            $objectName = $objectContainer ? $objectContainer->name : 'Obyekt';
+            $prefix = !empty($validated['prefix']) ? strtoupper(trim($validated['prefix'])) : 'P-';
+
+            if ($validated['parking_type'] === 'existing_block' && !empty($validated['target_building_id'])) {
+                $building = Building::findOrFail($validated['target_building_id']);
+            } else {
+                $isUnderground = ($validated['parking_type'] === 'underground');
+                $building = Building::create([
+                    'name' => $objectName,
+                    'block_name' => $validated['block_name'],
+                    'corpus_name' => $isUnderground ? 'Yer osti parkovka' : 'Yer usti parkovka',
+                    'total_floors' => $isUnderground ? 0 : 1,
+                    'basement_floors' => $isUnderground ? 1 : 0,
+                    'blocks_count' => 1,
+                    'total_parking' => $validated['total_slots'],
+                    'city' => $objectContainer->city ?? '',
+                    'district' => $objectContainer->district ?? '',
+                    'mahalla' => $objectContainer->mahalla ?? '',
+                    'street' => $objectContainer->street ?? '',
+                ]);
+            }
+
+            $podez = Podez::firstOrCreate([
+                'building_id' => $building->id,
+                'number' => 1,
+            ], [
+                'name' => 'Parkovka Yo\'lagi',
+                'total_parking' => $validated['total_slots'],
+            ]);
+
+            $floorNum = $validated['floor_number'] ?? ($validated['parking_type'] === 'underground' ? -1 : 1);
+            $floor = Floor::firstOrCreate([
+                'building_id' => $building->id,
+                'podez_id' => $podez->id,
+                'floor_number' => $floorNum,
+            ], [
+                'total_parking_units' => $validated['total_slots'],
+            ]);
+
+            $existingCount = Unit::where('floor_id', $floor->id)->where('type', 'parking')->count();
+
+            for ($i = 1; $i <= $validated['total_slots']; $i++) {
+                $slotNumber = $prefix . ($existingCount + $i);
+                Unit::create([
+                    'floor_id' => $floor->id,
+                    'podez_id' => $podez->id,
+                    'unit_number' => $slotNumber,
+                    'type' => 'parking',
+                    'area_sqm' => 18.00,
+                    'price' => $validated['slot_price'] ?? 0,
+                    'status' => 'available',
+                    'podyezd' => 1,
+                ]);
+            }
+
+            $building->update([
+                'total_parking' => Unit::where('building_id', $building->id)->where('type', 'parking')->count()
+            ]);
+        });
+
+        return redirect()->back()->with('message', 'Avtoturargoh o\'rinlari muvaffaqiyatli shakllantirildi!');
+    }
 }

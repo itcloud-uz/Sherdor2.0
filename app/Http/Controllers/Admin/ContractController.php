@@ -37,7 +37,9 @@ class ContractController extends Controller
             'user_id' => 'nullable|exists:users,id',
             'contract_template_id' => 'nullable|exists:contract_templates,id',
             'selected_variants' => 'nullable|array',
-            'custom_monthly_amount' => 'nullable|numeric|min:0'
+            'custom_monthly_amount' => 'nullable|numeric|min:0',
+            'parking_unit_id' => 'nullable|exists:units,id',
+            'parking_price' => 'nullable|numeric|min:0'
         ]);
 
         $paymentType = $validated['payment_type'] ?? 'installment';
@@ -51,6 +53,8 @@ class ContractController extends Controller
                 'client_id' => $validated['buyer_type'] === 'client' ? $validated['client_id'] : null,
                 'partner_id' => $validated['buyer_type'] === 'partner' ? $validated['partner_id'] : null,
                 'unit_id' => $validated['unit_id'],
+                'parking_unit_id' => $validated['parking_unit_id'] ?? null,
+                'parking_price' => $validated['parking_price'] ?? 0,
                 'contract_type' => $validated['contract_type'],
                 'price_per_sqm' => $validated['price_per_sqm'],
                 'total_amount' => $validated['total_amount'],
@@ -220,6 +224,13 @@ class ContractController extends Controller
             $unit = \App\Models\Unit::find($validated['unit_id']);
             if ($unit) {
                 $unit->update(['status' => $contract->status === 'active' ? 'sold' : 'reserved']);
+            }
+
+            if (!empty($validated['parking_unit_id'])) {
+                $parkingUnit = \App\Models\Unit::find($validated['parking_unit_id']);
+                if ($parkingUnit) {
+                    $parkingUnit->update(['status' => $contract->status === 'active' ? 'sold' : 'reserved']);
+                }
             }
 
             return redirect()->back()->with('message', 'Contract created successfully. Agar to\'lov kiritilgan bo\'lsa, Tasdiqlar bo\'limiga tushdi.');

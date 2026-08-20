@@ -1398,6 +1398,40 @@ function deleteSmetaItem(id) {
     }
 }
 
+const showAddParkingModal = ref(false);
+const parkingForm = useForm({
+    object_id: '',
+    parking_type: 'surface',
+    block_name: 'Yer Usti Avtoturargohi',
+    total_slots: 30,
+    prefix: 'P-',
+    slot_price: 25000000,
+    target_building_id: '',
+    floor_number: 1,
+});
+
+function openAddParkingModal() {
+    parkingForm.reset();
+    parkingForm.object_id = getObjectContainerId(currentObject.value) || (props.buildings && props.buildings.length > 0 ? props.buildings[0].id : '');
+    parkingForm.parking_type = 'surface';
+    parkingForm.block_name = 'Yer Usti Avtoturargohi';
+    parkingForm.total_slots = 30;
+    parkingForm.prefix = 'P-';
+    parkingForm.slot_price = 25000000;
+    showAddParkingModal.value = true;
+}
+
+function submitParkingForm() {
+    parkingForm.post(route('admin.facility.parking.store'), {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            showAddParkingModal.value = false;
+            parkingForm.reset();
+        }
+    });
+}
+
 function exportSmetaExcel() {
     const buildingObj = props.buildings ? props.buildings.find(b => b.id == smetaSelectedBuildingId.value) : null;
     const bName = buildingObj ? buildingObj.name : 'Obyekt';
@@ -4137,6 +4171,9 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <Link :href="route('admin.facility.buildings.edit', getObjectContainerId(currentObject) || 0) + '?type=object'" class="px-3 py-1.5 bg-indigo-600 hover:indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
                                     ✏️ Obyektni tahrirlash
                                 </Link>
+                                <button @click="openAddParkingModal" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
+                                    🚗 + Avtoturargoh Qo'shish
+                                </button>
                                 <Link :href="route('admin.facility.buildings.create', { object_id: getObjectContainerId(currentObject) })" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm inline-block">
                                     + Yangi Blok
                                 </Link>
@@ -6651,6 +6688,70 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
                         <button type="button" @click="showAddSmetaModal = false" class="px-5 py-2.5 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all">Bekor qilish</button>
                         <button type="submit" :disabled="smetaForm.processing" class="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- AVTOTURARGOH QO'SHISH MODALI -->
+        <Modal :show="showAddParkingModal" @close="showAddParkingModal = false" max-width="lg">
+            <div class="p-6 bg-white rounded-2xl">
+                <div class="flex justify-between items-center pb-4 border-b border-gray-100 mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <span class="p-2 bg-purple-100 text-purple-600 rounded-xl">🚗</span>
+                        Avtoturargoh (Parkovka) O'rinlarini Qo'shish
+                    </h3>
+                    <button @click="showAddParkingModal = false" class="text-gray-400 hover:text-gray-600 transition-all text-xl font-bold">&times;</button>
+                </div>
+
+                <form @submit.prevent="submitParkingForm" class="space-y-4">
+                    <!-- Avtoturargoh Turi -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Avtoturargoh Joylashuvi / Turi</label>
+                        <select v-model="parkingForm.parking_type" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none">
+                            <option value="surface">☀️ Yer usti avtoturargohi (Ochiq hududda)</option>
+                            <option value="underground">🌙 Yer osti avtoturargohi (Binodan tashqari podval)</option>
+                            <option value="existing_block">🏢 Mavjud blok / korpus ichiga qo'shish</option>
+                        </select>
+                    </div>
+
+                    <!-- Blok / Avtoturargoh Nomi -->
+                    <div v-if="parkingForm.parking_type !== 'existing_block'">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Avtoturargoh Bloki Nomi</label>
+                        <input v-model="parkingForm.block_name" type="text" placeholder="Masalan: Yer Usti Avtoturargohi" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none" required>
+                    </div>
+
+                    <div v-else>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Qaysi Blokga Qo'shilsin?</label>
+                        <select v-model="parkingForm.target_building_id" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none" required>
+                            <option value="">-- Blokni tanlang --</option>
+                            <option v-for="b in props.buildings" :key="b.id" :value="b.id">{{ b.block_name }} ({{ b.corpus_name || 'Korpus' }})</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Joylar soni -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Parkovka o'rinlari soni</label>
+                            <input v-model.number="parkingForm.total_slots" type="number" min="1" max="500" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none" required>
+                        </div>
+                        <!-- Raqamlash prefiksi -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Raqamlash prefiksi</label>
+                            <input v-model="parkingForm.prefix" type="text" placeholder="P-" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none">
+                            <span class="text-[10px] text-gray-400">Natija: {{ parkingForm.prefix || 'P-' }}1, {{ parkingForm.prefix || 'P-' }}2 ...</span>
+                        </div>
+                    </div>
+
+                    <!-- Narxi -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Bir O'rin Narxi (UZS)</label>
+                        <input v-model.number="parkingForm.slot_price" type="number" min="0" step="100000" placeholder="25000000" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none">
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" @click="showAddParkingModal = false" class="px-5 py-2.5 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all">Bekor qilish</button>
+                        <button type="submit" :disabled="parkingForm.processing" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-md transition-all">Shakllantirish</button>
                     </div>
                 </form>
             </div>

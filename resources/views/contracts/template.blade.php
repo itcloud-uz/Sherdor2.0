@@ -70,5 +70,52 @@
             </td>
         </tr>
     </table>
+
+@if(!empty($contract->parking_unit_id) || !empty($contract->parkingUnit))
+    <div style="page-break-before: always; margin-top: 30px;">
+        <h3 class="text-center font-bold">SHARTNOMAGA 2-ILOVA</h3>
+        <h4 class="text-center font-bold">AVTOTURARJOY O'RNI BERISH VA BIRIKTIRISH DALOLATNOMASI</h4>
+        <p class="text-center">«{{ \Carbon\Carbon::parse($contract->created_at)->format('d') }}» {{ \Carbon\Carbon::parse($contract->created_at)->format('F Y') }}-yilgi № {{ $contract->id }}-sonli Hissadorlik shartnomasiga ajralmas qism sifatida tuzildi.</p>
+        
+        <p>1. «Quruvchi» ushbu ilovaga asosan «Xaridor» <strong>{{ $client->first_name }} {{ $client->last_name }}</strong>ga obyekt hududida joylashgan quyidagi avtoturarjoy o'rnini biriktiradi va foydalanishga topshiradi:</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Avtoturarjoy kodi / Raqami</th>
+                    <th>Joylashuvi / Turi</th>
+                    <th>Maydoni (kv.m)</th>
+                    <th>Qiymati (so'm)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>{{ $contract->parkingUnit ? $contract->parkingUnit->unit_number : 'Parkovka' }}</strong></td>
+                    <td>{{ ($contract->parkingUnit && $contract->parkingUnit->floor && $contract->parkingUnit->floor->floor_number < 0) ? 'Yer osti parkovkasi (' . $contract->parkingUnit->floor->floor_number . '-qavat)' : 'Yer usti parkovka hududi' }}</td>
+                    <td>{{ ($contract->parkingUnit ? $contract->parkingUnit->area_sqm : 18.0) }} kv.m</td>
+                    <td><strong>{{ number_format($contract->parking_price ?: ($contract->parkingUnit ? $contract->parkingUnit->price : 0), 0, ',', ' ') }} so'm</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>2. Avtoturarjoy o'rni kadastr va loyiha hujjatlariga muvofiq rasmiylashtiriladi.</p>
+        <p>3. Ushbu 2-Ilova asosiy shartnomaning ajralmas qismi hisoblanadi.</p>
+
+        <table class="no-border-table mt-5">
+            <tr>
+                <td style="width: 50%;">
+                    <strong>«XARIDOR»</strong><br>
+                    {{ $client->last_name }} {{ $client->first_name }}<br><br>
+                    Imzo: ___________________
+                </td>
+                <td style="width: 50%;">
+                    <strong>«KORXONA»</strong><br>
+                    «Sher-Dor» Xususiy korxonasi<br><br>
+                    Imzo: ___________________
+                </td>
+            </tr>
+        </table>
+    </div>
+@endif
 </body>
 </html>

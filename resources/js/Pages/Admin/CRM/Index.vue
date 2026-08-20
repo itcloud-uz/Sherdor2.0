@@ -1519,7 +1519,23 @@ function deleteClient(id) {
 const showCreateContractModal = ref(false);
 const isEditingContract = ref(false);
 const currentContractId = ref(null);
-const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '', selected_variants: {} });
+const contractForm = ref({ buyer_type: 'client', partner_id: '', client_id: '', unit_id: '', contract_number: '', contract_type: 'residential', price_per_sqm: '', total_amount: '', down_payment: '', term_months: 36, payment_type: 'installment', created_at: '', actual_paid_amount: '', payment_method: 'bank', account_id: '', floor: '', rooms: '', user_id: '', contract_template_id: '', selected_variants: {}, include_parking: false, parking_unit_id: '', parking_price: 0 });
+
+const availableParkingUnits = computed(() => {
+    if (!props.units) return [];
+    return props.units.filter(u => u.type === 'parking' && (u.status === 'available' || (isEditingContract.value && u.id === contractForm.value.parking_unit_id)));
+});
+
+watch(() => contractForm.value.parking_unit_id, (newParkId) => {
+    if (newParkId) {
+        const parkUnit = props.units ? props.units.find(u => u.id === newParkId) : null;
+        if (parkUnit) {
+            contractForm.value.parking_price = Number(parkUnit.price || 0);
+        }
+    } else {
+        contractForm.value.parking_price = 0;
+    }
+});
 
 const filteredTemplates = computed(() => {
     if (!props.contractTemplates) return [];
@@ -2427,6 +2443,9 @@ const finalContractPrice = computed(() => {
     let price = markupPrice.value;
     if (hasDiscount.value) {
         price = price - discountAmount.value;
+    }
+    if (contractForm.value.include_parking && contractForm.value.parking_price) {
+        price += Number(contractForm.value.parking_price);
     }
     return price;
 });
@@ -8626,10 +8645,39 @@ const ledgerReportData = computed(() => {
                                 <span class="absolute right-3 top-3.5 text-gray-400 pointer-events-none">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                                 </span>
+                        </div>
+
+                        <!-- Parkovka Biriktirish (2-Ilova bilan) -->
+                        <div class="mt-4 p-4 bg-purple-50/70 border border-purple-100 rounded-2xl space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" v-model="contractForm.include_parking" class="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500">
+                                    <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                                        🚗 Parkovka (Avtoturarjoy) joyini ham biriktirish (2-Ilova shakllanadi)
+                                    </span>
+                                </label>
+                                <span v-if="contractForm.include_parking" class="text-[10px] bg-purple-200 text-purple-800 font-bold px-2 py-0.5 rounded-full">2-Ilova Avtomatik</span>
+                            </div>
+
+                            <div v-if="contractForm.include_parking" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-purple-800 mb-1">Bo'sh Parkovka O'rni</label>
+                                    <select v-model="contractForm.parking_unit_id" class="w-full bg-white border border-purple-200 text-gray-800 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-purple-500 outline-none">
+                                        <option value="">-- Parkovka o'rnini tanlang --</option>
+                                        <option v-for="pUnit in availableParkingUnits" :key="pUnit.id" :value="pUnit.id">
+                                            {{ pUnit.unit_number }} - {{ Number(pUnit.price || 0).toLocaleString('uz-UZ') }} UZS
+                                        </option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-purple-800 mb-1">Parkovka Narxi (UZS)</label>
+                                    <input v-model.number="contractForm.parking_price" type="number" step="100000" min="0" class="w-full bg-white border border-purple-200 text-purple-900 font-bold text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="25 000 000">
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
                 <!-- STEP 3: To'lov ma'lumotlari -->
                 <div v-show="!isEditingClient && currentStep === 3" class="space-y-6">

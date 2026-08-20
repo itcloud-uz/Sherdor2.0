@@ -1740,6 +1740,13 @@ function openEditTransactionModal(txn) {
         extraNotes = parts[1];
     }
 
+    let txDate = '';
+    if (txn.transaction_date) {
+        txDate = String(txn.transaction_date).slice(0, 10);
+    } else if (txn.created_at) {
+        txDate = String(txn.created_at).slice(0, 10);
+    }
+
     editTransactionForm.value = {
         id: txn.id,
         amount: txn.amount,
@@ -1750,7 +1757,7 @@ function openEditTransactionModal(txn) {
         building_id: txn.building_id || '',
         account_id: txn.account_id || '',
         payment_method: txn.payment_method || 'cash',
-        transaction_date: txn.transaction_date ? txn.transaction_date.slice(0, 10) : '',
+        transaction_date: txDate,
         counterparty_id: txn.counterparty_id || '',
         partner_id: txn.partner_id || '',
         worker_id: txn.worker_id || '',
@@ -3104,7 +3111,14 @@ function openEditTransferModal(t) {
         return;
     }
 
-    let transferTxDate = (t.created_at ? t.created_at.slice(0, 10) : '');
+    let transferTxDate = '';
+    if (t.transactions && t.transactions.length > 0 && t.transactions[0].transaction_date) {
+        transferTxDate = String(t.transactions[0].transaction_date).slice(0, 10);
+    } else if (t.transaction_date) {
+        transferTxDate = String(t.transaction_date).slice(0, 10);
+    } else if (t.created_at) {
+        transferTxDate = String(t.created_at).slice(0, 10);
+    }
     let transferCategory = (props.allCategories || props.categories || []).find(c => c.name === "Ichki O'tkazma");
 
     editTransactionForm.value = {

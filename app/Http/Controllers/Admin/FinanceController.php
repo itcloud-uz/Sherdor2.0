@@ -1259,6 +1259,10 @@ class FinanceController extends Controller
             }
         }
 
+        if (empty($validated['transaction_date'])) {
+            $validated['transaction_date'] = $transaction->transaction_date ?: ($transaction->created_at ? $transaction->created_at->toDateString() : now()->toDateString());
+        }
+
         if (!empty($validated['counterparty_id'])) {
             $counterparty = Counterparty::find($validated['counterparty_id']);
             if ($counterparty) {
@@ -1684,7 +1688,8 @@ class FinanceController extends Controller
 
         $rate = $validated['exchange_rate'] ?? 1.0;
         $receivedAmount = $validated['sent_amount'] * $rate;
-        $txDate = !empty($validated['transaction_date']) ? $validated['transaction_date'] : now()->toDateTimeString();
+        $existingDate = Transaction::where('money_transfer_id', $transfer->id)->whereNotNull('transaction_date')->value('transaction_date');
+        $txDate = !empty($validated['transaction_date']) ? $validated['transaction_date'] : ($existingDate ?: ($transfer->created_at ? $transfer->created_at->toDateTimeString() : now()->toDateTimeString()));
 
         DB::transaction(function () use ($transfer, $oldFromAcc, $oldToAcc, $fromAcc, $toAcc, $validated, $rate, $receivedAmount, $txDate) {
             // 1. Revert old balance changes

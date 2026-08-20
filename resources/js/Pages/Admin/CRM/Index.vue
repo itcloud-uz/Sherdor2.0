@@ -6806,8 +6806,8 @@ const ledgerReportData = computed(() => {
                                     </span>
                                 </td>
                                 <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                                    <button @click.stop="openClientLedgerFromGroup(entry)" class="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-sm inline-flex items-center gap-1.5" title="Mijozning barcha to'lovlari va hisob-kitob jurnali (Shaxsiy varaqa)">
-                                        👤 Hisob-kitob jurnali
+                                    <button @click.stop="openClientLedgerFromGroup(entry)" class="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-sm inline-flex items-center gap-1.5" title="Mijozning shaxsiy varaqasi">
+                                        👤 Mijoz shaxsiy varaqasi
                                     </button>
                                 </td>
                             </tr>

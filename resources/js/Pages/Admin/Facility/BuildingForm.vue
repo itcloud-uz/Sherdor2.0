@@ -172,23 +172,23 @@
                                     <!-- FLOOR CONFIGURATION AREA -->
                                     <div v-if="podez.show_config" class="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
                                         <h4 class="text-sm font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">Qavatlardagi uylar, do'konlar va parkovkalar soni</h4>
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                            <div v-for="fc in podez.floors_config" :key="fc.floor" class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
-                                                <div class="font-bold text-xs w-16" :class="fc.floor < 0 ? 'text-amber-600' : 'text-slate-700'">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                                            <div v-for="fc in podez.floors_config" :key="fc.floor" class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-200 transition-all">
+                                                <div class="font-bold text-xs shrink-0 mr-2" :class="fc.floor < 0 ? 'text-amber-600' : 'text-slate-700'">
                                                     {{ fc.floor < 0 ? 'Yer to\'la ' + fc.floor : fc.floor + '-qavat' }}
                                                 </div>
-                                                <div class="flex gap-1.5">
+                                                <div class="flex gap-2 shrink-0">
                                                     <div class="flex flex-col items-center">
-                                                        <span class="text-[9px] text-slate-400 font-bold">UY</span>
-                                                        <input v-model.number="fc.apartments" type="number" min="0" class="w-10 h-7 text-center bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500" title="Kvartiralar soni">
+                                                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">UY</span>
+                                                        <input v-model.number="fc.apartments" type="number" min="0" class="w-12 h-8 px-1 text-center bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [moz-appearance:textfield]" title="Kvartiralar soni">
                                                     </div>
                                                     <div class="flex flex-col items-center">
-                                                        <span class="text-[9px] text-slate-400 font-bold">DO'KON</span>
-                                                        <input v-model.number="fc.shops" type="number" min="0" class="w-10 h-7 text-center bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500" title="Do'konlar / Tijorat joylari soni">
+                                                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">DO'KON</span>
+                                                        <input v-model.number="fc.shops" type="number" min="0" class="w-12 h-8 px-1 text-center bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [moz-appearance:textfield]" title="Do'konlar / Tijorat joylari soni">
                                                     </div>
                                                     <div class="flex flex-col items-center">
-                                                        <span class="text-[9px] text-indigo-600 font-bold">PARKOVKA</span>
-                                                        <input v-model.number="fc.parking" type="number" min="0" class="w-10 h-7 text-center bg-indigo-50/60 border border-indigo-200 text-indigo-900 rounded text-xs font-semibold focus:ring-1 focus:ring-indigo-500" title="Avto parkovka o'rinlari soni">
+                                                        <span class="text-[9px] text-indigo-600 font-bold uppercase tracking-wider mb-0.5">PARKOVKA</span>
+                                                        <input v-model.number="fc.parking" type="number" min="0" class="w-12 h-8 px-1 text-center bg-indigo-50/70 border border-indigo-200 rounded-lg text-xs font-bold text-indigo-950 focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [moz-appearance:textfield]" title="Avto parkovka o'rinlari soni">
                                                     </div>
                                                 </div>
                                             </div>

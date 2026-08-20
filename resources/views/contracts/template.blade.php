@@ -23,7 +23,7 @@
 <body>
 
     @php
-        $createdAt = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at) : now();
+        $createdAt = isset($contract->created_at) && $contract->created_at ? \Carbon\Carbon::parse($contract->created_at) : now();
         $monthsUz = [
             1 => 'июл', 2 => 'феврал', 3 => 'март', 4 => 'апрел',
             5 => 'май', 6 => 'июн', 7 => 'июл', 8 => 'август',
@@ -55,6 +55,7 @@
         $pricePerSqm = $contract->price_per_sqm ?? ($areaSqm > 0 ? round($totalAmount / $areaSqm) : 8000000);
         $downPaymentPercent = $totalAmount > 0 ? round(($downPayment / $totalAmount) * 100) : 20;
         $termMonths = $contract->term_months ?? 36;
+        $passportDate = !empty($client->passport_issued_date) ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '11/01/2024';
     @endphp
 
     <div class="title">
@@ -73,7 +74,7 @@
         «Шер-Дор» ҳусусий корхонаси, Устав асосида ҳаракат қилувчи директори, Ж. Рахмонов бир томондан «СОТУВЧИ» деб юритилади ва иккинчи томондан, Ўзбекистон Республикаси Фуқаролик кодекси асосида ҳаракат қилувчи, Ўзбекистон Республикаси фуқароси, 
         <strong>{{ $client->address ?? 'Ургут туман Дўстлик махалласида' }}</strong> рўйхатда турувчи, 
         <strong>{{ $clientName }}</strong> (ЖШШИР: {{ $client->pinfl ?? '32308703990033' }}, 
-        {{ $client->passport_issued_date ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '11/01/2024' }}-йилда {{ $client->passport_issued_by ?? 'Самарқанд вилояти Ургут тумани И.И.Б' }} томонидан берилган Ўзбекистон Республикаси шахс гувоҳномаси ID–картаси {{ $client->passport_series ?? 'AD' }} №{{ $client->passport_number ?? '5716836' }}-рақамли), бундан кейин «ХАРИДОР» деб юритилади, ҳар бири алоҳида «томон», биргаликда эса «томонлар» деб аталувчилар, мазкур шартномани қўйидагилар туғрисида туздилар:
+        {{ $passportDate }}-йилда {{ $client->passport_issued_by ?? 'Самарқанд вилояти Ургут тумани И.И.Б' }} томонидан берилган Ўзбекистон Республикаси шахс гувоҳномаси ID–картаси {{ $client->passport_series ?? 'AD' }} №{{ $client->passport_number ?? '5716836' }}-рақамли), бундан кейин «ХАРИДОР» деб юритилади, ҳар бири алоҳида «томон», биргаликда эса «томонлар» деб аталувчилар, мазкур шартномани қўйидагилар туғрисида туздилар:
     </p>
 
     <div class="section-header">1. КВАРТИРА ҚУРИЛИШИНИ АМАЛГА ОШИРИЛИШИНИНГ ҲУҚУҚИЙ АСОСЛАРИ.</div>
@@ -227,7 +228,7 @@
             <td>
                 <p class="no-indent"><strong>Ф.И.Ш:</strong> {{ $clientName }}</p>
                 <p class="no-indent"><strong>Паспорт серия:</strong> {{ $client->passport_series ?? 'AD' }} №{{ $client->passport_number ?? '5716836' }}</p>
-                <p class="no-indent"><strong>Паспорт берилган вақти:</strong> {{ $client->passport_issued_date ? \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y') : '11/01/2024' }}-йил<br>{{ $client->passport_issued_by ?? 'Самарқанд вилояти Ургут тумани И.И.Б' }} томонидан берилган</p>
+                <p class="no-indent"><strong>Паспорт берилган вақти:</strong> {{ $passportDate }}-йил<br>{{ $client->passport_issued_by ?? 'Самарқанд вилояти Ургут тумани И.И.Б' }} томонидан берилган</p>
                 <p class="no-indent"><strong>Манзил:</strong> {{ $client->address ?? 'Самарқанд вилояти Ургут тумани' }}</p>
                 <p class="no-indent"><strong>ЖШШИР:</strong> {{ $client->pinfl ?? '32308703990033' }}</p>
                 <p class="no-indent"><strong>Телефон:</strong> {{ $client->phone ?? '(93) 196-07-21' }}</p>
@@ -249,7 +250,7 @@
 
 @if(!empty($contract->parking_unit_id) || !empty($contract->parkingUnit))
     <div style="page-break-before: always; margin-top: 30px;">
-        <h3 class="text-center font-bold">ШАРТНОМАГА 2-ИЛИВА</h3>
+        <h3 class="text-center font-bold">ШАРТНОМАГА 2-ИЛОВА</h3>
         <h4 class="text-center font-bold">АВТОТУРАРЖОЙ ЎРНИ БЕРИШ ВА БИРИКТИРИШ ДАЛОЛАТНОМАСИ</h4>
         <p class="text-center no-indent">“{{ $day }}” {{ $monthName }} {{ $year }}-йилги № {{ $contract->contract_number ?: ($contract->id . 'Б/9') }}-сонли Ҳиссадорлик шартномасига ажралмас қисм сифатида тузилди.</p>
         

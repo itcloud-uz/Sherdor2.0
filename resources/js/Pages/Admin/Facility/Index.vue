@@ -1193,6 +1193,14 @@ watch([startMonth, endMonth], () => {
 
 // --- SMETA SECTION LOGIC ---
 const smetaSelectedBuildingId = ref('');
+const isBarakaSelected = computed(() => {
+    if (smetaSelectedBuildingId.value) {
+        const b = (props.buildings || []).find(x => x.id == smetaSelectedBuildingId.value);
+        return b && (b.name || '').toLowerCase().includes('baraka');
+    }
+    const activeObjName = currentObject.value || (props.buildings && props.buildings[0] ? props.buildings[0].name : '');
+    return (activeObjName || '').toLowerCase().includes('baraka');
+});
 const smetaSelectedBlock = ref('');
 const smetaSelectedCategory = ref('');
 const smetaSearchQuery = ref('');
@@ -4023,7 +4031,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 </div>
 
                 <!-- RASMIY EKSPERTIZA SMETASI VA TANNARX RENTABELLIK PANELI -->
-                <div v-if="props.officialSmetaSummary" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div v-if="props.officialSmetaSummary && isBarakaSelected" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Card 1: Ekspertiza Tasdiqlagan Smeta Qiymati -->
                     <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-lg border border-slate-700 flex flex-col justify-between">
                         <div>

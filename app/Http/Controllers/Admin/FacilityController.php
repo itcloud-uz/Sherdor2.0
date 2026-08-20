@@ -72,75 +72,82 @@ class FacilityController extends Controller
                 ];
             });
 
-        $officialSmetaSummary = [
-            'initial_proposal' => 86296045372,
-            'expertise_reduction' => 942844176,
-            'final_approved_total' => 85353201196,
-            'breakdown' => [
-                'qmi' => [
-                    'title' => 'Qurilish-montaj ishlari (QMI)',
-                    'amount' => 72769235374,
-                    'percentage' => 85.25,
+        $hasBarakaBuilding = $buildings->contains(function ($b) {
+            return stripos($b->name, 'Baraka') !== false;
+        });
+
+        $officialSmetaSummary = null;
+        if ($hasBarakaBuilding) {
+            $officialSmetaSummary = [
+                'initial_proposal' => 86296045372,
+                'expertise_reduction' => 942844176,
+                'final_approved_total' => 85353201196,
+                'breakdown' => [
+                    'qmi' => [
+                        'title' => 'Qurilish-montaj ishlari (QMI)',
+                        'amount' => 72769235374,
+                        'percentage' => 85.25,
+                    ],
+                    'equipment' => [
+                        'title' => 'Asbob-uskunalar va jihozlar',
+                        'amount' => 3438979980,
+                        'percentage' => 4.03,
+                    ],
+                    'vat' => [
+                        'title' => 'Qo\'shilgan qiymat solig\'i (QQS 12%)',
+                        'amount' => 9144985842,
+                        'percentage' => 10.72,
+                    ],
                 ],
-                'equipment' => [
-                    'title' => 'Asbob-uskunalar va jihozlar',
-                    'amount' => 3438979980,
-                    'percentage' => 4.03,
+                'block_allocations' => [
+                    [
+                        'block_name' => 'Blok A-1 (A1 Tipi)',
+                        'floors' => '16 qavat + podval',
+                        'apartments' => 105,
+                        'area_sqm' => 5773.5,
+                        'features' => '1 xonali (15), 2 xonali (75), 4 xonali (15)',
+                        'share_percent' => 33.1,
+                        'allocated_budget' => 28251909595,
+                    ],
+                    [
+                        'block_name' => 'Blok A-2 (A2 Tipi)',
+                        'floors' => '16 qavat + podval',
+                        'apartments' => 120,
+                        'area_sqm' => 6169.5,
+                        'features' => '1 xonali (15), 2 xonali (105)',
+                        'share_percent' => 35.4,
+                        'allocated_budget' => 30215033223,
+                    ],
+                    [
+                        'block_name' => 'Blok B (B Tipi)',
+                        'floors' => '16 qavat + podval',
+                        'apartments' => 90,
+                        'area_sqm' => 5016.0,
+                        'features' => 'Faqat 2 xonali xonadonlar',
+                        'share_percent' => 28.8,
+                        'allocated_budget' => 24581721944,
+                    ],
+                    [
+                        'block_name' => 'Avtoturargoh (Parking)',
+                        'floors' => 'Yer osti (-1 qavat)',
+                        'apartments' => 0,
+                        'area_sqm' => 536.8,
+                        'features' => 'Monolit temir-beton karkas',
+                        'share_percent' => 2.7,
+                        'allocated_budget' => 2304536434,
+                    ],
                 ],
-                'vat' => [
-                    'title' => 'Qo\'shilgan qiymat solig\'i (QQS 12%)',
-                    'amount' => 9144985842,
-                    'percentage' => 10.72,
-                ],
-            ],
-            'block_allocations' => [
-                [
-                    'block_name' => 'Blok A-1 (A1 Tipi)',
-                    'floors' => '16 qavat + podval',
-                    'apartments' => 105,
-                    'area_sqm' => 5773.5,
-                    'features' => '1 xonali (15), 2 xonali (75), 4 xonali (15)',
-                    'share_percent' => 33.1,
-                    'allocated_budget' => 28251909595,
-                ],
-                [
-                    'block_name' => 'Blok A-2 (A2 Tipi)',
-                    'floors' => '16 qavat + podval',
-                    'apartments' => 120,
-                    'area_sqm' => 6169.5,
-                    'features' => '1 xonali (15), 2 xonali (105)',
-                    'share_percent' => 35.4,
-                    'allocated_budget' => 30215033223,
-                ],
-                [
-                    'block_name' => 'Blok B (B Tipi)',
-                    'floors' => '16 qavat + podval',
-                    'apartments' => 90,
-                    'area_sqm' => 5016.0,
-                    'features' => 'Faqat 2 xonali xonadonlar',
-                    'share_percent' => 28.8,
-                    'allocated_budget' => 24581721944,
-                ],
-                [
-                    'block_name' => 'Avtoturargoh (Parking)',
-                    'floors' => 'Yer osti (-1 qavat)',
-                    'apartments' => 0,
-                    'area_sqm' => 536.8,
-                    'features' => 'Monolit temir-beton karkas',
-                    'share_percent' => 2.7,
-                    'allocated_budget' => 2304536434,
-                ],
-            ],
-            'profitability_analysis' => [
-                'qmi_cost_per_sqm_24430' => 2978683,
-                'qmi_cost_per_sqm_22100' => 3292726,
-                'full_cost_per_sqm_24430' => 3493786,
-                'full_cost_per_sqm_22100' => 3862136,
-                'sales_price_per_sqm' => 7000000,
-                'cost_percentage_range' => '43% - 47%',
-                'profit_margin_range' => '45% - 51.5%',
-            ]
-        ];
+                'profitability_analysis' => [
+                    'qmi_cost_per_sqm_24430' => 2978683,
+                    'qmi_cost_per_sqm_22100' => 3292726,
+                    'full_cost_per_sqm_24430' => 3493786,
+                    'full_cost_per_sqm_22100' => 3862136,
+                    'sales_price_per_sqm' => 7000000,
+                    'cost_percentage_range' => '43% - 47%',
+                    'profit_margin_range' => '45% - 51.5%',
+                ]
+            ];
+        }
 
         return Inertia::render('Admin/Facility/Index', [
             'buildings' => $buildings,

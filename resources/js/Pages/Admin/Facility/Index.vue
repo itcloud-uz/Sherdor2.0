@@ -6,6 +6,7 @@ import Modal from '@/Components/Modal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { useI18n } from 'vue-i18n';
 import { regionsData } from '@/locations.js';
+import * as XLSX from 'xlsx-js-style';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -14,6 +15,8 @@ const props = defineProps({
     partners: Array,
     registers: Array,
     reportData: Array,
+    smetaItems: Array,
+    actualExpenses: Array,
     contractTemplates: Array,
     filters: Object
 });
@@ -1186,6 +1189,264 @@ function fetchReportWithDates() {
 watch([startMonth, endMonth], () => {
     fetchReportWithDates();
 });
+
+// --- SMETA SECTION LOGIC ---
+const smetaSelectedBuildingId = ref('');
+const smetaSelectedBlock = ref('');
+const smetaSelectedCategory = ref('');
+const smetaSearchQuery = ref('');
+const showAddSmetaModal = ref(false);
+const isEditingSmeta = ref(false);
+const editingSmetaId = ref(null);
+
+const smetaCategoriesList = [
+    'Poydevor va Nolinchi Sikl',
+    'Monolit Karkas',
+    'G\'isht va Devorlar',
+    'Tom Yopish',
+    'Fasad va Pardozlash',
+    'Santexnika va Isitish',
+    'Elektr Montaj',
+    'Texnika va Transport',
+    'Ish Haqi va Brigadalar',
+    'Ta\'minot va Materiallar',
+    'Boshqa Xarajatlar'
+];
+
+const smetaUnitsList = ['m²', 'm³', 'tonna', 'kg', 'dona', 'komplekt', 'm.b', 'smena', 'soat'];
+
+const smetaForm = useForm({
+    building_id: '',
+    block_name: 'Umumiy',
+    category_name: 'Monolit Karkas',
+    item_name: '',
+    unit_type: 'dona',
+    planned_quantity: '',
+    planned_price: '',
+    notes: ''
+});
+
+watch(() => props.buildings, (bList) => {
+    if (bList && bList.length > 0 && !smetaSelectedBuildingId.value) {
+        smetaSelectedBuildingId.value = bList[0].id;
+    }
+}, { immediate: true });
+
+const availableSmetaBlocks = computed(() => {
+    if (!smetaSelectedBuildingId.value || !props.buildings) return ['Umumiy'];
+    const b = props.buildings.find(x => x.id == smetaSelectedBuildingId.value);
+    if (!b) return ['Umumiy'];
+    
+    const blocks = ['Umumiy'];
+    if (b.blocks_count && b.blocks_count > 0) {
+        for (let i = 1; i <= b.blocks_count; i++) {
+            const letter = String.fromCharCode(64 + i);
+            blocks.push(`${letter} Blok`);
+        }
+    }
+    if (b.podezes && b.podezes.length > 0) {
+        b.podezes.forEach(p => {
+            const name = p.name || `${p.number || 1}-Podez`;
+            if (!blocks.includes(name)) blocks.push(name);
+        });
+    }
+    return blocks;
+});
+
+const filteredSmetaItems = computed(() => {
+    let list = props.smetaItems || [];
+    
+    if (smetaSelectedBuildingId.value) {
+        list = list.filter(item => item.building_id == smetaSelectedBuildingId.value);
+    }
+    if (smetaSelectedBlock.value) {
+        list = list.filter(item => (item.block_name || 'Umumiy') === smetaSelectedBlock.value);
+    }
+    if (smetaSelectedCategory.value) {
+        list = list.filter(item => item.category_name === smetaSelectedCategory.value);
+    }
+    if (smetaSearchQuery.value) {
+        const q = smetaSearchQuery.value.toLowerCase().trim();
+        list = list.filter(item => 
+            (item.item_name && item.item_name.toLowerCase().includes(q)) ||
+            (item.category_name && item.category_name.toLowerCase().includes(q)) ||
+            (item.notes && item.notes.toLowerCase().includes(q))
+        );
+    }
+    return list;
+});
+
+const actualExpensesForSmeta = computed(() => {
+    let list = props.actualExpenses || [];
+    if (smetaSelectedBuildingId.value) {
+        list = list.filter(ex => ex.building_id == smetaSelectedBuildingId.value);
+    }
+    return list;
+});
+
+const smetaTotalPlan = computed(() => {
+    return filteredSmetaItems.value.reduce((sum, item) => sum + (Number(item.planned_total) || 0), 0);
+});
+
+const smetaTotalActual = computed(() => {
+    return actualExpensesForSmeta.value.reduce((sum, ex) => sum + (Number(ex.amount) || 0), 0);
+});
+
+const smetaTotalVariance = computed(() => {
+    return smetaTotalPlan.value - smetaTotalActual.value;
+});
+
+const smetaCompletionPercent = computed(() => {
+    if (!smetaTotalPlan.value || smetaTotalPlan.value === 0) return 0;
+    const pct = (smetaTotalActual.value / smetaTotalPlan.value) * 100;
+    return Math.min(Math.round(pct * 10) / 10, 999.9);
+});
+
+const groupedSmetaCategories = computed(() => {
+    const map = new Map();
+    
+    smetaCategoriesList.forEach(catName => {
+        map.set(catName, {
+            category_name: catName,
+            items: [],
+            planned_total: 0,
+            actual_total: 0
+        });
+    });
+    
+    filteredSmetaItems.value.forEach(item => {
+        const cat = item.category_name || 'Boshqa Xarajatlar';
+        if (!map.has(cat)) {
+            map.set(cat, {
+                category_name: cat,
+                items: [],
+                planned_total: 0,
+                actual_total: 0
+            });
+        }
+        const group = map.get(cat);
+        group.items.push(item);
+        group.planned_total += Number(item.planned_total) || 0;
+    });
+    
+    actualExpensesForSmeta.value.forEach(ex => {
+        const catName = ex.category_name || 'Boshqa Xarajatlar';
+        let matchedKey = Array.from(map.keys()).find(k => k.toLowerCase().includes(catName.toLowerCase()) || catName.toLowerCase().includes(k.toLowerCase()));
+        if (!matchedKey) matchedKey = 'Boshqa Xarajatlar';
+        if (map.has(matchedKey)) {
+            map.get(matchedKey).actual_total += Number(ex.amount) || 0;
+        }
+    });
+
+    return Array.from(map.values()).filter(g => g.items.length > 0 || g.actual_total > 0);
+});
+
+function openAddSmetaModal() {
+    isEditingSmeta.value = false;
+    editingSmetaId.value = null;
+    smetaForm.reset();
+    smetaForm.building_id = smetaSelectedBuildingId.value || (props.buildings && props.buildings.length > 0 ? props.buildings[0].id : '');
+    smetaForm.block_name = availableSmetaBlocks.value[0] || 'Umumiy';
+    smetaForm.category_name = 'Monolit Karkas';
+    smetaForm.unit_type = 'dona';
+    showAddSmetaModal.value = true;
+}
+
+function openEditSmetaModal(item) {
+    if (!item) return;
+    isEditingSmeta.value = true;
+    editingSmetaId.value = item.id;
+    smetaForm.building_id = item.building_id;
+    smetaForm.block_name = item.block_name || 'Umumiy';
+    smetaForm.category_name = item.category_name;
+    smetaForm.item_name = item.item_name;
+    smetaForm.unit_type = item.unit_type;
+    smetaForm.planned_quantity = item.planned_quantity;
+    smetaForm.planned_price = item.planned_price;
+    smetaForm.notes = item.notes || '';
+    showAddSmetaModal.value = true;
+}
+
+function saveSmetaItem() {
+    if (isEditingSmeta.value) {
+        smetaForm.put(route('admin.facility.smeta.update', editingSmetaId.value), {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                showAddSmetaModal.value = false;
+                smetaForm.reset();
+            }
+        });
+    } else {
+        smetaForm.post(route('admin.facility.smeta.store'), {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                showAddSmetaModal.value = false;
+                smetaForm.reset();
+            }
+        });
+    }
+}
+
+function deleteSmetaItem(id) {
+    if (confirm('Ushbu smeta pozitsiyasini o\'chirishga ishonchingiz komilmi?')) {
+        router.delete(route('admin.facility.smeta.destroy', id), {
+            preserveScroll: true,
+            preserveState: true
+        });
+    }
+}
+
+function exportSmetaExcel() {
+    const buildingObj = props.buildings ? props.buildings.find(b => b.id == smetaSelectedBuildingId.value) : null;
+    const bName = buildingObj ? buildingObj.name : 'Obyekt';
+    
+    const data = [];
+    data.push([`${bName} - QURILISH SMETASI VA XARAJATLAR HISOBOTI`, "", "", "", "", "", "", "", ""]);
+    data.push(["№", "Blok", "Kategoriya", "Ish / Material nomi", "Birligi", "Rejadagi miqdor", "Birlik narxi (UZS)", "Jami Reja (UZS)", "Amaldagi xarajat (Fakt UZS)", "Farq (Reja - Fakt)"]);
+    
+    filteredSmetaItems.value.forEach((item, idx) => {
+        data.push([
+            idx + 1,
+            item.block_name || 'Umumiy',
+            item.category_name,
+            item.item_name,
+            item.unit_type,
+            Number(item.planned_quantity || 0),
+            Number(item.planned_price || 0),
+            Number(item.planned_total || 0),
+            0,
+            Number(item.planned_total || 0)
+        ]);
+    });
+    
+    data.push(["JAMI", "", "", "", "", "", "", smetaTotalPlan.value, smetaTotalActual.value, smetaTotalVariance.value]);
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    if (!ws['!merges']) ws['!merges'] = [];
+    ws['!merges'].push({s:{r:0,c:0}, e:{r:0,c:9}});
+
+    ws['!cols'] = [
+        { wch: 6 },
+        { wch: 14 },
+        { wch: 25 },
+        { wch: 35 },
+        { wch: 12 },
+        { wch: 16 },
+        { wch: 20 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 22 }
+    ];
+
+    wb.SheetNames.push("Smeta Hisoboti");
+    wb.Sheets["Smeta Hisoboti"] = ws;
+    
+    XLSX.writeFile(wb, bName.replace(/\s+/g, '_') + "_Qurilish_Smetasi.xlsx");
+}
 const selectedCity = ref('');
 const selectedDistrict = ref('');
 const selectedRoomsFilter = ref('');
@@ -3186,6 +3447,10 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 <span class="text-gray-300">/</span>
                 <span class="text-gray-800 font-semibold">Obyektlar Hisoboti</span>
             </template>
+            <template v-if="currentView === 'smeta'">
+                <span class="text-gray-300">/</span>
+                <span class="text-gray-800 font-semibold">📑 Smeta Bo'limi</span>
+            </template>
             <template v-if="currentObject">
                 <span class="text-gray-300">/</span>
                 <button @click="selectedBuilding = null" class="hover:text-blue-600 transition-colors font-medium">
@@ -3610,6 +3875,237 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SMETA BO'LIMI (Qurilish Smetasi va Xarajatlar Boshqaruvi) -->
+            <div v-else-if="currentView === 'smeta'" class="space-y-6">
+                <!-- Sarlavha paneli -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <button 
+                            @click="currentObject = null; selectedBuilding = null; currentView = 'objects'" 
+                            class="p-2 bg-gray-50 border border-gray-200 rounded-full hover:bg-gray-100 transition-all shadow-sm"
+                            title="Orqaga"
+                        >
+                            <svg class="h-4 w-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                        </button>
+                        <div>
+                            <h2 class="text-xl font-extrabold text-gray-900 flex items-center gap-2">
+                                <span>📑</span> Qurilish Smetasi va Xarajatlar Nazorati
+                            </h2>
+                            <p class="text-xs text-gray-500 mt-0.5">Obyektlar va bloklar bo'yicha sarf-xarajatlar smetasi va amaldagi bajarilish nazorati</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button @click="exportSmetaExcel" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Excelga yuklash
+                        </button>
+                        <button @click="openAddSmetaModal" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5">
+                            <span>+</span> Smeta Pozitsiyasi Kiritish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TOP METRICS CARDS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Card 1: Rejalashtirilgan Smeta -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Jami Smeta (Reja)</span>
+                                <p class="text-xl font-black text-gray-900 mt-1 font-mono">
+                                    {{ Number(smetaTotalPlan || 0).toLocaleString('uz-UZ') }} <span class="text-xs font-bold text-gray-500">so'm</span>
+                                </p>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg">
+                                💰
+                            </div>
+                        </div>
+                        <div class="mt-3 text-[11px] text-gray-500 flex items-center gap-1">
+                            <span>Rejalashtirilgan smeta hajmi</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Amaldagi Xarajat (Fakt) -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Amaldagi Xarajat (Fakt)</span>
+                                <p class="text-xl font-black text-blue-600 mt-1 font-mono">
+                                    {{ Number(smetaTotalActual || 0).toLocaleString('uz-UZ') }} <span class="text-xs font-bold text-gray-500">so'm</span>
+                                </p>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                                💸
+                            </div>
+                        </div>
+                        <div class="mt-3 text-[11px] text-gray-500 flex items-center gap-1">
+                            <span>Faktik sarflangan xarajatlar</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Tejamkorlik / Farq -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Kutilyotgan Qoldiq / Farq</span>
+                                <p class="text-xl font-black mt-1 font-mono" :class="smetaTotalVariance >= 0 ? 'text-emerald-600' : 'text-red-600'">
+                                    {{ (smetaTotalVariance >= 0 ? '+' : '') + Number(smetaTotalVariance || 0).toLocaleString('uz-UZ') }} <span class="text-xs font-bold text-gray-500">so'm</span>
+                                </p>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg" :class="smetaTotalVariance >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'">
+                                {{ smetaTotalVariance >= 0 ? '⚖️' : '⚠️' }}
+                            </div>
+                        </div>
+                        <div class="mt-3 text-[11px] font-bold flex items-center gap-1" :class="smetaTotalVariance >= 0 ? 'text-emerald-600' : 'text-red-600'">
+                            <span>{{ smetaTotalVariance >= 0 ? 'Tejamkorlik (Smeta doirasida)' : 'Smetadan oshib ketdi!' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Smeta Bajarilishi % -->
+                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Smeta Bajarilishi</span>
+                                <p class="text-xl font-black text-gray-900 mt-1 font-mono">
+                                    {{ smetaCompletionPercent }}%
+                                </p>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-lg">
+                                📈
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-100 h-2 rounded-full mt-3 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" :style="{ width: Math.min(100, smetaCompletionPercent) + '%' }" :class="smetaCompletionPercent > 100 ? 'bg-red-500' : (smetaCompletionPercent > 85 ? 'bg-amber-500' : 'bg-emerald-500')"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FILTER BAR (Obyekt, Blok, Kategoriya, Qidiruv) -->
+                <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-3 flex-1">
+                        <!-- Obyektni tanlash -->
+                        <div class="min-w-[200px]">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Obyekt</label>
+                            <select v-model="smetaSelectedBuildingId" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none">
+                                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Blokni tanlash -->
+                        <div class="min-w-[150px]">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Blok</label>
+                            <select v-model="smetaSelectedBlock" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none">
+                                <option value="">Barcha bloklar</option>
+                                <option v-for="blk in availableSmetaBlocks" :key="blk" :value="blk">{{ blk }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Kategoriyani tanlash -->
+                        <div class="min-w-[180px]">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Kategoriya</label>
+                            <select v-model="smetaSelectedCategory" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none">
+                                <option value="">Barcha kategoriyalar</option>
+                                <option v-for="cat in smetaCategoriesList" :key="cat" :value="cat">{{ cat }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="relative w-full md:w-64 mt-auto">
+                        <input v-model="smetaSearchQuery" type="text" placeholder="Pozitsiya bo'yicha qidirish..." class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs text-gray-800 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none">
+                        <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+                    </div>
+                </div>
+
+                <!-- AUTO-BASELINE NOTIFICATION WHEN NO CUSTOM SMETA ENTERED -->
+                <div v-if="!filteredSmetaItems.length" class="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
+                    <span class="text-xl">ℹ️</span>
+                    <div>
+                        <h4 class="text-xs font-bold text-blue-900">Eslatma: Smeta majburiy emas (Avtomatik yig'ish faol)</h4>
+                        <p class="text-xs text-blue-700 mt-0.5 leading-relaxed">
+                            Ushbu obyekt uchun hali qo'lda batafsil smeta pozitsiyalari kiritilmagan bo'lsa ham, tizim moliya va ta'minot bo'limlaridan tushgan amaldagi xarajatlarni avtomatik yig'ib boradi.
+                            Istalgan vaqtda tepadagi <strong class="text-blue-900">'+ Smeta Pozitsiyasi Kiritish'</strong> tugmasini bosib rejalashtirilgan smeta ma'lumotlarini kiritishingiz mumkin.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- MAIN SMETA TABLE BY CATEGORIES -->
+                <div class="space-y-6">
+                    <div v-for="catGroup in groupedSmetaCategories" :key="catGroup.category_name" class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                        <!-- Category Header -->
+                        <div class="bg-gray-50 px-5 py-3.5 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <h3 class="text-sm font-bold text-gray-900">{{ catGroup.category_name }}</h3>
+                                <span class="text-xs text-gray-500">({{ catGroup.items.length }} ta pozitsiya)</span>
+                            </div>
+                            <div class="flex items-center gap-4 text-xs font-mono font-bold">
+                                <span class="text-gray-600">Reja: <strong class="text-gray-900">{{ Number(catGroup.planned_total).toLocaleString('uz-UZ') }} so'm</strong></span>
+                                <span class="text-gray-600">Fakt: <strong class="text-blue-600">{{ Number(catGroup.actual_total).toLocaleString('uz-UZ') }} so'm</strong></span>
+                                <span :class="catGroup.planned_total >= catGroup.actual_total ? 'text-emerald-600' : 'text-red-600'">
+                                    {{ catGroup.planned_total >= catGroup.actual_total ? 'Tejamkorlik' : 'Oshdi' }}: 
+                                    {{ Number(Math.abs(catGroup.planned_total - catGroup.actual_total)).toLocaleString('uz-UZ') }} so'm
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Items Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs font-sans border-collapse">
+                                <thead class="bg-gray-100/60 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
+                                    <tr>
+                                        <th class="p-3 w-10 text-center">№</th>
+                                        <th class="p-3 w-28">Blok</th>
+                                        <th class="p-3">Ish / Material Nomi</th>
+                                        <th class="p-3 text-center">Birligi</th>
+                                        <th class="p-3 text-right">Reja Miqdori</th>
+                                        <th class="p-3 text-right">Birlik Narxi</th>
+                                        <th class="p-3 text-right font-bold text-gray-900">Jami Reja (UZS)</th>
+                                        <th class="p-3 text-right font-bold text-blue-600">Amaldagi Xarajat (Fakt)</th>
+                                        <th class="p-3 text-right font-bold">Farq</th>
+                                        <th class="p-3 text-center">Amallar</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 bg-white">
+                                    <tr v-for="(item, idx) in catGroup.items" :key="item.id" class="hover:bg-amber-50/20 transition-colors">
+                                        <td class="p-3 text-center font-bold text-gray-400">{{ idx + 1 }}</td>
+                                        <td class="p-3 font-semibold text-gray-700">
+                                            <span class="px-2 py-0.5 bg-gray-100 border border-gray-200 rounded text-[11px] font-mono">{{ item.block_name || 'Umumiy' }}</span>
+                                        </td>
+                                        <td class="p-3 font-bold text-gray-900">
+                                            {{ item.item_name }}
+                                            <p v-if="item.notes" class="text-[11px] font-normal text-gray-400 mt-0.5">{{ item.notes }}</p>
+                                        </td>
+                                        <td class="p-3 text-center font-mono text-gray-600">{{ item.unit_type }}</td>
+                                        <td class="p-3 text-right font-mono font-semibold">{{ Number(item.planned_quantity || 0).toLocaleString('uz-UZ') }}</td>
+                                        <td class="p-3 text-right font-mono text-gray-600">{{ Number(item.planned_price || 0).toLocaleString('uz-UZ') }} so'm</td>
+                                        <td class="p-3 text-right font-mono font-bold text-gray-900">{{ Number(item.planned_total || 0).toLocaleString('uz-UZ') }} so'm</td>
+                                        <td class="p-3 text-right font-mono font-bold text-blue-600">-</td>
+                                        <td class="p-3 text-right font-mono font-bold text-emerald-600">+{{ Number(item.planned_total || 0).toLocaleString('uz-UZ') }} so'm</td>
+                                        <td class="p-3 text-center whitespace-nowrap">
+                                            <div class="flex items-center justify-center gap-1.5">
+                                                <button @click="openEditSmetaModal(item)" class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm" title="Tahrirlash">
+                                                    ✏️
+                                                </button>
+                                                <button @click="deleteSmetaItem(item.id)" class="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all shadow-sm" title="O'chirish">
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="!catGroup.items.length">
+                                        <td colspan="10" class="p-4 text-center text-gray-400 italic">Ushbu toifa bo'yicha hali alohida smeta pozitsiyasi kiritilmagan.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -6074,6 +6570,91 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 </div>
             </div>
         </div>
+
+        <!-- ADD / EDIT SMETA ITEM MODAL -->
+        <Modal :show="showAddSmetaModal" @close="showAddSmetaModal = false" maxWidth="2xl">
+            <div class="p-6 font-sans">
+                <div class="flex justify-between items-center pb-4 border-b border-gray-100 mb-5">
+                    <h3 class="text-base font-extrabold text-gray-900 flex items-center gap-2">
+                        <span>📑</span> {{ isEditingSmeta ? "Smeta Pozitsiyasini Tahrirlash" : "Yangi Smeta Pozitsiyasi Kiritish" }}
+                    </h3>
+                    <button @click="showAddSmetaModal = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+                </div>
+
+                <form @submit.prevent="saveSmetaItem" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Obyekt -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">* Obyekt</label>
+                            <select v-model="smetaForm.building_id" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" required>
+                                <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Blok -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">* Blok</label>
+                            <select v-model="smetaForm.block_name" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" required>
+                                <option v-for="blk in availableSmetaBlocks" :key="blk" :value="blk">{{ blk }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Kategoriya -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">* Kategoriya</label>
+                            <select v-model="smetaForm.category_name" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" required>
+                                <option v-for="cat in smetaCategoriesList" :key="cat" :value="cat">{{ cat }}</option>
+                            </select>
+                        </div>
+
+                        <!-- O'lchov birligi -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">* O'lchov Birligi</label>
+                            <select v-model="smetaForm.unit_type" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" required>
+                                <option v-for="u in smetaUnitsList" :key="u" :value="u">{{ u }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Ish / Material Nomi -->
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">* Ish / Material Nomi</label>
+                            <input v-model="smetaForm.item_name" type="text" placeholder="Masalan: Beton M300 quyish ishilari" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" required>
+                        </div>
+
+                        <!-- Rejadagi Miqdor -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">* Rejadagi Miqdor</label>
+                            <input v-model="smetaForm.planned_quantity" type="number" step="any" placeholder="0.00" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" required>
+                        </div>
+
+                        <!-- Birlik Narxi -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">* Birlik Narxi (UZS)</label>
+                            <input v-model="smetaForm.planned_price" type="number" step="any" placeholder="0.00" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" required>
+                        </div>
+
+                        <!-- Avtomatik Jami Reja Summasi -->
+                        <div class="md:col-span-2 bg-amber-50/50 border border-amber-200/80 rounded-xl p-3.5 flex justify-between items-center">
+                            <span class="text-xs font-bold text-gray-700 uppercase">Jami Rejalashtirilgan Summa:</span>
+                            <span class="text-base font-black text-amber-600 font-mono">
+                                {{ Number((Number(smetaForm.planned_quantity || 0) * Number(smetaForm.planned_price || 0)) || 0).toLocaleString('uz-UZ') }} so'm
+                            </span>
+                        </div>
+
+                        <!-- Izoh -->
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Izoh / Qo'shimcha Ma'lumot</label>
+                            <textarea v-model="smetaForm.notes" rows="2" placeholder="Qo'shimcha izoh kiritishingiz mumkin..." class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-none"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" @click="showAddSmetaModal = false" class="px-5 py-2.5 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all">Bekor qilish</button>
+                        <button type="submit" :disabled="smetaForm.processing" class="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all">Saqlash</button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
 
     </AdminLayout>
     </div>

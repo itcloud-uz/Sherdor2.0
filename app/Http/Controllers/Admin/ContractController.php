@@ -216,10 +216,10 @@ class ContractController extends Controller
                 }
             }
 
-            // Also mark unit as reserved
+            // Mark unit status based on contract status (active -> sold, otherwise reserved)
             $unit = \App\Models\Unit::find($validated['unit_id']);
             if ($unit) {
-                $unit->update(['status' => 'reserved']);
+                $unit->update(['status' => $contract->status === 'active' ? 'sold' : 'reserved']);
             }
 
             return redirect()->back()->with('message', 'Contract created successfully. Agar to\'lov kiritilgan bo\'lsa, Tasdiqlar bo\'limiga tushdi.');
@@ -269,10 +269,10 @@ class ContractController extends Controller
             if ($oldUnit) {
                 $oldUnit->update(['status' => 'available']);
             }
-            $newUnit = \App\Models\Unit::find($newUnitId);
-            if ($newUnit) {
-                $newUnit->update(['status' => $contract->status === 'active' ? 'sold' : 'reserved']);
-            }
+        }
+        $newUnit = \App\Models\Unit::find($newUnitId);
+        if ($newUnit) {
+            $newUnit->update(['status' => $contract->status === 'active' ? 'sold' : 'reserved']);
         }
 
         $contract->fill($validated);

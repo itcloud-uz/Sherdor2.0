@@ -1879,27 +1879,59 @@ watch(showCreateContractModal, (isOpen) => {
     }
 });
 
-// Update contract amounts when unit changes
-watch(() => contractForm.value.unit_id, (newUnitId) => {
-    if (newUnitId && !isEditingContract.value) {
+// Update contract amounts, floor, rooms when unit changes
+watch(() => contractForm.value.unit_id, (newUnitId, oldUnitId) => {
+    if (newUnitId) {
         const u = props.units.find(unit => unit.id === newUnitId);
         if (u) {
-            contractForm.value.total_amount = Number(u.price) || 0;
-            const area = Number(u.area_sqm) || 0;
-            contractForm.value.price_per_sqm = area > 0 ? (contractForm.value.total_amount / area).toFixed(2) : 0;
+            selectedFacilityName.value = u.floor?.building?.name || '';
+            selectedBuildingId.value = u.floor?.building?.id || '';
             
             contractForm.value.floor = u.floor?.floor_number || '';
             contractForm.value.rooms = u.rooms_count || '';
             
-            if (contractForm.value.payment_type === 'full') {
-                contractForm.value.down_payment = contractForm.value.total_amount;
-                contractForm.value.term_months = 1;
-            } else {
-                contractForm.value.down_payment = contractForm.value.total_amount * 0.3; // Default 30%
+            // Recalculate price when creating new contract OR when changing unit during edit
+            if (!isEditingContract.value || (oldUnitId && oldUnitId !== newUnitId)) {
+                const area = Number(u.area_sqm) || 0;
+                const unitPrice = Number(u.price) || 0;
+                if (unitPrice > 0) {
+                    contractForm.value.total_amount = unitPrice;
+                    contractForm.value.price_per_sqm = area > 0 ? (unitPrice / area).toFixed(2) : 0;
+                } else if (Number(contractForm.value.price_per_sqm) > 0 && area > 0) {
+                    contractForm.value.total_amount = Math.round(Number(contractForm.value.price_per_sqm) * area);
+                } else {
+                    contractForm.value.total_amount = 0;
+                    contractForm.value.price_per_sqm = 0;
+                }
+                
+                if (contractForm.value.payment_type === 'full') {
+                    contractForm.value.down_payment = contractForm.value.total_amount;
+                    contractForm.value.term_months = 1;
+                } else {
+                    contractForm.value.down_payment = Math.round(contractForm.value.total_amount * 0.3); // Default 30%
+                }
             }
         }
     }
 });
+
+function onPricePerSqmInput() {
+    if (contractForm.value.unit_id) {
+        const u = props.units.find(unit => unit.id === contractForm.value.unit_id);
+        if (u) {
+            const area = Number(u.area_sqm) || 0;
+            if (area > 0) {
+                const sqmPrice = Number(contractForm.value.price_per_sqm) || 0;
+                contractForm.value.total_amount = Math.round(sqmPrice * area);
+                if (contractForm.value.payment_type === 'full') {
+                    contractForm.value.down_payment = contractForm.value.total_amount;
+                } else if (!contractForm.value.down_payment || contractForm.value.down_payment == 0) {
+                    contractForm.value.down_payment = Math.round(contractForm.value.total_amount * 0.3);
+                }
+            }
+        }
+    }
+}
 
 watch(() => contractForm.value.total_amount, (newTotal) => {
     if (contractForm.value.unit_id) {
@@ -9018,8 +9050,8 @@ const ledgerReportData = computed(() => {
 <div v-if="contractForm.total_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.total_amount) }} UZS</div>
                             </div>
                             <div>
-                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('price_per_sqm_label') }} (Avtomatik hisoblandi)</label>
-                                <input v-model="contractForm.price_per_sqm" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full opacity-70 cursor-not-allowed" readonly tabindex="-1">
+                                <label class="block text-[10px] font-mono text-gray-500 mb-1 uppercase">{{ $t('price_per_sqm_label') }} (1 kv.m narxi)</label>
+                                <input v-model="contractForm.price_per_sqm" @input="onPricePerSqmInput" type="number" step="any" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-emerald-600 font-bold text-lg" placeholder="1 kv.m narxini kiriting">
 <div v-if="contractForm.price_per_sqm" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.price_per_sqm) }} UZS</div>
                             </div>
                         </div>

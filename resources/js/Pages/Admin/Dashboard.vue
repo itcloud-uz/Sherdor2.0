@@ -429,10 +429,10 @@ const monthlySalesSeries = computed(() => [{
                     <div>
                         <div class="flex items-center justify-between gap-4 mb-4">
                             <div class="flex items-center gap-3.5">
-                                <div class="w-13 h-13 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0 shadow-sm flex items-center justify-center">
-                                    <img v-if="building.photo_path" :src="'/storage/' + building.photo_path" class="w-full h-full object-cover" />
+                                <div class="w-14 h-14 min-w-[56px] max-w-[56px] min-h-[56px] max-h-[56px] rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0 shadow-sm flex items-center justify-center relative">
+                                    <img v-if="building.photo_path" :src="'/storage/' + building.photo_path" class="w-full h-full object-cover block absolute inset-0" />
                                     <div v-else class="w-full h-full bg-gradient-to-tr from-amber-500/10 to-yellow-500/5 flex items-center justify-center text-amber-500">
-                                        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.33l-7.5-5-7.5 5V21" />
                                         </svg>
                                     </div>

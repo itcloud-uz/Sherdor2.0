@@ -3985,32 +3985,54 @@ function viewClientDetail(client, saveScroll = true, targetContract = null) {
     selectClientForDetail(client, saveScroll, targetContract);
 }
 
+function openClientLedgerModal(contract, client = null) {
+    if (!contract && client && client.contracts && client.contracts.length > 0) {
+        contract = client.contracts[0];
+    }
+    if (!contract) return false;
+
+    const fullContract = JSON.parse(JSON.stringify(contract));
+    if (!fullContract.client && client) {
+        fullContract.client = client;
+    }
+    selectedContract.value = fullContract;
+    showModal.value = true;
+    return true;
+}
+
 function openClientLedgerFromPayment(t) {
     if (!t) return;
-    let client = t.client || t.contract?.client;
-    const clientId = t.client_id || t.contract?.client_id || t.counterparty?.customable_id || t.target_id;
-    if (!client && clientId && props.clients) {
-        client = props.clients.find(c => c.id == clientId);
+    let contract = t.contract;
+    let client = t.client;
+
+    if (!contract && t.contract_id && props.contracts) {
+        contract = props.contracts.find(c => c.id == t.contract_id);
     }
-    if (client && client.id) {
-        selectClientForDetail(client, true, t.contract || null);
-    } else if (t.contract) {
-        openScheduleModal(t.contract);
-    } else if (t.contract_id) {
-        const ct = (props.contracts || []).find(c => c.id == t.contract_id);
-        if (ct) {
-            if (ct.client) {
-                selectClientForDetail(ct.client, true, ct);
-            } else {
-                openScheduleModal(ct);
-            }
+    const clientId = t.client_id || t.contract?.client_id || t.counterparty?.customable_id || t.target_id;
+    if (!contract && clientId && props.contracts) {
+        contract = props.contracts.find(c => c.client_id == clientId || c.client?.id == clientId);
+    }
+    if (!contract && clientId && props.clients) {
+        const foundClient = props.clients.find(c => c.id == clientId);
+        if (foundClient && foundClient.contracts && foundClient.contracts.length > 0) {
+            client = foundClient;
+            contract = foundClient.contracts[0];
         }
+    }
+
+    if (contract) {
+        openClientLedgerModal(contract, client);
     } else if (clientId) {
         clientDetailLoading.value = true;
         axios.get(route('admin.crm.clients.details', clientId))
             .then(res => {
                 if (res.data.status === 'success' && res.data.client) {
-                    selectClientForDetail(res.data.client, true, null);
+                    const c = res.data.client;
+                    if (c.contracts && c.contracts.length > 0) {
+                        openClientLedgerModal(c.contracts[0], c);
+                    } else {
+                        selectClientForDetail(c, true, null);
+                    }
                 }
             })
             .catch(e => console.error('Mijoz ma\'lumotlarini yuklashda xatolik:', e))
@@ -4136,25 +4158,44 @@ const filteredClientPaymentsGrouped = computed(() => {
 
 function openClientLedgerFromGroup(entry) {
     if (!entry) return;
-    if (entry.client && entry.client.id) {
-        selectClientForDetail(entry.client, true, entry.contract || null);
-    } else if (entry.clientId) {
-        const client = (props.clients || []).find(c => c.id == entry.clientId);
-        if (client) {
-            selectClientForDetail(client, true, entry.contract || null);
-        } else {
-            clientDetailLoading.value = true;
-            axios.get(route('admin.crm.clients.details', entry.clientId))
-                .then(res => {
-                    if (res.data.status === 'success' && res.data.client) {
-                        selectClientForDetail(res.data.client, true, null);
-                    }
-                })
-                .catch(e => console.error(e))
-                .finally(() => clientDetailLoading.value = false);
+
+    let contract = entry.contract;
+    let client = entry.client;
+
+    if (!contract && client && client.contracts && client.contracts.length > 0) {
+        contract = client.contracts[0];
+    }
+    if (!contract && entry.clientId && props.clients) {
+        const foundClient = props.clients.find(c => c.id == entry.clientId);
+        if (foundClient && foundClient.contracts && foundClient.contracts.length > 0) {
+            client = foundClient;
+            contract = foundClient.contracts[0];
         }
-    } else if (entry.contract) {
-        openScheduleModal(entry.contract);
+    }
+    if (!contract && (props.contracts || []).length > 0) {
+        const cId = entry.clientId || client?.id;
+        if (cId) {
+            contract = props.contracts.find(c => c.client_id == cId || c.client?.id == cId);
+        }
+    }
+
+    if (contract) {
+        openClientLedgerModal(contract, client);
+    } else if (entry.clientId) {
+        clientDetailLoading.value = true;
+        axios.get(route('admin.crm.clients.details', entry.clientId))
+            .then(res => {
+                if (res.data.status === 'success' && res.data.client) {
+                    const c = res.data.client;
+                    if (c.contracts && c.contracts.length > 0) {
+                        openClientLedgerModal(c.contracts[0], c);
+                    } else {
+                        selectClientForDetail(c, true, null);
+                    }
+                }
+            })
+            .catch(e => console.error(e))
+            .finally(() => clientDetailLoading.value = false);
     } else if (entry.lastTransaction) {
         openClientLedgerFromPayment(entry.lastTransaction);
     }
@@ -7506,6 +7547,9 @@ const ledgerReportData = computed(() => {
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Mijoz shaxsiy varaqasi (Excel)
                                 </a>
                             </template>
+                            <a :href="`/admin/crm/ledger/${selectedContract.id}/preview`" target="_blank" class="px-4 py-2 bg-blue-600 border border-blue-700 text-white text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-blue-700 transition-all shadow-sm flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> Alohida sahifada (Chop etish)
+                            </a>
                             <a :href="`/admin/crm/contracts/${selectedContract.id}/export-doc/docx?lang=` + $i18n.locale" target="_blank" class="px-4 py-2 bg-neon-purple/20 border border-neon-purple text-neon-purple text-xs font-mono font-bold uppercase tracking-widest rounded hover:bg-neon-purple hover:text-black transition-all shadow-sm">
                                 💾 Shartnoma (Word)
                             </a>

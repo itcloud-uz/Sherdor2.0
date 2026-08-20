@@ -800,17 +800,17 @@ const exportFinanceToExcel = () => {
                     fill: isHeader ? {fgColor: {rgb: "F3F4F6"}} : (isFooter ? {fgColor: {rgb: "F9FAFB"}} : undefined),
                     alignment: {
                         vertical: 'center',
-                        horizontal: C === 0 || C === 1 || C === 4 ? 'center' : (C === 5 ? 'right' : 'left')
+                        horizontal: C === 0 || C === 1 || C === 4 || C === 5 ? 'center' : (C === 6 ? 'right' : 'left')
                     }
                 };
-                if (C === 5 && typeof ws[cellAddress].v === 'number') {
+                if (C === 6 && typeof ws[cellAddress].v === 'number') {
                     ws[cellAddress].z = '#,##0';
                 }
             }
         }
         
         ws['!cols'] = [
-            {wch: 6}, {wch: 16}, {wch: 35}, {wch: 25}, {wch: 18}, {wch: 22}
+            {wch: 6}, {wch: 16}, {wch: 30}, {wch: 25}, {wch: 18}, {wch: 15}, {wch: 22}
         ];
 
         const wb = XLSX.utils.book_new();

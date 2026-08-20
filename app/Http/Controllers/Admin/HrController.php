@@ -102,7 +102,8 @@ class HrController extends Controller
                 $q->select('id', 'brigade_id', 'name', 'phone');
             }, 
             'transactions' => function($q) {
-                $q->select('id', 'brigade_id', 'type', 'amount', 'date', 'created_at', 'description', 'linked_work_id');
+                $q->leftJoin('transactions as ft', 'ft.id', '=', 'brigade_transactions.finance_transaction_id')
+                  ->select('brigade_transactions.id', 'brigade_id', 'brigade_transactions.type', 'amount', 'date', 'brigade_transactions.created_at', 'description', 'linked_work_id', 'ft.payment_method');
             },
             'works' => function($q) {
                 $q->select('id', 'brigade_id', 'calculated_sum');
@@ -126,7 +127,8 @@ class HrController extends Controller
                 $q->with('transactions')->orderBy('date', 'asc');
             },
             'transactions' => function($q) {
-                $q->select('id', 'machine_owner_id', 'type', 'amount', 'date', 'created_at', 'description')->orderBy('date', 'asc');
+                $q->leftJoin('transactions as ft', 'ft.id', '=', 'machine_owner_transactions.finance_transaction_id')
+                  ->select('machine_owner_transactions.id', 'machine_owner_id', 'machine_owner_transactions.type', 'amount', 'date', 'machine_owner_transactions.created_at', 'description', 'ft.payment_method')->orderBy('date', 'asc');
             }
         ])->get();
         return Inertia::render('Admin/HR/Texnikalar', [

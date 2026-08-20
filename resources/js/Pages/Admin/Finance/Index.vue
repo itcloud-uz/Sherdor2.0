@@ -463,14 +463,97 @@ function formatDateTime(dateStr) {
 
 const getTransactionSourceName = (t) => {
     if (!t) return '-';
+
+    // 1. Direct counterparty relation
     if (t.counterparty && t.counterparty.name) {
         return t.counterparty.name;
+    }
+
+    // 2. Direct brigade relation
+    if (t.brigade && t.brigade.name) {
+        return t.brigade.name;
+    }
+
+    // 3. Direct worker relation
+    if (t.worker && t.worker.name) {
+        return t.worker.name;
+    }
+
+    // 4. Direct supplier relation
+    if (t.supplier) {
+        const sName = t.supplier.company_name || t.supplier.name;
+        if (sName) return sName;
+    }
+
+    // 5. Direct client relation (or contract client)
+    if (t.client) {
+        const c = t.client;
+        const name = [c.first_name, c.last_name, c.middle_name].filter(Boolean).join(' ');
+        if (name) return name;
     }
     if (t.contract && t.contract.client) {
         const c = t.contract.client;
         const name = [c.first_name, c.last_name, c.middle_name].filter(Boolean).join(' ');
         if (name) return name;
     }
+
+    // 6. Direct partner relation
+    if (t.partner) {
+        const pName = t.partner.name || t.partner.user?.name;
+        if (pName) return pName;
+    }
+
+    // 7. Check target_type / target_id in props options
+    if (t.target_type && t.target_id) {
+        const tType = String(t.target_type).toLowerCase();
+        if (tType.includes('brigade')) {
+            const b = props.brigades?.find(x => x.id == t.target_id);
+            if (b && b.name) return b.name;
+        }
+        if (tType.includes('worker')) {
+            const w = props.workers?.find(x => x.id == t.target_id);
+            if (w && w.name) return w.name;
+        }
+        if (tType.includes('supplier')) {
+            const s = props.suppliers?.find(x => x.id == t.target_id);
+            if (s) return s.company_name || s.name;
+        }
+        if (tType.includes('counterparty')) {
+            const cp = props.counterparties?.find(x => x.id == t.target_id);
+            if (cp && cp.name) return cp.name;
+        }
+        if (tType.includes('partner')) {
+            const p = props.partners?.find(x => x.id == t.target_id);
+            if (p) return p.name || p.user?.name;
+        }
+        if (tType.includes('client')) {
+            const c = props.clients?.find(x => x.id == t.target_id);
+            if (c) {
+                const name = [c.first_name, c.last_name, c.middle_name].filter(Boolean).join(' ');
+                if (name) return name;
+            }
+        }
+    }
+
+    // 8. Check brigade_id, worker_id, supplier_id, counterparty_id in props options
+    if (t.brigade_id && props.brigades) {
+        const b = props.brigades.find(x => x.id == t.brigade_id);
+        if (b && b.name) return b.name;
+    }
+    if (t.worker_id && props.workers) {
+        const w = props.workers.find(x => x.id == t.worker_id);
+        if (w && w.name) return w.name;
+    }
+    if (t.supplier_id && props.suppliers) {
+        const s = props.suppliers.find(x => x.id == t.supplier_id);
+        if (s) return s.company_name || s.name;
+    }
+    if (t.counterparty_id && props.counterparties) {
+        const cp = props.counterparties.find(x => x.id == t.counterparty_id);
+        if (cp && cp.name) return cp.name;
+    }
+
+    // 9. Money transfer
     const transfer = t.money_transfer || t.moneyTransfer;
     if (transfer) {
         if (t.type === 'income') {
@@ -481,15 +564,22 @@ const getTransactionSourceName = (t) => {
             return toName ? `O'tkazma (${toName} kassasiga)` : `O'tkazma (Kassaga)`;
         }
     }
-    if (t.notes && (t.notes.includes("kassasidan") || t.notes.includes("kassasiga"))) {
-        return t.notes;
-    }
-    if (t.category_display === "Ichki O'tkazma" || (t.category && t.category.name === "Ichki O'tkazma")) {
-        if (t.notes) {
+
+    // 10. Fallback to notes or description if non-empty
+    if (t.notes) {
+        if (t.notes.includes("kassasidan") || t.notes.includes("kassasiga")) {
             return t.notes;
         }
+        return t.notes;
+    }
+    if (t.description) {
+        return t.description;
+    }
+
+    if (t.category_display === "Ichki O'tkazma" || (t.category && t.category.name === "Ichki O'tkazma")) {
         return `Ichki o'tkazma`;
     }
+
     return '-';
 };
 
@@ -676,7 +766,8 @@ const reportFilteredTransactions = computed(() => {
         const query = reportJournalSearch.value.toLowerCase();
         result = result.filter(t => 
             (t.notes || '').toLowerCase().includes(query) ||
-            (t.counterparty?.name || '').toLowerCase().includes(query)
+            (t.description || '').toLowerCase().includes(query) ||
+            getTransactionSourceName(t).toLowerCase().includes(query)
         );
     }
     if (reportJournalDateFrom.value) {
@@ -879,7 +970,7 @@ function exportReportToCsv() {
         new Date(t.transaction_date).toLocaleDateString(),
         t.category_display || 'Noma\'lum',
         t.cashRegister?.name || t.cash_register?.name || 'Asosiy',
-        t.counterparty?.name || '-',
+        getTransactionSourceName(t),
         t.type === 'income' ? 'Kirim' : 'Chiqim',
         t.amount,
         t.notes || ''
@@ -5671,7 +5762,7 @@ function deleteCategory(id) {
                                         </span>
                                     </td>
                                     <td class="p-3 font-bold text-gray-900">{{ t.cashRegister?.name || t.cash_register?.name || 'Asosiy' }}</td>
-                                    <td class="p-3 text-gray-700 font-semibold">{{ t.counterparty?.name || '-' }}</td>
+                                    <td class="p-3 text-gray-700 font-semibold">{{ getTransactionSourceName(t) }}</td>
                                     <td class="p-3 text-right font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-red-600'">
                                         {{ formatMoney(t.amount, t.currency) }}
                                     </td>

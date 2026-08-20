@@ -146,7 +146,13 @@ class FinanceController extends Controller
                 'counterparty:id,name,type', 
                 'building:id,name',
                 'moneyTransfer.fromAccount:id,name',
-                'moneyTransfer.toAccount:id,name'
+                'moneyTransfer.toAccount:id,name',
+                'brigade:id,name',
+                'worker:id,name',
+                'supplier:id,name,company_name',
+                'client:id,first_name,last_name,middle_name',
+                'partner:id,user_id',
+                'partner.user:id,name'
             ])
             ->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc');
@@ -392,22 +398,45 @@ class FinanceController extends Controller
             
             if (empty($validated['counterparty_id'])) {
                 $customableType = null;
+                $targetName = null;
                 switch ($validated['target_type']) {
-                    case 'supplier': $customableType = \App\Models\Supplier::class; break;
-                    case 'machine_owner': $customableType = \App\Models\MachineOwner::class; break;
-                    case 'brigade': $customableType = \App\Models\Brigade::class; break;
-                    case 'partner': $customableType = \App\Models\Partner::class; break;
-                    case 'client': $customableType = \App\Models\Client::class; break;
-                    case 'worker': $customableType = \App\Models\Worker::class; break;
-                    case 'user': $customableType = \App\Models\User::class; break;
+                    case 'supplier': 
+                        $customableType = \App\Models\Supplier::class; 
+                        $s = \App\Models\Supplier::find($validated['target_id']);
+                        if ($s) $targetName = $s->company_name ?: $s->name;
+                        break;
+                    case 'brigade': 
+                        $customableType = \App\Models\Brigade::class; 
+                        $b = \App\Models\Brigade::find($validated['target_id']);
+                        if ($b) $targetName = $b->name;
+                        break;
+                    case 'worker': 
+                        $customableType = \App\Models\Worker::class; 
+                        $w = \App\Models\Worker::find($validated['target_id']);
+                        if ($w) $targetName = $w->name;
+                        break;
+                    case 'partner': 
+                        $customableType = \App\Models\Partner::class; 
+                        $p = \App\Models\Partner::find($validated['target_id']);
+                        if ($p) $targetName = $p->user ? $p->user->name : ('Partner #' . $p->id);
+                        break;
+                    case 'client': 
+                        $customableType = \App\Models\Client::class; 
+                        $c = \App\Models\Client::find($validated['target_id']);
+                        if ($c) $targetName = trim(($c->first_name ?? '') . ' ' . ($c->last_name ?? ''));
+                        break;
+                    case 'machine_owner': 
+                        $customableType = \App\Models\MachineOwner::class; 
+                        $mo = \App\Models\MachineOwner::find($validated['target_id']);
+                        if ($mo) $targetName = $mo->name;
+                        break;
                 }
                 if ($customableType) {
-                    $cp = \App\Models\Counterparty::where('customable_type', $customableType)
-                        ->where('customable_id', $validated['target_id'])
-                        ->first();
-                    if ($cp) {
-                        $validated['counterparty_id'] = $cp->id;
-                    }
+                    $cp = \App\Models\Counterparty::firstOrCreate(
+                        ['customable_type' => $customableType, 'customable_id' => $validated['target_id']],
+                        ['name' => $targetName ?: 'Kontragent', 'type' => $validated['target_type'], 'is_active' => true]
+                    );
+                    $validated['counterparty_id'] = $cp->id;
                 }
             }
         }

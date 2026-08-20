@@ -1,17 +1,17 @@
-import re
+import paramiko
+import sys
 
-path = r'd:\Sherdor 2.0\resources\js\Pages\Admin\HR\Index.vue'
-with open(path, 'r', encoding='utf-8') as f:
-    lines = f.readlines()
-
-for i, line in enumerate(lines):
-    # we are looking for {{ ... '...xxx'yyy' ... }} pattern
-    # basically counting single quotes inside {{ }} blocks
-    # if it's an odd number of quotes inside, it's a syntax error
-    matches = re.findall(r'\{\{.*?\}\}', line)
-    for m in matches:
-        count = m.count("'")
-        if count > 0 and count % 2 != 0:
-            # check if there's no double quotes surrounding it
-            if '"' not in m:
-                print(f'{i+1}: {line.strip()}')
+try:
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect('100.70.240.43', username='itcloud', password='clone1997', timeout=10)
+    stdin, stdout, stderr = ssh.exec_command('cat /home/itcloud/Sherdor2.0/resources/js/Pages/Admin/HR/QurilishIshHaqi.vue | grep unlinkedPaidAmount')
+    
+    out = stdout.read().decode('utf-8')
+    err = stderr.read().decode('utf-8')
+    
+    print('OUTPUT:', out)
+    
+    ssh.close()
+except Exception as e:
+    print('Error:', e)

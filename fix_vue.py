@@ -1,19 +1,47 @@
-import re
+import sys
 
-path = r'd:\Sherdor 2.0\resources\js\Pages\Admin\HR\Index.vue'
+file_path = 'resources/js/Pages/Admin/HR/QurilishIshHaqi.vue'
+with open(file_path, 'r', encoding='utf-8') as f:
+    content = f.read()
 
-with open(path, 'r', encoding='utf-8') as f:
-    text = f.read()
+target = '''        const header = [["Sana", "Turi", "Izoh", "Summa (UZS)"]];
+        const rows = selectedBrigade.value.transactions.map(txn => {
+            let type = txn.type;
+            if (type === 'payment') type = "To'lov / Avans";
+            else if (type === 'salary_accrual') type = "Xizmat yozildi";
+            else if (type === 'penalty') type = "Jarima";
+            
+            return [
+                txn.date,
+                type,
+                txn.description || '',
+                parseFloat(txn.amount)
+            ];
+        });'''
 
-text = text.replace("{{ isBrigadeEditMode ? 'Saqlash' : 'Qo'shish' }}", "{{ isBrigadeEditMode ? 'Saqlash' : \\\"Qo'shish\\\" }}")
-text = text.replace("{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : 'Yangi Ishchi Qo'shish' }}", "{{ isWorkerEditMode ? 'Ishchini Tahrirlash' : \\\"Yangi Ishchi Qo'shish\\\" }}")
-text = text.replace("{{ showOwnerForm ? '- Yopish' : '+ Texnika Egasi Qo'shish' }}", "{{ showOwnerForm ? '- Yopish' : \\\"+ Texnika Egasi Qo'shish\\\" }}")
-text = text.replace("{{ isOwnerEditMode ? 'Saqlash' : 'Qo'shish' }}", "{{ isOwnerEditMode ? 'Saqlash' : \\\"Qo'shish\\\" }}")
-text = text.replace("{{ editMachineryId ? 'Texnikani Tahrirlash' : 'Yangi Texnika Qo'shish' }}", "{{ editMachineryId ? 'Texnikani Tahrirlash' : \\\"Yangi Texnika Qo'shish\\\" }}")
-text = text.replace("{{ payroll.status === 'paid' ? 'To'langan' : 'Shakllantirildi (Hisobot)' }}", "{{ payroll.status === 'paid' ? \\\"To'langan\\\" : 'Shakllantirildi (Hisobot)' }}")
-text = text.replace("{{ log.status === 'unpaid' ? 'To'lanmagan' : 'To'langan' }}", "{{ log.status === 'unpaid' ? \\\"To'lanmagan\\\" : \\\"To'langan\\\" }}")
+replacement = '''        const header = [["Sana", "Turi", "Izoh", "To'lov turi", "Summa (UZS)"]];
+        const rows = selectedBrigade.value.transactions.map(txn => {
+            let type = txn.type;
+            if (type === 'payment') type = "To'lov / Avans";
+            else if (type === 'salary_accrual') type = "Xizmat yozildi";
+            else if (type === 'penalty') type = "Jarima";
+            
+            let payment_method = '-';
+            if (txn.payment_method === 'cash') payment_method = 'Naqd';
+            else if (txn.payment_method === 'card') payment_method = 'Plastik';
+            else if (txn.payment_method === 'bank_transfer') payment_method = 'Bank';
 
-with open(path, 'w', encoding='utf-8') as f:
-    f.write(text)
+            return [
+                txn.date,
+                type,
+                txn.description || '',
+                payment_method,
+                parseFloat(txn.amount)
+            ];
+        });'''
 
-print('Fixed remaining vue template errors')
+content = content.replace(target, replacement)
+
+with open(file_path, 'w', encoding='utf-8') as f:
+    f.write(content)
+print('Success QurilishIshHaqi')

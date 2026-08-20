@@ -621,45 +621,79 @@ onMounted(() => {
         <!-- FOOTER -->
         <footer class="border-t border-white/10 bg-[#050508] py-16 px-4 sm:px-6 lg:px-8 relative z-10">
             <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+                
+                <!-- Col 1: IQS ERP & ITCloud Branding -->
                 <div class="md:col-span-2">
                     <div class="flex items-center gap-3 mb-4">
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-purple-600 flex items-center justify-center font-black text-lg text-black">
                             IQS
                         </div>
-                        <span class="text-2xl font-black text-white">IQS ERP</span>
+                        <div class="flex flex-col">
+                            <span class="text-2xl font-black text-white">IQS ERP</span>
+                            <span class="text-xs text-amber-400 font-semibold uppercase tracking-wider">Qur va Sotish • Men Quraman va Sotaman!</span>
+                        </div>
                     </div>
                     <p class="text-gray-400 text-sm leading-relaxed max-w-md mb-6">
-                        <strong>IQS</strong> (Qur va Sotish — Men quraman va sotaman!) — Ko'p qavatli turar-joy binolari qurilishini va sotuv jarayonlarini avtomatlashtirish uchun yagona tizim. Hisobotlar, mijozlar, sotuv, moliya va omborxona boshqaruvi — barchasi bir joyda.
+                        <strong>IQS ERP</strong> — Ko'p qavatli turar-joy binolari qurilishini va sotuv jarayonlarini avtomatlashtirish uchun yagona innovatsion tizim. Hisobotlar, mijozlar, sotuv, moliya va omborxona boshqaruvi — barchasi bir joyda.
                     </p>
-                    <div class="text-xs text-gray-500 font-mono">
-                        Server: Multi-tenant Cloud Infrastructure • 200 OK
+                    
+                    <!-- ITCloud Developer Badge -->
+                    <div class="p-4 rounded-2xl bg-white/[0.03] border border-cyan-500/30 max-w-md flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-black text-sm text-black shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                            ITC
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400 font-medium">Boshqaruv va IT Integrator:</div>
+                            <a href="https://itcloud.uz" target="_blank" class="text-sm font-bold text-cyan-400 hover:underline flex items-center gap-1">
+                                «ITCloud» Dasturiy Ta'minot Kompaniyasi
+                            </a>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Col 2: Bo'limlar -->
                 <div>
                     <h5 class="text-white font-bold text-sm uppercase tracking-wider mb-4">Bo'limlar</h5>
-                    <ul class="space-y-2 text-sm text-gray-400">
+                    <ul class="space-y-2.5 text-sm text-gray-400">
                         <li><a href="#home" class="hover:text-amber-400 transition-colors">Bosh sahifa</a></li>
                         <li><a href="#modules" class="hover:text-amber-400 transition-colors">Modullar</a></li>
                         <li><a href="#benefits" class="hover:text-amber-400 transition-colors">Afzalliklar</a></li>
+                        <li><a href="#services" class="hover:text-amber-400 transition-colors">Qadamlar</a></li>
+                        <li><a href="#testimonials" class="hover:text-amber-400 transition-colors">Fikrlar</a></li>
                         <li><a href="#faq" class="hover:text-amber-400 transition-colors">FAQ</a></li>
                         <li><Link :href="route('promo.offers')" class="text-emerald-400 hover:underline">Uy sotib olish</Link></li>
                     </ul>
                 </div>
 
+                <!-- Col 3: Aloqa & ITCloud Kontaktlari -->
                 <div>
-                    <h5 class="text-white font-bold text-sm uppercase tracking-wider mb-4">Aloqa</h5>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="tel:+998977084444" class="hover:text-amber-400 transition-colors">+998 (97) 708-44-44</a></li>
-                        <li><a href="tel:+998935732929" class="hover:text-amber-400 transition-colors">+998 (93) 573-29-29</a></li>
-                        <li class="text-gray-500">Urgut shahar, Navoiy ko'chasi 83-uy</li>
+                    <h5 class="text-white font-bold text-sm uppercase tracking-wider mb-4">Aloqa & ITCloud</h5>
+                    <ul class="space-y-3 text-sm text-gray-400">
+                        <li>
+                            <span class="text-xs text-gray-500 block">Qo'llab-quvvatlash va Sotuv:</span>
+                            <a href="tel:+998977084444" class="text-white font-semibold hover:text-amber-400 transition-colors">+998 (97) 708-44-44</a>
+                        </li>
+                        <li>
+                            <span class="text-xs text-gray-500 block">Texnik Bo'lim:</span>
+                            <a href="tel:+998935732929" class="text-white font-semibold hover:text-amber-400 transition-colors">+998 (93) 573-29-29</a>
+                        </li>
+                        <li>
+                            <span class="text-xs text-gray-500 block">Veb-sayt:</span>
+                            <a href="https://itcloud.uz" target="_blank" class="text-cyan-400 hover:underline font-medium">www.itcloud.uz</a>
+                        </li>
+                        <li>
+                            <span class="text-xs text-gray-500 block">Manzil:</span>
+                            <span class="text-gray-300 text-xs">Urgut shahar, Navoiy shoh ko'chasi 83-uy</span>
+                        </li>
                     </ul>
                 </div>
             </div>
 
-            <div class="max-w-7xl mx-auto border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-4">
-                <p>© 2026 IQS (Qur va Sot). Barcha huquqlar himoyalangan.</p>
-                <p class="text-gray-400">Developed with Advanced Architecture</p>
+            <div class="max-w-7xl mx-auto border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-4">
+                <p>© 2026 IQS ERP. Barcha huquqlar himoyalangan.</p>
+                <p class="text-gray-400 flex items-center gap-1.5">
+                    Dasturiy ta'minot <a href="https://itcloud.uz" target="_blank" class="text-cyan-400 font-bold hover:underline">«ITCloud»</a> tomonidan ishlab chiqilgan va litsenziyalangan.
+                </p>
             </div>
         </footer>
 

@@ -17,6 +17,7 @@ const props = defineProps({
     reportData: Array,
     smetaItems: Array,
     actualExpenses: Array,
+    officialSmetaSummary: Object,
     contractTemplates: Array,
     filters: Object
 });
@@ -4017,6 +4018,100 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                         </div>
                         <div class="w-full bg-gray-100 h-2 rounded-full mt-3 overflow-hidden">
                             <div class="h-full rounded-full transition-all duration-500" :style="{ width: Math.min(100, smetaCompletionPercent) + '%' }" :class="smetaCompletionPercent > 100 ? 'bg-red-500' : (smetaCompletionPercent > 85 ? 'bg-amber-500' : 'bg-emerald-500')"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RASMIY EKSPERTIZA SMETASI VA TANNARX RENTABELLIK PANELI -->
+                <div v-if="props.officialSmetaSummary" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Card 1: Ekspertiza Tasdiqlagan Smeta Qiymati -->
+                    <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-lg border border-slate-700 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20">🏛️ Davlat Ekspertiza Xulosasi</span>
+                                <span class="text-xs text-slate-400 font-mono">QQS bilan (12%)</span>
+                            </div>
+                            <h4 class="text-xs text-slate-300 uppercase font-semibold">Ekspertizadan o'tgan yakuniy tasdiqlangan smeta</h4>
+                            <p class="text-2xl font-black text-white mt-1 font-mono tracking-tight">
+                                85 353 201 196 <span class="text-sm font-bold text-amber-400">so'm</span>
+                            </p>
+                            <p class="text-[11px] text-slate-400 mt-1">
+                                Dastlabki loyiha: <span class="line-through text-slate-500">86.29 mlrd</span> • Ekspertiza qisqartirgan: <span class="text-emerald-400 font-bold">-942.84 mln so'm</span>
+                            </p>
+                        </div>
+
+                        <!-- Breakdown Bar -->
+                        <div class="mt-6 pt-4 border-t border-slate-700/80 space-y-2.5">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-300 font-medium">🏗️ Qurilish-montaj (QMI):</span>
+                                <span class="font-bold text-emerald-400">72.76 mlrd so'm (85.25%)</span>
+                            </div>
+                            <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-emerald-400 h-full" style="width: 85.25%"></div>
+                            </div>
+
+                            <div class="flex justify-between text-xs pt-1">
+                                <span class="text-slate-300 font-medium">⚙️ Jihoz va Asbob-uskunalar:</span>
+                                <span class="font-bold text-blue-400">3.43 mlrd so'm (4.03%)</span>
+                            </div>
+                            <div class="flex justify-between text-xs pt-1">
+                                <span class="text-slate-300 font-medium">🧾 QQS solig'i (12%):</span>
+                                <span class="font-bold text-purple-400">9.14 mlrd so'm (10.72%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Tannarx vs Sotuv va Rentabellik Tahlili -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">📊 Tannarx va Rentabellik Tahlili</span>
+                                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">+51.5% Foyda Marjasi</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 my-2">
+                                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <span class="text-[10px] font-bold text-gray-500 uppercase block">1 m² Bevosita QMI Tannarxi</span>
+                                    <span class="text-sm font-black text-gray-900 font-mono">2.98 - 3.29 mln UZS</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <span class="text-[10px] font-bold text-gray-500 uppercase block">1 m² To'liq Tannarx (QQS+)</span>
+                                    <span class="text-sm font-black text-indigo-900 font-mono">3.49 - 3.86 mln UZS</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-gray-100 space-y-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-600">🏷️ Boshlang'ich sotuv narxi:</span>
+                                <span class="font-black text-gray-900 font-mono text-sm">7 000 000 UZS / m²</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-600">📉 Tannarxning sotuvdagi ulushi:</span>
+                                <span class="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">43% - 47%</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-600 font-bold">✨ Sof Rentabellik (Foyda):</span>
+                                <span class="font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md text-xs">+45% dan +51.5% gacha</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Bloklar bo'yicha Taqsimot -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 block mb-3">🏬 Bloklar Kesimida Taqsimot</span>
+                            <div class="space-y-2 text-xs">
+                                <div v-for="bAlloc in props.officialSmetaSummary.block_allocations" :key="bAlloc.block_name" class="p-2.5 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
+                                    <div>
+                                        <span class="font-bold text-gray-900 block">{{ bAlloc.block_name }}</span>
+                                        <span class="text-[10px] text-gray-500">{{ bAlloc.floors }} • {{ bAlloc.apartments > 0 ? bAlloc.apartments + ' xonadon' : 'Parking' }} • {{ bAlloc.area_sqm }} m²</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="font-black text-indigo-900 block font-mono text-xs">{{ Number(bAlloc.allocated_budget || 0).toLocaleString('uz-UZ') }} so'm</span>
+                                        <span class="text-[10px] font-bold text-indigo-600">{{ bAlloc.share_percent }}% ulush</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

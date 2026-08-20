@@ -158,19 +158,33 @@ const openDebtLedger = (client) => {
     debtLedgerStartDate.value = '';
     debtLedgerEndDate.value = '';
 
-    const clientId = client.client_id || client.customable_id || client.customable?.id || client.id;
-    const counterpartyId = client.counterparty_id || client.id;
+    const clientId = client.client_id || client.customable_id || client.customable?.id || (typeof client.id === 'number' ? client.id : null);
+    const counterpartyId = client.counterparty_id || (typeof client.id === 'number' ? client.id : null);
     const contractId = client.contract_id || client.contract?.id || client.customable?.contracts?.[0]?.id;
 
-    let allTxns = [];
-    if (client.transactions && client.transactions.length > 0) {
-        allTxns = [...client.transactions];
-    }
-    if (client.customable && client.customable.transactions && client.customable.transactions.length > 0) {
-        client.customable.transactions.forEach(t => {
-            if (!allTxns.some(x => x.id === t.id)) allTxns.push(t);
+    // 1. Gather all related contracts
+    let clientContracts = [];
+    if (client.contract) clientContracts.push(client.contract);
+    if (client.customable && client.customable.contracts) {
+        client.customable.contracts.forEach(ct => {
+            if (!clientContracts.some(x => x.id === ct.id)) clientContracts.push(ct);
         });
     }
+    if (props.contracts) {
+        props.contracts.forEach(ct => {
+            if ((clientId && (ct.client_id == clientId || ct.client?.id == clientId)) || (contractId && ct.id == contractId)) {
+                if (!clientContracts.some(x => x.id === ct.id)) clientContracts.push(ct);
+            }
+        });
+    }
+
+    let allIncomes = [];
+    let allExpenses = [];
+
+    // 2. Gather raw transactions
+    const rawTxns = [];
+    if (client.transactions) rawTxns.push(...client.transactions);
+    if (client.customable && client.customable.transactions) rawTxns.push(...client.customable.transactions);
 
     (props.transactions || []).forEach(t => {
         const matchesClient = clientId && (t.client_id == clientId || t.client?.id == clientId || t.contract?.client_id == clientId);
@@ -178,13 +192,82 @@ const openDebtLedger = (client) => {
         const matchesContract = contractId && (t.contract_id == contractId);
 
         if (matchesClient || matchesCounterparty || matchesContract) {
-            if (!allTxns.some(existing => existing.id === t.id)) {
-                allTxns.push(t);
+            if (!rawTxns.some(existing => existing.id === t.id)) {
+                rawTxns.push(t);
             }
         }
     });
 
-    selectedDebtClient.value.all_transactions = allTxns;
+    rawTxns.forEach(t => {
+        const amt = Number(t.amount || 0);
+        if (amt > 0) {
+            if (t.type === 'income' && (t.status === 'approved' || !t.status)) {
+                allIncomes.push({
+                    id: `tx-${t.id}`,
+                    amount: amt,
+                    payment_method: t.payment_method || 'cash',
+                    transaction_date: t.transaction_date || t.created_at,
+                    notes: t.notes || t.description || 'To\'lov'
+                });
+            } else if (t.type === 'expense' && (t.status === 'approved' || !t.status)) {
+                allExpenses.push({
+                    id: `tx-${t.id}`,
+                    amount: amt,
+                    payment_method: t.payment_method || 'cash',
+                    transaction_date: t.transaction_date || t.created_at,
+                    notes: t.notes || t.description || 'Pul qaytarish'
+                });
+            }
+        }
+    });
+
+    // 3. Gather from contract payment schedules with paid_amount > 0
+    clientContracts.forEach(ct => {
+        const schedules = ct.payment_schedules || ct.paymentSchedules || [];
+        schedules.forEach(s => {
+            const pAmt = Number(s.paid_amount || 0);
+            if (pAmt > 0) {
+                const sDate = s.paid_date || s.updated_at || ct.created_at;
+                const alreadyIn = allIncomes.some(inc => Math.abs(inc.amount - pAmt) < 1 && inc.transaction_date && sDate && inc.transaction_date.substring(0,10) === sDate.substring(0,10));
+                if (!alreadyIn) {
+                    allIncomes.push({
+                        id: `sch-${s.id}`,
+                        amount: pAmt,
+                        payment_method: s.payment_method || 'cash',
+                        transaction_date: sDate,
+                        notes: s.notes || s.description || (s.payment_type === 'down_payment' ? 'Boshlang\'ich to\'lov' : 'Oylik to\'lov')
+                    });
+                }
+            }
+        });
+
+        // Down payment fallback if contract paid_amount > 0 but not in transactions yet
+        const dAmt = Number(ct.down_payment || 0);
+        if (dAmt > 0 && allIncomes.length === 0) {
+            allIncomes.push({
+                id: `dp-${ct.id}`,
+                amount: dAmt,
+                payment_method: 'cash',
+                transaction_date: ct.created_at,
+                notes: 'Boshlang\'ich to\'lov'
+            });
+        }
+    });
+
+    // Fallback if client has paid_amount recorded on summary but list is empty
+    const summaryPaid = Number(client.paid_amount || client.paid || 0);
+    if (summaryPaid > 0 && allIncomes.length === 0) {
+        allIncomes.push({
+            id: `sum-paid-${client.id}`,
+            amount: summaryPaid,
+            payment_method: 'cash',
+            transaction_date: client.created_at || new Date().toISOString(),
+            notes: 'Mijoz to\'lovi'
+        });
+    }
+
+    selectedDebtClient.value.parsed_incomes = allIncomes;
+    selectedDebtClient.value.parsed_expenses = allExpenses;
     isDebtLedgerOpen.value = true;
 };
 
@@ -195,36 +278,34 @@ const closeDebtLedger = () => {
 
 const debtLedgerIncomes = computed(() => {
     if (!selectedDebtClient.value) return [];
-    const list = selectedDebtClient.value.all_transactions || selectedDebtClient.value.transactions || [];
-    let txns = list.filter(t => t.type === 'income' && (t.status === 'approved' || !t.status));
+    let list = selectedDebtClient.value.parsed_incomes || [];
     
     if (debtLedgerStartDate.value) {
-        txns = txns.filter(t => new Date(t.transaction_date || t.created_at) >= new Date(debtLedgerStartDate.value));
+        list = list.filter(t => new Date(t.transaction_date) >= new Date(debtLedgerStartDate.value));
     }
     if (debtLedgerEndDate.value) {
         const end = new Date(debtLedgerEndDate.value);
         end.setHours(23, 59, 59, 999);
-        txns = txns.filter(t => new Date(t.transaction_date || t.created_at) <= end);
+        list = list.filter(t => new Date(t.transaction_date) <= end);
     }
     
-    return txns.sort((a,b) => new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at));
+    return list.sort((a,b) => new Date(a.transaction_date) - new Date(b.transaction_date));
 });
 
 const debtLedgerExpenses = computed(() => {
     if (!selectedDebtClient.value) return [];
-    const list = selectedDebtClient.value.all_transactions || selectedDebtClient.value.transactions || [];
-    let txns = list.filter(t => t.type === 'expense' && (t.status === 'approved' || !t.status));
+    let list = selectedDebtClient.value.parsed_expenses || [];
     
     if (debtLedgerStartDate.value) {
-        txns = txns.filter(t => new Date(t.transaction_date || t.created_at) >= new Date(debtLedgerStartDate.value));
+        list = list.filter(t => new Date(t.transaction_date) >= new Date(debtLedgerStartDate.value));
     }
     if (debtLedgerEndDate.value) {
         const end = new Date(debtLedgerEndDate.value);
         end.setHours(23, 59, 59, 999);
-        txns = txns.filter(t => new Date(t.transaction_date || t.created_at) <= end);
+        list = list.filter(t => new Date(t.transaction_date) <= end);
     }
     
-    return txns.sort((a,b) => new Date(a.transaction_date || a.created_at) - new Date(b.transaction_date || b.created_at));
+    return list.sort((a,b) => new Date(a.transaction_date) - new Date(b.transaction_date));
 });
 
 const debtLedgerMaxLength = computed(() => {

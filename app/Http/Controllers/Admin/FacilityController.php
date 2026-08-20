@@ -65,7 +65,6 @@ class FacilityController extends Controller
         $objectContainer = null;
         if ($request->has('object_id')) {
             $objectContainer = Building::where('id', $request->input('object_id'))
-                ->where('total_floors', 0)
                 ->with('podezes')
                 ->first();
         }

@@ -253,10 +253,10 @@ const pageTitle = computed(() => {
 
 const buildingForm = useForm({
     name: props.building?.name || (props.objectContainer ? props.objectContainer.name : ''),
-    city: props.building?.city || '',
-    district: props.building?.district || '',
-    mahalla: props.building?.mahalla || '',
-    street: props.building?.street || '',
+    city: props.building?.city || (props.objectContainer ? props.objectContainer.city : ''),
+    district: props.building?.district || (props.objectContainer ? props.objectContainer.district : ''),
+    mahalla: props.building?.mahalla || (props.objectContainer ? props.objectContainer.mahalla : ''),
+    street: props.building?.street || (props.objectContainer ? props.objectContainer.street : ''),
     total_floors: props.building?.total_floors || 0,
     blocks_count: props.building?.blocks_count || 1,
     entrances_count: props.building?.entrances_count || 1,

@@ -3794,14 +3794,61 @@ const paymentsSubTab = ref('payments');
 const clientPaymentsSearch = ref('');
 const clientDebtsSearch = ref('');
 
+const getClientPaymentName = (t) => {
+    if (!t) return '-';
+    if (t.counterparty?.name) return t.counterparty.name;
+    if (t.client) {
+        const name = [t.client.first_name, t.client.last_name, t.client.middle_name].filter(Boolean).join(' ');
+        if (name) return name;
+    }
+    if (t.contract?.client) {
+        const c = t.contract.client;
+        const name = [c.first_name, c.last_name, c.middle_name].filter(Boolean).join(' ');
+        if (name) return name;
+    }
+    if (t.target_id && props.clients) {
+        const c = props.clients.find(x => x.id == t.target_id);
+        if (c) {
+            const name = [c.first_name, c.last_name, c.middle_name].filter(Boolean).join(' ');
+            if (name) return name;
+        }
+    }
+    if (t.client_id && props.clients) {
+        const c = props.clients.find(x => x.id == t.client_id);
+        if (c) {
+            const name = [c.first_name, c.last_name, c.middle_name].filter(Boolean).join(' ');
+            if (name) return name;
+        }
+    }
+    return t.notes || '-';
+};
+
+const getClientPaymentPhone = (t) => {
+    if (!t) return '-';
+    if (t.counterparty?.phone) return t.counterparty.phone;
+    if (t.client?.phone) return t.client.phone;
+    if (t.contract?.client?.phone) return t.contract.client.phone;
+    if (t.client_id && props.clients) {
+        const c = props.clients.find(x => x.id == t.client_id);
+        if (c?.phone) return c.phone;
+    }
+    return '-';
+};
+
 const filteredClientPayments = computed(() => {
-    const txns = (props.transactions || []).filter(t => t.counterparty?.type === 'client' && t.status === 'approved');
+    const txns = (props.transactions || []).filter(t => {
+        const isClient = t.counterparty?.type === 'client' || 
+                         Boolean(t.contract_id || t.contract || t.client_id || t.client || t.target_type === 'client');
+        return isClient && t.type === 'income' && (t.status === 'approved' || !t.status);
+    });
     if (!clientPaymentsSearch.value) return txns;
     const q = clientPaymentsSearch.value.toLowerCase();
-    return txns.filter(t => 
-        (t.counterparty?.name || '').toLowerCase().includes(q) ||
-        (t.notes || '').toLowerCase().includes(q)
-    );
+    return txns.filter(t => {
+        const name = getClientPaymentName(t).toLowerCase();
+        const notes = (t.notes || '').toLowerCase();
+        const idStr = String(t.id);
+        return name.includes(q) || notes.includes(q) || idStr.includes(q);
+    });
 });
 
 const filteredClientDebts = computed(() => {
@@ -6229,12 +6276,12 @@ const ledgerReportData = computed(() => {
                                 <td class="p-4 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
                                 <td class="p-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
-                                            {{ getInitials(t.counterparty?.name ? t.counterparty.name.split(' ')[1] : '', t.counterparty?.name ? t.counterparty.name.split(' ')[0] : '') }}
+                                        <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0 uppercase">
+                                            {{ (getClientPaymentName(t).split(' ')[0]?.[0] || '') + (getClientPaymentName(t).split(' ')[1]?.[0] || '') || 'M' }}
                                         </div>
                                         <div>
-                                            <p class="font-bold text-gray-900 text-sm leading-tight">{{ t.counterparty?.name || '-' }}</p>
-                                            <span class="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono mt-1 inline-block">{{ t.counterparty?.phone || '-' }}</span>
+                                            <p class="font-bold text-gray-900 text-sm leading-tight">{{ getClientPaymentName(t) }}</p>
+                                            <span class="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono mt-1 inline-block">{{ getClientPaymentPhone(t) }}</span>
                                         </div>
                                     </div>
                                 </td>

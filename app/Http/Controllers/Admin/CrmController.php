@@ -174,6 +174,7 @@ class CrmController extends Controller
             $transactions = \App\Models\Transaction::with([
                 'creator', 
                 'approver', 
+                'client',
                 'contract.client', 
                 'contract.unit.floor.building',
                 'category', 
@@ -181,9 +182,20 @@ class CrmController extends Controller
                 'counterparty', 
                 'invoice',
                 'building'
-            ])->whereHas('counterparty', function($q) {
-                $q->where('type', 'client');
-            })->latest()->limit(1000)->get();
+            ])
+            ->where('type', 'income')
+            ->where(function($q) {
+                $q->whereHas('counterparty', function($cp) {
+                    $cp->where('type', 'client');
+                })
+                ->orWhereNotNull('contract_id')
+                ->orWhereNotNull('client_id')
+                ->orWhere('target_type', 'client')
+                ->orWhere('target_type', \App\Models\Client::class);
+            })
+            ->latest()
+            ->limit(2000)
+            ->get();
 
             $counterparties = \App\Models\Counterparty::with([
                 'customable.contracts.paymentSchedules',

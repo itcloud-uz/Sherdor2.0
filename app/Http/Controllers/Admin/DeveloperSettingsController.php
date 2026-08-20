@@ -81,11 +81,20 @@ class DeveloperSettingsController extends Controller
 
     public function requestOtp()
     {
-        $token = config('services.telegram.pin_bot_token');
-        $chatId = config('services.telegram.pin_chat_id');
+        $rawToken = config('services.telegram.pin_bot_token') ?: env('PIN_BOT_TOKEN');
+        $chatId = config('services.telegram.pin_chat_id') ?: env('PIN_CHAT_ID');
+
+        // Sanitize token (trim quotes and whitespace)
+        $token = trim($rawToken ?? '', " \t\n\r\0\x0B\"'");
+        $chatId = trim($chatId ?? '', " \t\n\r\0\x0B\"'");
+
+        // Handle accidental duplicate prepended token
+        if (preg_match('/^(\d+):(\d+:[A-Za-z0-9_-]+)$/', $token, $matches)) {
+            $token = $matches[2];
+        }
 
         if (!$token || !$chatId) {
-            return back()->withErrors(['otp' => 'Telegram Bot sozlamalari (.env) kiritilmagan!']);
+            return back()->withErrors(['otp' => 'Telegram Bot sozlamalari (.env da PIN_BOT_TOKEN va PIN_CHAT_ID) kiritilmagan!']);
         }
 
         // Generate 6-digit OTP
@@ -93,20 +102,32 @@ class DeveloperSettingsController extends Controller
         Session::put('developer_otp', $otp);
         Session::put('developer_otp_expires_at', now()->addMinutes(5));
 
-        $message = "🔐 *SHER-DOR 2.0 - XAVFSIZLIK TIZIMI*\n\n";
-        $message .= "🏢 *Loyiha:* Sher-Dor ERP (Qurilish Nazorati)\n";
-        $message .= "⚙️ *Qism:* Dasturchi bloki (API Kalitlar)\n\n";
+        $appName = config('app.name', 'IQS ERP');
+        $message = "🔐 *{$appName} - XAVFSIZLIK TIZIMI*\n\n";
+        $message .= "🏢 *Loyiha:* {$appName} (Boshqaruv Tizimi)\n";
+        $message .= "⚙️ *Qism:* Dasturchi bloki (Maxsus Ruxsat)\n\n";
         $message .= "Tizimga kirishga urinish aniqlandi. Agar bu siz bo'lsangiz, quyidagi tasdiqlash kodidan foydalaning:\n\n";
         $message .= "🔑 *KOD:* `{$otp}`\n\n";
         $message .= "⚠️ _Kod 5 daqiqa davomida amal qiladi. Begonalarga bermang!_";
 
-        Http::withoutVerifying()->post("https://api.telegram.org/bot{$token}/sendMessage", [
-            'chat_id' => $chatId,
-            'text' => $message,
-            'parse_mode' => 'Markdown'
-        ]);
+        try {
+            $response = Http::withoutVerifying()->timeout(10)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                'chat_id' => $chatId,
+                'text' => $message,
+                'parse_mode' => 'Markdown'
+            ]);
 
-        return back()->with('success', 'OTP kod Telegramga yuborildi!');
+            if (!$response->successful()) {
+                $err = $response->json('description') ?: ('HTTP ' . $response->status());
+                \Illuminate\Support\Facades\Log::error("Telegram PIN send failed: " . $err);
+                return back()->withErrors(['otp' => 'Telegram xatoligi: ' . $err]);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Telegram connection error: " . $e->getMessage());
+            return back()->withErrors(['otp' => 'Telegram serveriga ulanishda xatolik: ' . $e->getMessage()]);
+        }
+
+        return back()->with('success', 'OTP kod Telegramga muvaffaqiyatli yuborildi!');
     }
 
     public function verifyOtp(Request $request)

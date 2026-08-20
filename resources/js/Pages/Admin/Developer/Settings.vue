@@ -146,17 +146,27 @@ function lockSettings() {
                         </div>
 
                         <h2 class="text-2xl font-display font-bold text-gray-900 mb-2">Maxsus Ruxsat Talab Qilinadi</h2>
-                        <p class="text-xs font-mono text-gray-500 mb-8">Bu bo'lim tizim arxitekturasini boshqarish uchun xizmat qiladi. Davom etish uchun Telegram orqali tasdiqlash kodini yuboring.</p>
+                        <!-- Flash and Error Feedback -->
+                        <div v-if="$page.props.flash?.success" class="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-xs font-mono font-bold flex items-center justify-center gap-2">
+                            <span>✅</span> {{ $page.props.flash.success }}
+                        </div>
+                        <div v-if="$page.props.flash?.error || $page.props.errors?.otp" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-mono font-bold flex items-center justify-center gap-2">
+                            <span>⚠️</span> {{ $page.props.flash?.error || $page.props.errors?.otp }}
+                        </div>
 
-                        <button @click="requestOtp" :disabled="isProcessing" class="w-full py-4 mb-6 hover:bg-gray-100 text-gray-900 font-mono uppercase tracking-widest text-sm rounded-xl transition-colors border border-gray-200 cursor-pointer relative z-20">
-                            📱 Telegramga PIN Kod Yuborish
+                        <button @click="requestOtp" :disabled="isProcessing" class="w-full py-4 mb-4 bg-gray-50 hover:bg-gray-100 text-gray-900 font-mono uppercase tracking-widest text-xs font-bold rounded-xl transition-all border border-gray-200 cursor-pointer relative z-20 flex items-center justify-center gap-2 shadow-xs">
+                            <span v-if="isProcessing" class="animate-spin">⏳</span>
+                            <span v-else>📱</span>
+                            Telegramga PIN Kod Yuborish
                         </button>
 
                         <form @submit.prevent="verifyOtp" class="space-y-4">
-                            <input v-model="otpForm.otp" type="text" maxlength="6" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-center text-2xl tracking-[1em] font-mono text-red-600 relative z-20" placeholder="------" required>
-                            <p v-if="otpForm.errors.otp" class="text-red-600 text-xs font-mono mt-1">{{ otpForm.errors.otp }}</p>
+                            <input v-model="otpForm.otp" type="text" maxlength="6" class="bg-white border border-gray-300 text-gray-900 rounded-xl shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 w-full text-center text-2xl tracking-[0.8em] font-mono text-red-600 relative z-20 py-3" placeholder="------" required>
+                            <p v-if="otpForm.errors.otp" class="text-red-600 text-xs font-mono mt-1 font-bold">{{ otpForm.errors.otp }}</p>
 
-                            <button type="submit" :disabled="isProcessing" class="w-full py-4 bg-red-50 text-red-600 border border-red-500 font-bold font-mono uppercase tracking-widest text-sm rounded-xl hover:bg-red-600 hover:text-black hover:shadow-sm transition-all disabled:opacity-50 cursor-pointer relative z-20">
+                            <button type="submit" :disabled="isProcessing" class="w-full py-4 bg-red-500 text-white font-bold font-mono uppercase tracking-widest text-xs rounded-xl hover:bg-red-600 shadow-sm transition-all disabled:opacity-50 cursor-pointer relative z-20 flex items-center justify-center gap-2">
+                                <span v-if="isProcessing" class="animate-spin">⏳</span>
+                                <span v-else>🔓</span>
                                 Qulfni Ochish
                             </button>
                         </form>

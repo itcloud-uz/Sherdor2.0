@@ -36,11 +36,11 @@ return [
     ],
 
     'telegram' => [
-        'pin_bot_token' => env('PIN_BOT_TOKEN'),
-        'pin_chat_id' => env('PIN_CHAT_ID'),
-        'backup_bot_token' => env('BACKUP_BOT_TOKEN'),
-        'backup_chat_id' => env('BACKUP_CHAT_ID'),
-        'finance_bot_token' => env('FINANCE_BOT_TOKEN'),
+        'pin_bot_token' => env('PIN_BOT_TOKEN', env('TELEGRAM_PIN_BOT_TOKEN', env('TELEGRAM_BOT_TOKEN'))),
+        'pin_chat_id' => env('PIN_CHAT_ID', env('TELEGRAM_PIN_CHAT_ID', env('TELEGRAM_CHAT_ID'))),
+        'backup_bot_token' => env('BACKUP_BOT_TOKEN', env('TELEGRAM_BACKUP_BOT_TOKEN')),
+        'backup_chat_id' => env('BACKUP_CHAT_ID', env('TELEGRAM_BACKUP_CHAT_ID')),
+        'finance_bot_token' => env('FINANCE_BOT_TOKEN', env('TELEGRAM_FINANCE_BOT_TOKEN', env('TELEGRAM_BOT_TOKEN'))),
     ],
 
     'bot' => [

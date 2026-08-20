@@ -349,8 +349,8 @@ function shareUnitDetails() {
     const unit = selectedUnitForFullscreenBlueprint.value;
     const floor = selectedFloor.value?.floor_number || '';
     const building = selectedBuilding.value?.name || '';
-    const typeLabel = unit.type === 'commercial' ? "Do'kon" : "Xonadon";
-    const formattedUnitNumber = (unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number;
+    const typeLabel = unit.type === 'commercial' ? "Do'kon" : (unit.type === 'parking' ? "Parkovka" : "Xonadon");
+    const formattedUnitNumber = (unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : (unit.type === 'parking' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'P-' : '')) + unit.unit_number;
     const text = `🏢 ${building}
 🔑 ${typeLabel}: № ${formattedUnitNumber}
 🚪 Xonalar soni: ${unit.rooms_count || 1} xonali
@@ -3048,22 +3048,21 @@ function getFloorStatsText(floor) {
     if (floor.units && floor.units.length > 0) {
         const commercialCount = floor.units.filter(u => u.type === 'commercial').length;
         const residentialCount = floor.units.filter(u => u.type === 'residential').length;
+        const parkingCount = floor.units.filter(u => u.type === 'parking').length;
         
-        if (commercialCount > 0 && residentialCount > 0) {
-            return `${commercialCount} ta do'kon, ${residentialCount} ta uy`;
-        } else if (commercialCount > 0) {
-            return `${commercialCount} ta do'kon`;
-        } else if (residentialCount > 0) {
-            return `${residentialCount} ta uy`;
-        }
+        let parts = [];
+        if (residentialCount > 0) parts.push(`${residentialCount} ta uy`);
+        if (commercialCount > 0) parts.push(`${commercialCount} ta do'kon`);
+        if (parkingCount > 0) parts.push(`${parkingCount} ta parkovka`);
+        if (parts.length > 0) return parts.join(', ');
     }
     
     // Fallback to static config
-    if (floor.floor_number <= 1) {
-        return `${floor.total_commercial_units || 0} ta do'kon`;
-    } else {
-        return `${floor.total_units || 0} ta uy`;
-    }
+    let parts = [];
+    if (floor.total_units > 0) parts.push(`${floor.total_units} ta uy`);
+    if (floor.total_commercial_units > 0) parts.push(`${floor.total_commercial_units} ta do'kon`);
+    if (floor.total_parking_units > 0) parts.push(`${floor.total_parking_units} ta parkovka`);
+    return parts.length > 0 ? parts.join(', ') : '';
 }
 
 function getObjectPhoto(blocks) {

@@ -158,6 +158,7 @@
                                                 <option value="Staircase">Zina</option>
                                                 <option value="Elevator">Lift</option>
                                                 <option value="Corridor">Koridor</option>
+                                                <option value="Parking">Avtoturarjoy / Parkovka</option>
                                             </select>
                                         </div>
                                         <div class="col-span-2 flex items-end">
@@ -170,20 +171,24 @@
 
                                     <!-- FLOOR CONFIGURATION AREA -->
                                     <div v-if="podez.show_config" class="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                                        <h4 class="text-sm font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">Qavatlardagi uylar va do'konlar soni</h4>
+                                        <h4 class="text-sm font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">Qavatlardagi uylar, do'konlar va parkovkalar soni</h4>
                                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                            <div v-for="fc in podez.floors_config" :key="fc.floor" class="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
-                                                <div class="font-bold text-xs w-20" :class="fc.floor < 0 ? 'text-amber-600' : 'text-slate-700'">
+                                            <div v-for="fc in podez.floors_config" :key="fc.floor" class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm">
+                                                <div class="font-bold text-xs w-16" :class="fc.floor < 0 ? 'text-amber-600' : 'text-slate-700'">
                                                     {{ fc.floor < 0 ? 'Yer to\'la ' + fc.floor : fc.floor + '-qavat' }}
                                                 </div>
-                                                <div class="flex gap-2">
+                                                <div class="flex gap-1.5">
                                                     <div class="flex flex-col items-center">
                                                         <span class="text-[9px] text-slate-400 font-bold">UY</span>
-                                                        <input v-model.number="fc.apartments" type="number" min="0" class="w-12 h-7 text-center bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500">
+                                                        <input v-model.number="fc.apartments" type="number" min="0" class="w-10 h-7 text-center bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500" title="Kvartiralar soni">
                                                     </div>
                                                     <div class="flex flex-col items-center">
                                                         <span class="text-[9px] text-slate-400 font-bold">DO'KON</span>
-                                                        <input v-model.number="fc.shops" type="number" min="0" class="w-12 h-7 text-center bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500">
+                                                        <input v-model.number="fc.shops" type="number" min="0" class="w-10 h-7 text-center bg-slate-50 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500" title="Do'konlar / Tijorat joylari soni">
+                                                    </div>
+                                                    <div class="flex flex-col items-center">
+                                                        <span class="text-[9px] text-indigo-600 font-bold">PARKOVKA</span>
+                                                        <input v-model.number="fc.parking" type="number" min="0" class="w-10 h-7 text-center bg-indigo-50/60 border border-indigo-200 text-indigo-900 rounded text-xs font-semibold focus:ring-1 focus:ring-indigo-500" title="Avto parkovka o'rinlari soni">
                                                     </div>
                                                 </div>
                                             </div>
@@ -282,10 +287,12 @@ const buildingForm = useForm({
         floors_config: p.floors ? p.floors.map(f => ({
             floor: f.floor_number,
             apartments: f.total_units,
-            shops: f.total_commercial_units
+            shops: f.total_commercial_units,
+            parking: f.total_parking_units || 0
         })).sort((a, b) => b.floor - a.floor) : [],
         total_apartments: p.total_apartments > 0 ? p.total_apartments : 0,
         total_commercial: p.total_commercial > 0 ? p.total_commercial : 0,
+        total_parking: p.total_parking > 0 ? p.total_parking : 0,
     })) || [
         { 
             id: 'temp_' + Date.now(), 
@@ -296,7 +303,8 @@ const buildingForm = useForm({
             show_config: true,
             floors_config: [],
             total_apartments: 0, 
-            total_commercial: 0 
+            total_commercial: 0,
+            total_parking: 0
         }
     ]
 });
@@ -313,12 +321,18 @@ function syncFloorsConfig(podez, buildingFloors, basementFloors) {
     podez.floors_config = podez.floors_config.filter(c => desired.includes(c.floor));
     
     desired.forEach(fNum => {
-        if (!podez.floors_config.find(c => c.floor === fNum)) {
+        let existing = podez.floors_config.find(c => c.floor === fNum);
+        if (!existing) {
             podez.floors_config.push({
                 floor: fNum,
-                apartments: fNum > 0 ? 4 : 0,
-                shops: (fNum === 1 || fNum < 0) ? 2 : 0
+                apartments: fNum > 0 && podez.type !== 'Parking' ? 4 : 0,
+                shops: (fNum === 1 || fNum < 0) && podez.type !== 'Parking' ? 2 : 0,
+                parking: (fNum < 0 || podez.type === 'Parking') ? 5 : 0
             });
+        } else {
+            if (existing.parking === undefined) {
+                existing.parking = 0;
+            }
         }
     });
     

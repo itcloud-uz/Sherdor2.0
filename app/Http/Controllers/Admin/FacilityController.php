@@ -668,6 +668,13 @@ class FacilityController extends Controller
     {
         $seqStr = str_pad($sequence, 2, '0', STR_PAD_LEFT);
 
+        if ($type === 'parking') {
+            if ($floorNumber < 0) {
+                return 'P-' . abs($floorNumber) . $seqStr;
+            }
+            return 'P' . $floorNumber . $seqStr;
+        }
+
         if ($type === 'commercial') {
             if ($floorNumber < 0) {
                 // Basement: D- prefix with absolute floor number
@@ -1375,6 +1382,7 @@ class FacilityController extends Controller
                     'total_floors' => (int) $podezItem['floors'],
                     'total_apartments' => (int) ($podezItem['total_apartments'] ?? 0),
                     'total_commercial' => (int) ($podezItem['total_commercial'] ?? 0),
+                    'total_parking' => (int) ($podezItem['total_parking'] ?? 0),
                 ];
 
                 if ($id && !$isTemp && $existingPodezes->has($id)) {
@@ -1436,6 +1444,7 @@ class FacilityController extends Controller
 
         $shopsPerFloor = [];
         $aptsPerFloor = [];
+        $parkingPerFloor = [];
 
         if ($floorsConfig && is_array($floorsConfig) && count($floorsConfig) > 0) {
             // Use custom configuration
@@ -1443,11 +1452,13 @@ class FacilityController extends Controller
                 $f = (int) $config['floor'];
                 $shopsPerFloor[$f] = (int) ($config['shops'] ?? 0);
                 $aptsPerFloor[$f] = (int) ($config['apartments'] ?? 0);
+                $parkingPerFloor[$f] = (int) ($config['parking'] ?? 0);
             }
         } else {
             // Distribution Logic
             $totalApts = (int) $podez->total_apartments;
             $totalComm = (int) $podez->total_commercial;
+            $totalPark = (int) ($podez->total_parking ?? 0);
 
             $commercialFloors = [];
             for ($b = -$basementFloors; $b <= -1; $b++) { $commercialFloors[] = $b; }
@@ -1464,6 +1475,18 @@ class FacilityController extends Controller
             $commercialFloorsRev = array_reverse($commercialFloors);
             for ($i = 0; $i < $remShops; $i++) { $shopsPerFloor[$commercialFloorsRev[$i]]++; }
 
+            // Parking distribution: put parking in basement floors or first floor
+            if ($totalPark > 0) {
+                $parkingFloors = [];
+                for ($b = -$basementFloors; $b <= -1; $b++) { $parkingFloors[] = $b; }
+                if (empty($parkingFloors)) { $parkingFloors[] = 1; }
+                $parkFloorCount = count($parkingFloors);
+                $basePark = (int)floor($totalPark / $parkFloorCount);
+                foreach ($parkingFloors as $f) { $parkingPerFloor[$f] = $basePark; }
+                $remPark = $totalPark % $parkFloorCount;
+                for ($i = 0; $i < $remPark; $i++) { $parkingPerFloor[$parkingFloors[$i]]++; }
+            }
+
             // Is it evenly divisible across ALL above-ground floors?
             if ($totalFloors > 0 && $totalApts > 0 && $totalApts % $totalFloors == 0) {
                 $baseApts = (int)($totalApts / $totalFloors);
@@ -1479,6 +1502,7 @@ class FacilityController extends Controller
         foreach ($desiredFloorNumbers as $fNum) {
             $targetCommercial = $shopsPerFloor[$fNum] ?? 0;
             $targetResidential = $aptsPerFloor[$fNum] ?? 0;
+            $targetParking = $parkingPerFloor[$fNum] ?? 0;
 
             if (!$existingFloors->has($fNum)) {
                 $floor = Floor::create([
@@ -1487,13 +1511,15 @@ class FacilityController extends Controller
                     'floor_number' => $fNum,
                     'total_units' => $targetResidential,
                     'total_commercial_units' => $targetCommercial,
+                    'total_parking_units' => $targetParking,
                 ]);
 
                 $this->createUnitsForFloorPodez($floor, 'residential', $targetResidential, $podez);
                 $this->createUnitsForFloorPodez($floor, 'commercial', $targetCommercial, $podez);
+                $this->createUnitsForFloorPodez($floor, 'parking', $targetParking, $podez);
             } else {
                 $existingFloor = $existingFloors->get($fNum);
-                $this->syncFloorUnitsPodez($existingFloor, $targetResidential, $targetCommercial, $podez);
+                $this->syncFloorUnitsPodez($existingFloor, $targetResidential, $targetCommercial, $targetParking, $podez);
             }
         }
     }
@@ -1519,15 +1545,17 @@ class FacilityController extends Controller
         }
     }
 
-    private function syncFloorUnitsPodez(Floor $floor, int $targetResidential, int $targetCommercial, Podez $podez): void
+    private function syncFloorUnitsPodez(Floor $floor, int $targetResidential, int $targetCommercial, int $targetParking, Podez $podez): void
     {
         $floor->update([
             'total_units' => $targetResidential,
             'total_commercial_units' => $targetCommercial,
+            'total_parking_units' => $targetParking,
         ]);
 
         $this->syncUnitsByTypePodez($floor, 'residential', $targetResidential, $podez);
         $this->syncUnitsByTypePodez($floor, 'commercial', $targetCommercial, $podez);
+        $this->syncUnitsByTypePodez($floor, 'parking', $targetParking, $podez);
     }
 
     private function syncUnitsByTypePodez(Floor $floor, string $type, int $target, Podez $podez): void

@@ -17,6 +17,7 @@ class Podez extends Model
         'status',
         'total_apartments',
         'total_commercial',
+        'total_parking',
     ];
 
     public function building()

@@ -1875,4 +1875,114 @@ class FacilityController extends Controller
 
         return redirect()->back()->with('message', 'Avtoturargoh o\'rinlari muvaffaqiyatli shakllantirildi!');
     }
+
+    public function floorPlanEditor(Request $request)
+    {
+        $buildings = Building::with([
+            'podezes.floors.units',
+            'floors.units',
+        ])->get();
+
+        $selectedBuildingId = $request->query('building_id') ? (int) $request->query('building_id') : null;
+        $selectedFloorId = $request->query('floor_id') ? (int) $request->query('floor_id') : null;
+
+        return Inertia::render('Admin/Facility/FloorPlanEditor', [
+            'buildings' => $buildings,
+            'initialBuildingId' => $selectedBuildingId,
+            'initialFloorId' => $selectedFloorId,
+        ]);
+    }
+
+    public function saveFloorShapes(Request $request, $floorId)
+    {
+        $floor = Floor::with('building')->findOrFail($floorId);
+
+        $validated = $request->validate([
+            'shapes' => 'required|array',
+            'shapes.*.id' => 'nullable|integer',
+            'shapes.*.unit_number' => 'required|string|max:50',
+            'shapes.*.type' => 'nullable|string|in:residential,commercial,parking',
+            'shapes.*.area_sqm' => 'nullable|numeric|min:0',
+            'shapes.*.price' => 'nullable|numeric|min:0',
+            'shapes.*.status' => 'nullable|string|in:available,reserved,sold,booked',
+            'shapes.*.rooms_count' => 'nullable|integer|min:1|max:20',
+            'shapes.*.podyezd' => 'nullable|integer|min:1',
+            'shapes.*.shape_data' => 'nullable',
+            'shapes.*.svg_polygon' => 'nullable|string',
+        ]);
+
+        DB::transaction(function () use ($floor, $validated) {
+            foreach ($validated['shapes'] as $shape) {
+                $shapeString = is_array($shape['shape_data'] ?? null) 
+                    ? json_encode($shape['shape_data']) 
+                    : ($shape['svg_polygon'] ?? (is_string($shape['shape_data'] ?? null) ? $shape['shape_data'] : null));
+
+                $status = ($shape['status'] ?? 'available') === 'booked' ? 'reserved' : ($shape['status'] ?? 'available');
+
+                $unitData = [
+                    'floor_id' => $floor->id,
+                    'unit_number' => $shape['unit_number'],
+                    'type' => $shape['type'] ?? 'residential',
+                    'area_sqm' => $shape['area_sqm'] ?? 0,
+                    'price' => $shape['price'] ?? 0,
+                    'status' => $status,
+                    'rooms_count' => $shape['rooms_count'] ?? 1,
+                    'podyezd' => $shape['podyezd'] ?? 1,
+                    'svg_polygon' => $shapeString,
+                ];
+
+                if (!empty($shape['id'])) {
+                    $unit = Unit::where('floor_id', $floor->id)->where('id', $shape['id'])->first();
+                    if ($unit) {
+                        $unit->update($unitData);
+                        continue;
+                    }
+                }
+
+                // Check by unit_number on this floor
+                $existing = Unit::where('floor_id', $floor->id)
+                    ->where('unit_number', $shape['unit_number'])
+                    ->first();
+
+                if ($existing) {
+                    $existing->update($unitData);
+                } else {
+                    Unit::create($unitData);
+                }
+            }
+        });
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Qavat xonadonlari va chizma shakllari muvaffaqiyatli saqlandi!',
+                'floor' => $floor->fresh(['units'])
+            ]);
+        }
+
+        return redirect()->back()->with('message', 'Qavat xonadonlari va chizma shakllari muvaffaqiyatli saqlandi!');
+    }
+
+    public function uploadFloorBlueprint(Request $request, $floorId)
+    {
+        $floor = Floor::findOrFail($floorId);
+
+        $request->validate([
+            'blueprint' => 'required|file|mimes:jpg,jpeg,png,webp,svg,pdf|max:102400',
+        ]);
+
+        $path = $request->file('blueprint')->store('blueprints/floors', 'public');
+        $floor->update(['blueprint_path' => $path]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Qavat chizmasi muvaffaqiyatli yuklandi!',
+                'blueprint_path' => $path,
+                'blueprint_url' => '/storage/' . $path
+            ]);
+        }
+
+        return redirect()->back()->with('message', 'Qavat chizmasi muvaffaqiyatli yuklandi!');
+    }
 }

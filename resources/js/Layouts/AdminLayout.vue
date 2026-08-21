@@ -744,11 +744,11 @@ const formattedDate = computed(() => {
                         <button
                             @click="isFacilityMenuOpen = !isFacilityMenuOpen"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors duration-200 group hover:bg-slate-50 border border-transparent text-left"
-                            :class="route().current('admin.facility') ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
+                            :class="route().current('admin.facility*') ? 'bg-blue-50 text-blue-600 font-semibold' : ''"
                         >
                             <div class="flex items-center gap-3">
-                                <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors" :class="route().current('admin.facility') ? 'text-blue-600' : ''">{{ item.icon }}</span>
-                                <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="route().current('admin.facility') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
+                                <span class="text-[16px] text-slate-500 group-hover:text-slate-800 transition-colors" :class="route().current('admin.facility*') ? 'text-blue-600' : ''">{{ item.icon }}</span>
+                                <span class="text-[13px] font-medium text-slate-500 group-hover:text-blue-700 transition-colors" :class="route().current('admin.facility*') ? 'text-blue-700 font-semibold' : ''">{{ $t(item.name) }}</span>
                             </div>
                             <svg
                                 class="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-transform duration-200"
@@ -772,6 +772,22 @@ const formattedDate = computed(() => {
                                         :class="isFacilityViewActive('objects') ? 'text-blue-600 font-semibold' : ''"
                                     >
                                         🏢 Obyektlar
+                                    </Link>
+                                </div>
+                            </div>
+
+                            <!-- 3D Maket / Qavat Chizmasi Muharriri -->
+                            <div class="space-y-1 mt-1">
+                                <div
+                                    class="flex items-center justify-between rounded-lg hover:bg-blue-50/50 transition-colors"
+                                    :class="route().current('admin.facility.floor_plan_editor') ? 'bg-blue-50/50 border border-blue-100/30' : ''"
+                                >
+                                    <Link
+                                        :href="route('admin.facility.floor_plan_editor')"
+                                        class="flex-1 flex items-center gap-2 py-2 px-3 text-xs font-medium text-gray-500 hover:text-blue-600 transition-colors"
+                                        :class="route().current('admin.facility.floor_plan_editor') ? 'text-blue-600 font-semibold' : ''"
+                                    >
+                                        📐 3D Maket / Muharrir
                                     </Link>
                                 </div>
                             </div>

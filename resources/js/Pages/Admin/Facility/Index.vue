@@ -4571,6 +4571,9 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </span>
                                     </h4>
                                     <div class="flex items-center gap-2">
+                                        <Link :href="route('admin.facility.floor_plan_editor', selectedBuilding ? { building_id: selectedBuilding.id } : {})" class="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 text-xs font-sans font-bold rounded hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1.5 shadow-sm">
+                                            <span>📐</span> 3D MAKET MUHARRIRI
+                                        </Link>
                                         <button @click="downloadUnitsCSV" class="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-sans rounded hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2 shadow-sm">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                             EXCEL YUKLAB OLISH

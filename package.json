@@ -21,11 +21,13 @@
     "dependencies": {
         "apexcharts": "^5.10.6",
         "dayjs": "^1.11.21",
+        "fabric": "^7.4.0",
         "jspdf": "^4.2.1",
         "jspdf-autotable": "^5.0.8",
         "vue-i18n": "^9.14.5",
         "vue3-apexcharts": "^1.11.1",
         "xlsx": "^0.18.5",
-        "xlsx-js-style": "^1.2.0"
+        "xlsx-js-style": "^1.2.0",
+        "ziggy-js": "^2.6.4"
     }
 }

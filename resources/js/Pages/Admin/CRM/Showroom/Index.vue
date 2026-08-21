@@ -117,6 +117,77 @@ const onUnitHover = (unit, event) => {
 const onUnitLeave = () => {
     hoveredUnit.value = null;
 };
+
+// Floor Plan Maket Mode Logic
+const availableFloorsForBuilding = computed(() => {
+    if (!selectedBuilding.value) return [];
+    let list = [];
+    if (selectedBuilding.value.floors && selectedBuilding.value.floors.length > 0) {
+        list = [...selectedBuilding.value.floors];
+    } else if (selectedBuilding.value.podezes) {
+        selectedBuilding.value.podezes.forEach(p => {
+            if (p.floors) list.push(...p.floors);
+        });
+    }
+    return list.sort((a, b) => a.floor_number - b.floor_number);
+});
+
+const selectedFloorForPlanId = ref(null);
+watch(availableFloorsForBuilding, (floors) => {
+    if (floors.length > 0 && !floors.some(f => f.id === selectedFloorForPlanId.value)) {
+        selectedFloorForPlanId.value = floors[0].id;
+    }
+}, { immediate: true });
+
+const selectedFloorForPlan = computed(() => {
+    return availableFloorsForBuilding.value.find(f => f.id === selectedFloorForPlanId.value) || null;
+});
+
+const parseUnitShape = (unit) => {
+    if (!unit || !unit.svg_polygon) return null;
+    try {
+        const data = typeof unit.svg_polygon === 'object' ? unit.svg_polygon : JSON.parse(unit.svg_polygon);
+        if (data.type === 'rect') {
+            return {
+                type: 'rect',
+                x: data.left || 0,
+                y: data.top || 0,
+                width: data.width || 100,
+                height: data.height || 80,
+                centerX: (data.left || 0) + (data.width || 100) / 2,
+                centerY: (data.top || 0) + (data.height || 80) / 2
+            };
+        }
+        if (data.type === 'polygon' && data.points && data.points.length >= 3) {
+            const ptsStr = data.points.map(p => `${p.x},${p.y}`).join(' ');
+            const avgX = data.points.reduce((s, p) => s + p.x, 0) / data.points.length;
+            const avgY = data.points.reduce((s, p) => s + p.y, 0) / data.points.length;
+            return {
+                type: 'polygon',
+                points: ptsStr,
+                centerX: avgX,
+                centerY: avgY
+            };
+        }
+    } catch(e) {
+        return null;
+    }
+    return null;
+};
+
+const getSvgFillColor = (unit) => {
+    if (unit.status === 'available') return 'rgba(16, 185, 129, 0.45)';
+    if (unit.status === 'sold') return 'rgba(239, 68, 68, 0.45)';
+    if (unit.status === 'booked' || unit.status === 'reserved') return 'rgba(245, 158, 11, 0.45)';
+    return 'rgba(156, 163, 175, 0.4)';
+};
+
+const getSvgStrokeColor = (unit) => {
+    if (unit.status === 'available') return '#10b981';
+    if (unit.status === 'sold') return '#ef4444';
+    if (unit.status === 'booked' || unit.status === 'reserved') return '#f59e0b';
+    return '#9ca3af';
+};
 </script>
 
 <template>
@@ -165,6 +236,13 @@ const onUnitLeave = () => {
                         :class="activeTab === 'shaxmatka' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:bg-gray-200/50'"
                     >
                         Shaxmatka
+                    </button>
+                    <button
+                        @click="activeTab = 'floor_plan'"
+                        class="text-[14px] font-bold px-4 py-2 rounded-lg transition-all flex items-center gap-1.5"
+                        :class="activeTab === 'floor_plan' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:bg-gray-200/50'"
+                    >
+                        <span>📐</span> 3D / 2D Qavat Maketi
                     </button>
                 </div>
 
@@ -358,6 +436,174 @@ const onUnitLeave = () => {
                         </div>
                         <div v-else class="w-80 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center text-gray-400 font-bold text-sm text-center p-6 bg-gray-50">
                             Kvartira haqida ma'lumot ko'rish uchun shaxmatkadan tanlang
+                        </div>
+                    </div>
+
+                    <!-- Floor Plan (3D/2D Maket) Tab -->
+                    <div v-else-if="activeTab === 'floor_plan'" class="flex h-full gap-6">
+                        <div class="flex-1 flex flex-col overflow-hidden">
+                            <!-- Floor Switcher & Controls -->
+                            <div class="flex flex-wrap items-center justify-between gap-4 mb-4 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
+                                <div class="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+                                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Qavat:</span>
+                                    <button 
+                                        v-for="floor in availableFloorsForBuilding" 
+                                        :key="'fl-btn-' + floor.id"
+                                        @click="selectedFloorForPlanId = floor.id"
+                                        :class="selectedFloorForPlanId === floor.id ? 'bg-blue-600 text-white font-bold shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-200 border border-gray-200'"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
+                                    >
+                                        {{ floor.floor_number < 0 ? `${floor.floor_number} yerto'la` : `${floor.floor_number}-qavat` }}
+                                    </button>
+                                </div>
+
+                                <div class="flex items-center gap-4">
+                                    <!-- Legend -->
+                                    <div class="flex items-center gap-4 text-xs font-bold">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-3 h-3 rounded-full bg-emerald-500 block"></span>
+                                            <span class="text-gray-700">Sotuvda</span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-3 h-3 rounded-full bg-amber-500 block"></span>
+                                            <span class="text-gray-700">Band</span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-3 h-3 rounded-full bg-red-500 block"></span>
+                                            <span class="text-gray-700">Sotilgan</span>
+                                        </div>
+                                    </div>
+
+                                    <Link :href="route('admin.facility.floor_plan_editor', { building_id: selectedBuilding.id, floor_id: selectedFloorForPlanId })" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-bold rounded-lg border border-blue-200 transition-all flex items-center gap-1">
+                                        <span>✏️</span> Maketni Tahrirlash
+                                    </Link>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Floor Plan SVG Stage -->
+                            <div class="flex-1 bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden relative flex items-center justify-center min-h-[480px]">
+                                <img 
+                                    v-if="selectedFloorForPlan?.blueprint_path || selectedBuilding.blueprint_path" 
+                                    :src="'/storage/' + (selectedFloorForPlan?.blueprint_path || selectedBuilding.blueprint_path)" 
+                                    class="max-w-full max-h-full object-contain pointer-events-none select-none opacity-90"
+                                />
+                                <div v-else class="text-slate-500 font-bold text-sm">
+                                    Ushbu qavat uchun chizma yuklanmagan
+                                </div>
+
+                                <!-- SVG Interactive Unit Overlays -->
+                                <svg class="absolute inset-0 w-full h-full pointer-events-auto" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid meet">
+                                    <g v-for="unit in (selectedFloorForPlan?.units || [])" :key="'plan-unit-' + unit.id">
+                                        <template v-if="parseUnitShape(unit)">
+                                            <!-- Rectangle Unit -->
+                                            <g v-if="parseUnitShape(unit).type === 'rect'"
+                                               class="cursor-pointer transition-transform duration-200"
+                                               @mousemove="(e) => onUnitHover(unit, e)"
+                                               @mouseleave="onUnitLeave"
+                                               @click="selectedUnit = unit"
+                                            >
+                                                <rect 
+                                                    :x="parseUnitShape(unit).x" 
+                                                    :y="parseUnitShape(unit).y" 
+                                                    :width="parseUnitShape(unit).width" 
+                                                    :height="parseUnitShape(unit).height"
+                                                    :fill="getSvgFillColor(unit)"
+                                                    :stroke="selectedUnit?.id === unit.id ? '#3b82f6' : getSvgStrokeColor(unit)"
+                                                    :stroke-width="selectedUnit?.id === unit.id ? 3.5 : 2"
+                                                    rx="4"
+                                                    class="hover:opacity-90 transition-opacity"
+                                                />
+                                                <text 
+                                                    :x="parseUnitShape(unit).centerX" 
+                                                    :y="parseUnitShape(unit).centerY" 
+                                                    fill="#ffffff" 
+                                                    font-size="12" 
+                                                    font-weight="bold" 
+                                                    text-anchor="middle" 
+                                                    dominant-baseline="central"
+                                                    class="pointer-events-none select-none drop-shadow"
+                                                >
+                                                    {{ unit.unit_number }}
+                                                </text>
+                                            </g>
+
+                                            <!-- Polygon Unit -->
+                                            <g v-else-if="parseUnitShape(unit).type === 'polygon'"
+                                               class="cursor-pointer transition-transform duration-200"
+                                               @mousemove="(e) => onUnitHover(unit, e)"
+                                               @mouseleave="onUnitLeave"
+                                               @click="selectedUnit = unit"
+                                            >
+                                                <polygon 
+                                                    :points="parseUnitShape(unit).points"
+                                                    :fill="getSvgFillColor(unit)"
+                                                    :stroke="selectedUnit?.id === unit.id ? '#3b82f6' : getSvgStrokeColor(unit)"
+                                                    :stroke-width="selectedUnit?.id === unit.id ? 3.5 : 2"
+                                                    class="hover:opacity-90 transition-opacity"
+                                                />
+                                                <text 
+                                                    :x="parseUnitShape(unit).centerX" 
+                                                    :y="parseUnitShape(unit).centerY" 
+                                                    fill="#ffffff" 
+                                                    font-size="12" 
+                                                    font-weight="bold" 
+                                                    text-anchor="middle" 
+                                                    dominant-baseline="central"
+                                                    class="pointer-events-none select-none drop-shadow"
+                                                >
+                                                    {{ unit.unit_number }}
+                                                </text>
+                                            </g>
+                                        </template>
+                                    </g>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Unit Details Sidebar -->
+                        <div class="w-80 bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden flex flex-col" v-if="selectedUnit">
+                            <div class="h-44 bg-gray-200 relative">
+                                <img v-if="selectedUnit.images && selectedUnit.images.length > 0" :src="'/storage/' + selectedUnit.images[0]" class="w-full h-full object-cover" />
+                                <div v-else class="w-full h-full flex items-center justify-center text-gray-400 font-bold">Rasm yo'q</div>
+                                <div class="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded text-xs font-bold text-gray-800 shadow-sm">
+                                    № {{ selectedUnit.unit_number }}
+                                </div>
+                            </div>
+                            <div class="p-5 space-y-3.5 flex-1 flex flex-col">
+                                <h3 class="text-sm font-extrabold text-gray-800 uppercase tracking-widest border-b border-gray-200 pb-2">Uy haqida ma'lumot</h3>
+                                
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500 font-bold">Holati</span>
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase" :class="getUnitColor(selectedUnit)">{{ selectedUnit.status }}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500 font-bold">Qavat</span>
+                                    <span class="font-bold text-gray-800">{{ selectedBuilding.floors.find(f => f.id === selectedUnit.floor_id)?.floor_number }}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500 font-bold">Xonalar</span>
+                                    <span class="font-bold text-gray-800">{{ selectedUnit.rooms_count }} xona</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500 font-bold">Maydoni</span>
+                                    <span class="font-bold text-gray-800">{{ selectedUnit.area_sqm }} m²</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm pt-2 border-t border-gray-200">
+                                    <span class="text-gray-800 font-extrabold">Umumiy narxi</span>
+                                    <span class="font-extrabold text-blue-600 text-base">{{ selectedUnit.price?.toLocaleString() }} UZS</span>
+                                </div>
+                                <div class="mt-auto pt-3">
+                                    <Link v-if="selectedUnit.status === 'available'" :href="route('admin.crm', { unit_id: selectedUnit.id })" class="block w-full text-center px-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
+                                        Sotish (Shartnoma tuzish)
+                                    </Link>
+                                    <div v-else class="text-center px-4 py-3 bg-gray-100 text-gray-400 font-bold rounded-xl cursor-not-allowed">
+                                        Bu xonadon sotuvda emas
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="w-80 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center text-gray-400 font-bold text-sm text-center p-6 bg-gray-50">
+                            Xonadon haqida to'liq ma'lumot olish uchun qavat chizmasidan xonadonni bosing
                         </div>
                     </div>
                 </div>

@@ -136,6 +136,9 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::delete('/facility/objects/{building}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyObject'])->name('facility.objects.destroy');
     Route::post('/facility/buildings/{building}/showroom-images', [\App\Http\Controllers\Admin\FacilityController::class, 'uploadShowroomImages'])->name('facility.buildings.showroom-images.store');
     Route::delete('/facility/buildings/{building}/showroom-images', [\App\Http\Controllers\Admin\FacilityController::class, 'deleteShowroomImage'])->name('facility.buildings.showroom-images.destroy');
+    Route::get('/facility/floor-plan-editor', [\App\Http\Controllers\Admin\FacilityController::class, 'floorPlanEditor'])->name('facility.floor_plan_editor');
+    Route::post('/facility/floors/{floor}/save-shapes', [\App\Http\Controllers\Admin\FacilityController::class, 'saveFloorShapes'])->name('facility.floors.save_shapes');
+    Route::post('/facility/floors/{floor}/upload-blueprint', [\App\Http\Controllers\Admin\FacilityController::class, 'uploadFloorBlueprint'])->name('facility.floors.upload_blueprint');
     Route::post('/facility/stages', [\App\Http\Controllers\Admin\FacilityController::class, 'storeStage'])->name('facility.stages.store');
     Route::post('/facility/floors', [\App\Http\Controllers\Admin\FacilityController::class, 'storeFloor'])->name('facility.floors.store');
     Route::put('/facility/floors/{floor}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateFloor'])->name('facility.floors.update');

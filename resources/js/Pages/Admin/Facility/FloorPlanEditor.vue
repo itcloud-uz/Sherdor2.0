@@ -274,12 +274,15 @@ const initCanvas = () => {
     loadFloorData();
 };
 
+const currentBlueprintDimensions = ref({ width: 1200, height: 800 });
+
 // Load Background Image
 const loadBackgroundImage = async (imageUrl) => {
     if (!fabricCanvas) return;
 
     if (!imageUrl) {
         fabricCanvas.backgroundImage = null;
+        fabricCanvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
         fabricCanvas.renderAll();
         return;
     }
@@ -288,25 +291,38 @@ const loadBackgroundImage = async (imageUrl) => {
         const img = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
         if (!img || !fabricCanvas) return;
 
-        const canvasWidth = fabricCanvas.getWidth();
-        const canvasHeight = fabricCanvas.getHeight();
+        const imgWidth = img.width || 1200;
+        const imgHeight = img.height || 800;
+        currentBlueprintDimensions.value = { width: imgWidth, height: imgHeight };
 
-        const scaleX = (canvasWidth - 40) / (img.width || 1);
-        const scaleY = (canvasHeight - 40) / (img.height || 1);
-        const scale = Math.min(scaleX, scaleY, 1.2);
+        const containerWidth = canvasContainerRef.value?.clientWidth || 900;
+        const containerHeight = Math.max(580, window.innerHeight - 280);
 
+        fabricCanvas.setDimensions({ width: containerWidth, height: containerHeight });
+
+        // Calculate scale to fit image centered inside container
+        const scaleX = (containerWidth - 40) / imgWidth;
+        const scaleY = (containerHeight - 40) / imgHeight;
+        const scale = Math.min(scaleX, scaleY);
+
+        const posX = (containerWidth - imgWidth * scale) / 2;
+        const posY = (containerHeight - imgHeight * scale) / 2;
+
+        // Image placed at (0, 0) in scene coordinates!
         img.set({
-            originX: 'center',
-            originY: 'center',
-            left: canvasWidth / 2,
-            top: canvasHeight / 2,
-            scaleX: scale,
-            scaleY: scale,
+            originX: 'left',
+            originY: 'top',
+            left: 0,
+            top: 0,
+            scaleX: 1,
+            scaleY: 1,
             selectable: false,
             evented: false
         });
 
         fabricCanvas.backgroundImage = img;
+        // Viewport transform scales and centers the scene (image & drawn units)
+        fabricCanvas.setViewportTransform([scale, 0, 0, scale, posX, posY]);
         fabricCanvas.renderAll();
     } catch (err) {
         console.error('Error loading background image', err);
@@ -728,7 +744,15 @@ const setZoom = (factor) => {
 const resetZoom = () => {
     if (!fabricCanvas) return;
     zoomLevel.value = 1;
-    fabricCanvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    const imgWidth = currentBlueprintDimensions.value.width;
+    const imgHeight = currentBlueprintDimensions.value.height;
+    const containerWidth = canvasContainerRef.value?.clientWidth || 900;
+    const containerHeight = Math.max(580, window.innerHeight - 280);
+    const scale = Math.min((containerWidth - 40) / imgWidth, (containerHeight - 40) / imgHeight);
+    const posX = (containerWidth - imgWidth * scale) / 2;
+    const posY = (containerHeight - imgHeight * scale) / 2;
+    fabricCanvas.setViewportTransform([scale, 0, 0, scale, posX, posY]);
+    fabricCanvas.renderAll();
 };
 
 // Blueprint File Upload

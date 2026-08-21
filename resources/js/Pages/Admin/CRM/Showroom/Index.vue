@@ -119,6 +119,17 @@ const onUnitLeave = () => {
 };
 
 // Floor Plan Maket Mode Logic
+const showroomBlueprintSize = ref({ width: 1200, height: 800 });
+
+const onBlueprintImageLoaded = (e) => {
+    if (e.target && e.target.naturalWidth && e.target.naturalHeight) {
+        showroomBlueprintSize.value = {
+            width: e.target.naturalWidth,
+            height: e.target.naturalHeight
+        };
+    }
+};
+
 const availableFloorsForBuilding = computed(() => {
     if (!selectedBuilding.value) return [];
     let list = [];
@@ -481,82 +492,88 @@ const getSvgStrokeColor = (unit) => {
                             </div>
 
                             <!-- Interactive Floor Plan SVG Stage -->
-                            <div class="flex-1 bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden relative flex items-center justify-center min-h-[480px]">
-                                <img 
-                                    v-if="selectedFloorForPlan?.blueprint_path || selectedBuilding.blueprint_path" 
-                                    :src="'/storage/' + (selectedFloorForPlan?.blueprint_path || selectedBuilding.blueprint_path)" 
-                                    class="max-w-full max-h-full object-contain pointer-events-none select-none opacity-90"
-                                />
+                            <div class="flex-1 bg-slate-900 rounded-2xl border border-slate-700 overflow-auto relative flex items-center justify-center min-h-[480px] p-4">
+                                <div class="relative inline-block max-w-full max-h-full" v-if="selectedFloorForPlan?.blueprint_path || selectedBuilding.blueprint_path">
+                                    <img 
+                                        :src="'/storage/' + (selectedFloorForPlan?.blueprint_path || selectedBuilding.blueprint_path)" 
+                                        @load="onBlueprintImageLoaded"
+                                        class="block max-w-full max-h-[75vh] w-auto h-auto object-contain pointer-events-none select-none opacity-95 rounded-lg shadow-2xl"
+                                    />
+
+                                    <!-- SVG Interactive Unit Overlays matching natural image coordinates -->
+                                    <svg 
+                                        class="absolute inset-0 w-full h-full pointer-events-auto" 
+                                        :viewBox="`0 0 ${showroomBlueprintSize.width} ${showroomBlueprintSize.height}`"
+                                        preserveAspectRatio="none"
+                                    >
+                                        <g v-for="unit in (selectedFloorForPlan?.units || [])" :key="'plan-unit-' + unit.id">
+                                            <template v-if="parseUnitShape(unit)">
+                                                <!-- Rectangle Unit -->
+                                                <g v-if="parseUnitShape(unit).type === 'rect'"
+                                                   class="cursor-pointer transition-transform duration-200"
+                                                   @mousemove="(e) => onUnitHover(unit, e)"
+                                                   @mouseleave="onUnitLeave"
+                                                   @click="selectedUnit = unit"
+                                                >
+                                                    <rect 
+                                                        :x="parseUnitShape(unit).x" 
+                                                        :y="parseUnitShape(unit).y" 
+                                                        :width="parseUnitShape(unit).width" 
+                                                        :height="parseUnitShape(unit).height"
+                                                        :fill="getSvgFillColor(unit)"
+                                                        :stroke="selectedUnit?.id === unit.id ? '#3b82f6' : getSvgStrokeColor(unit)"
+                                                        :stroke-width="selectedUnit?.id === unit.id ? 4 : 2.5"
+                                                        rx="4"
+                                                        class="hover:opacity-90 transition-opacity"
+                                                    />
+                                                    <text 
+                                                        :x="parseUnitShape(unit).centerX" 
+                                                        :y="parseUnitShape(unit).centerY" 
+                                                        fill="#ffffff" 
+                                                        font-size="13" 
+                                                        font-weight="bold" 
+                                                        text-anchor="middle" 
+                                                        dominant-baseline="central"
+                                                        class="pointer-events-none select-none drop-shadow"
+                                                    >
+                                                        {{ unit.unit_number }}
+                                                    </text>
+                                                </g>
+
+                                                <!-- Polygon Unit -->
+                                                <g v-else-if="parseUnitShape(unit).type === 'polygon'"
+                                                   class="cursor-pointer transition-transform duration-200"
+                                                   @mousemove="(e) => onUnitHover(unit, e)"
+                                                   @mouseleave="onUnitLeave"
+                                                   @click="selectedUnit = unit"
+                                                >
+                                                    <polygon 
+                                                        :points="parseUnitShape(unit).points"
+                                                        :fill="getSvgFillColor(unit)"
+                                                        :stroke="selectedUnit?.id === unit.id ? '#3b82f6' : getSvgStrokeColor(unit)"
+                                                        :stroke-width="selectedUnit?.id === unit.id ? 4 : 2.5"
+                                                        class="hover:opacity-90 transition-opacity"
+                                                    />
+                                                    <text 
+                                                        :x="parseUnitShape(unit).centerX" 
+                                                        :y="parseUnitShape(unit).centerY" 
+                                                        fill="#ffffff" 
+                                                        font-size="13" 
+                                                        font-weight="bold" 
+                                                        text-anchor="middle" 
+                                                        dominant-baseline="central"
+                                                        class="pointer-events-none select-none drop-shadow"
+                                                    >
+                                                        {{ unit.unit_number }}
+                                                    </text>
+                                                </g>
+                                            </template>
+                                        </g>
+                                    </svg>
+                                </div>
                                 <div v-else class="text-slate-500 font-bold text-sm">
                                     Ushbu qavat uchun chizma yuklanmagan
                                 </div>
-
-                                <!-- SVG Interactive Unit Overlays -->
-                                <svg class="absolute inset-0 w-full h-full pointer-events-auto" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid meet">
-                                    <g v-for="unit in (selectedFloorForPlan?.units || [])" :key="'plan-unit-' + unit.id">
-                                        <template v-if="parseUnitShape(unit)">
-                                            <!-- Rectangle Unit -->
-                                            <g v-if="parseUnitShape(unit).type === 'rect'"
-                                               class="cursor-pointer transition-transform duration-200"
-                                               @mousemove="(e) => onUnitHover(unit, e)"
-                                               @mouseleave="onUnitLeave"
-                                               @click="selectedUnit = unit"
-                                            >
-                                                <rect 
-                                                    :x="parseUnitShape(unit).x" 
-                                                    :y="parseUnitShape(unit).y" 
-                                                    :width="parseUnitShape(unit).width" 
-                                                    :height="parseUnitShape(unit).height"
-                                                    :fill="getSvgFillColor(unit)"
-                                                    :stroke="selectedUnit?.id === unit.id ? '#3b82f6' : getSvgStrokeColor(unit)"
-                                                    :stroke-width="selectedUnit?.id === unit.id ? 3.5 : 2"
-                                                    rx="4"
-                                                    class="hover:opacity-90 transition-opacity"
-                                                />
-                                                <text 
-                                                    :x="parseUnitShape(unit).centerX" 
-                                                    :y="parseUnitShape(unit).centerY" 
-                                                    fill="#ffffff" 
-                                                    font-size="12" 
-                                                    font-weight="bold" 
-                                                    text-anchor="middle" 
-                                                    dominant-baseline="central"
-                                                    class="pointer-events-none select-none drop-shadow"
-                                                >
-                                                    {{ unit.unit_number }}
-                                                </text>
-                                            </g>
-
-                                            <!-- Polygon Unit -->
-                                            <g v-else-if="parseUnitShape(unit).type === 'polygon'"
-                                               class="cursor-pointer transition-transform duration-200"
-                                               @mousemove="(e) => onUnitHover(unit, e)"
-                                               @mouseleave="onUnitLeave"
-                                               @click="selectedUnit = unit"
-                                            >
-                                                <polygon 
-                                                    :points="parseUnitShape(unit).points"
-                                                    :fill="getSvgFillColor(unit)"
-                                                    :stroke="selectedUnit?.id === unit.id ? '#3b82f6' : getSvgStrokeColor(unit)"
-                                                    :stroke-width="selectedUnit?.id === unit.id ? 3.5 : 2"
-                                                    class="hover:opacity-90 transition-opacity"
-                                                />
-                                                <text 
-                                                    :x="parseUnitShape(unit).centerX" 
-                                                    :y="parseUnitShape(unit).centerY" 
-                                                    fill="#ffffff" 
-                                                    font-size="12" 
-                                                    font-weight="bold" 
-                                                    text-anchor="middle" 
-                                                    dominant-baseline="central"
-                                                    class="pointer-events-none select-none drop-shadow"
-                                                >
-                                                    {{ unit.unit_number }}
-                                                </text>
-                                            </g>
-                                        </template>
-                                    </g>
-                                </svg>
                             </div>
                         </div>
 

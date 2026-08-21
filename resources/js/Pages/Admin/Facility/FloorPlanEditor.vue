@@ -191,6 +191,23 @@ const formatPrice = (val) => {
     return Number(val).toLocaleString('uz-UZ') + ' UZS';
 };
 
+// Helper to extract pointer coordinates in Fabric 7
+const getPointerCoords = (opt) => {
+    if (opt.scenePoint) {
+        return { x: opt.scenePoint.x, y: opt.scenePoint.y };
+    }
+    if (opt.viewportPoint) {
+        return { x: opt.viewportPoint.x, y: opt.viewportPoint.y };
+    }
+    if (opt.pointer) {
+        return { x: opt.pointer.x, y: opt.pointer.y };
+    }
+    if (opt.e && opt.e.offsetX !== undefined) {
+        return { x: opt.e.offsetX, y: opt.e.offsetY };
+    }
+    return { x: 0, y: 0 };
+};
+
 // Initialize Fabric Canvas
 const initCanvas = () => {
     if (!canvasElementRef.value || !canvasContainerRef.value) return;
@@ -228,8 +245,7 @@ const initCanvas = () => {
 
     // Mouse Down (Drawings, Polygon points)
     fabricCanvas.on('mouse:down', (opt) => {
-        const evt = opt.e;
-        const pointer = fabricCanvas.getPointer(evt);
+        const pointer = getPointerCoords(opt);
 
         if (currentTool.value === 'rectangle') {
             createRectangleAt(pointer.x, pointer.y);
@@ -242,7 +258,7 @@ const initCanvas = () => {
     // Mouse Move (Polygon preview line)
     fabricCanvas.on('mouse:move', (opt) => {
         if (isDrawingPolygon.value && polygonPoints.value.length > 0) {
-            const pointer = fabricCanvas.getPointer(opt.e);
+            const pointer = getPointerCoords(opt);
             updatePolygonPreview(pointer);
         }
     });
@@ -705,8 +721,8 @@ const setZoom = (factor) => {
     newZoom = Math.max(0.4, Math.min(3, newZoom));
     zoomLevel.value = newZoom;
 
-    const center = fabricCanvas.getCenter();
-    fabricCanvas.zoomToPoint(new Point(center.left, center.top), newZoom);
+    const center = fabricCanvas.getCenterPoint ? fabricCanvas.getCenterPoint() : new Point((fabricCanvas.width || 900) / 2, (fabricCanvas.height || 600) / 2);
+    fabricCanvas.zoomToPoint(center, newZoom);
 };
 
 const resetZoom = () => {
@@ -822,8 +838,7 @@ onMounted(() => {
         if (fabricCanvas && canvasContainerRef.value) {
             const w = canvasContainerRef.value.clientWidth;
             const h = Math.max(580, window.innerHeight - 280);
-            fabricCanvas.setWidth(w);
-            fabricCanvas.setHeight(h);
+            fabricCanvas.setDimensions({ width: w, height: h });
             fabricCanvas.renderAll();
         }
     };

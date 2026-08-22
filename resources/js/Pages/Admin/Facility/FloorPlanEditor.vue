@@ -507,17 +507,20 @@ const handleSave = async () => {
             const floorObj = availableFloors.value.find(f => f.floor_number === s.floor);
             let shapeJson = null;
             if (s.type === 'rect') {
-                shapeJson = { type: 'rect', left: s.x, top: s.y, width: s.w, height: s.h };
+                shapeJson = { type: 'rect', left: Math.round(s.x), top: Math.round(s.y), width: Math.round(s.w), height: Math.round(s.h) };
             } else if (s.type === 'polygon') {
                 shapeJson = { type: 'polygon', points: s.points };
             }
             return {
-                floor_id: floorObj?.id || s.id,
+                id: floorObj?.id || s.floorId || s.id,
+                floor_id: floorObj?.id || s.floorId || s.id,
+                facade_polygon: shapeJson,
                 polygon: shapeJson
             };
         });
 
-        const res = await axios.post(route('admin.facility.buildings.save_facade', selectedBuilding.value.id), {
+        const targetUrl = route('admin.facility.buildings.save_facade_floors', selectedBuilding.value.id);
+        const res = await axios.post(targetUrl, {
             floors: floorCoords,
             facade_data: { shapes: shapes.value }
         });
@@ -529,7 +532,9 @@ const handleSave = async () => {
         }
         setTimeout(() => message.value = '', 3500);
     } catch(err) {
-        message.value = '❌ Saqlashda xatolik yuz berdi!';
+        console.error('Save error:', err);
+        message.value = '❌ Saqlashda xatolik: ' + (err.response?.data?.message || err.message || 'Xatolik');
+        setTimeout(() => message.value = '', 4000);
     } finally {
         isSaving.value = false;
     }

@@ -2014,28 +2014,32 @@ class FacilityController extends Controller
         $building = Building::with('floors')->findOrFail($buildingId);
 
         $validated = $request->validate([
-            'facade_data' => 'nullable|array',
+            'facade_data' => 'nullable',
             'floors' => 'nullable|array',
-            'floors.*.id' => 'required|integer',
-            'floors.*.facade_polygon' => 'nullable',
         ]);
 
-        DB::transaction(function () use ($building, $validated) {
-            if (isset($validated['facade_data'])) {
-                $building->update(['facade_data' => $validated['facade_data']]);
+        DB::transaction(function () use ($building, $validated, $request) {
+            $facadeData = $request->input('facade_data');
+            if ($facadeData) {
+                $building->update(['facade_data' => is_array($facadeData) ? $facadeData : json_decode($facadeData, true)]);
             }
 
-            if (!empty($validated['floors'])) {
-                foreach ($validated['floors'] as $flData) {
-                    $poly = is_array($flData['facade_polygon']) ? json_encode($flData['facade_polygon']) : $flData['facade_polygon'];
-                    Floor::where('id', $flData['id'])->where('building_id', $building->id)->update([
-                        'facade_polygon' => $poly
-                    ]);
+            $floorsList = $request->input('floors', []);
+            if (!empty($floorsList)) {
+                foreach ($floorsList as $flData) {
+                    $targetId = $flData['id'] ?? ($flData['floor_id'] ?? null);
+                    $polygonData = $flData['facade_polygon'] ?? ($flData['polygon'] ?? null);
+                    if ($targetId) {
+                        $poly = is_array($polygonData) ? json_encode($polygonData) : $polygonData;
+                        Floor::where('id', $targetId)->update([
+                            'facade_polygon' => $poly
+                        ]);
+                    }
                 }
             }
         });
 
-        if ($request->wantsJson()) {
+        if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Bino fasadi va qavatlar koordinatalari muvaffaqiyatli saqlandi!',

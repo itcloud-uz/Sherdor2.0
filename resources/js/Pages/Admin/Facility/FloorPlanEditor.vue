@@ -412,20 +412,36 @@ const loadFloorPlanModeData = () => {
     fabricCanvas.renderAll();
 };
 
+const selectFloorForDrawing = (floorId) => {
+    const item = facadeFloorShapes.value.find(f => f.floor_id === floorId);
+    if (item && item.fabricObject) {
+        fabricCanvas.setActiveObject(item.fabricObject);
+        fabricCanvas.renderAll();
+        onCanvasObjectSelected(item.fabricObject);
+    } else if (item) {
+        fabricCanvas.discardActiveObject();
+        fabricCanvas.renderAll();
+        selectedShape.value = item;
+    }
+};
+
 // Create Rectangle Helper
 const createRectangleAt = (x, y) => {
     const statusConfig = STATUS_COLORS.available;
-    const rectW = Math.round(currentImageDimensions.value.width * 0.12) || 100;
+    const rectW = Math.round(currentImageDimensions.value.width * 0.16) || 120;
     const rectH = Math.round(currentImageDimensions.value.height * 0.08) || 60;
 
     if (editorMode.value === 'facade') {
-        // Find first floor without polygon or unassigned
-        const unassigned = facadeFloorShapes.value.find(f => !f.shape_data) || facadeFloorShapes.value[0];
-        const floorId = unassigned ? unassigned.floor_id : availableFloors.value[0]?.id;
+        let targetFloorId = selectedShape.value?.floor_id;
+        let unassigned = facadeFloorShapes.value.find(f => f.floor_id === targetFloorId);
+        if (!unassigned) {
+            unassigned = facadeFloorShapes.value.find(f => !f.shape_data) || facadeFloorShapes.value[0];
+            targetFloorId = unassigned ? unassigned.floor_id : availableFloors.value[0]?.id;
+        }
 
         const newMeta = {
-            id: floorId,
-            floor_id: floorId,
+            id: targetFloorId,
+            floor_id: targetFloorId,
             floor_number: unassigned?.floor_number || 1,
             shape_data: {
                 type: 'rect',
@@ -460,8 +476,10 @@ const createRectangleAt = (x, y) => {
             unassigned.shape_data = newMeta.shape_data;
             unassigned.fabricObject = rect;
             rect.shapeMeta = unassigned;
+            selectedShape.value = unassigned;
         } else {
             facadeFloorShapes.value.push(newMeta);
+            selectedShape.value = newMeta;
         }
         onCanvasObjectSelected(rect);
     } else {
@@ -1057,16 +1075,17 @@ onUnmounted(() => {
 
                         <!-- All Floors Facade Status List -->
                         <div class="mt-4 pt-4 border-t border-gray-100">
-                            <h4 class="text-xs font-extrabold text-gray-700 uppercase tracking-wider mb-2">Qavatlar ro'yxati:</h4>
+                            <h4 class="text-xs font-extrabold text-gray-700 uppercase tracking-wider mb-2">Qavatlar ro'yxati (Tanlash uchun bosing):</h4>
                             <div class="space-y-1.5 max-h-72 overflow-y-auto">
                                 <div 
                                     v-for="item in facadeFloorShapes" 
                                     :key="'fl-item-' + item.floor_id"
-                                    class="p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all"
-                                    :class="item.shape_data ? 'bg-emerald-50/60 border-emerald-200 text-emerald-800' : 'bg-gray-50 border-gray-200 text-gray-500'"
+                                    @click="selectFloorForDrawing(item.floor_id)"
+                                    class="p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all cursor-pointer select-none"
+                                    :class="selectedShape?.floor_id === item.floor_id ? 'ring-2 ring-blue-500 bg-blue-50/80 border-blue-300 text-blue-900 shadow-sm' : (item.shape_data ? 'bg-emerald-50/60 border-emerald-200 text-emerald-800 hover:bg-emerald-100/60' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100')"
                                 >
                                     <span>{{ item.floor_number < 0 ? `${item.floor_number}-yerto'la` : `${item.floor_number}-qavat` }}</span>
-                                    <span class="text-[10px] px-2 py-0.5 rounded-full" :class="item.shape_data ? 'bg-emerald-200 text-emerald-900' : 'bg-gray-200 text-gray-600'">
+                                    <span class="text-[10px] px-2 py-0.5 rounded-full font-black" :class="item.shape_data ? 'bg-emerald-200 text-emerald-900' : 'bg-gray-200 text-gray-600'">
                                         {{ item.shape_data ? 'Chizilgan ✓' : 'Chizilmagan' }}
                                     </span>
                                 </div>

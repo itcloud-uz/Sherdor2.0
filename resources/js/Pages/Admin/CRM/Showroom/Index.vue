@@ -290,7 +290,7 @@ const filterUnitsList = (units) => {
                     <svg 
                         class="w-full h-full block select-none pointer-events-auto" 
                         :viewBox="`0 0 ${facadeNaturalSize.width} ${facadeNaturalSize.height}`"
-                        preserveAspectRatio="xMidYMid slice"
+                        preserveAspectRatio="xMidYMid meet"
                     >
                         <!-- Background Facade Image inside SVG for 100% Guaranteed Lock -->
                         <image 
@@ -299,7 +299,7 @@ const filterUnitsList = (units) => {
                             y="0" 
                             :width="facadeNaturalSize.width" 
                             :height="facadeNaturalSize.height" 
-                            preserveAspectRatio="xMidYMid slice"
+                            preserveAspectRatio="xMidYMid meet"
                         />
 
                         <!-- Interactive Floor Overlays -->

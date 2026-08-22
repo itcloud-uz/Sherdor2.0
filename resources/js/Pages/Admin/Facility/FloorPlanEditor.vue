@@ -130,6 +130,53 @@ const updateCanvasSize = () => {
     redrawCanvas();
 };
 
+// Helper: Calculate and sync rawCoords (norm & natural) from canvas pixel positions
+const updateShapeRawCoords = (shape) => {
+    if (!shape) return;
+    const b = imgRenderBounds.value;
+    const img = canvasImageObj.value;
+    if (!img || !b.w || !b.h) return;
+    const nw = img.naturalWidth || b.w;
+    const nh = img.naturalHeight || b.h;
+
+    if (shape.type === 'rect') {
+        const normX = Math.min(1, Math.max(0, (shape.x - b.x) / b.w));
+        const normY = Math.min(1, Math.max(0, (shape.y - b.y) / b.h));
+        const normW = Math.min(1 - normX, Math.max(0.001, shape.w / b.w));
+        const normH = Math.min(1 - normY, Math.max(0.001, shape.h / b.h));
+
+        const natX = Math.round(normX * nw);
+        const natY = Math.round(normY * nh);
+        const natW = Math.round(normW * nw);
+        const natH = Math.round(normH * nh);
+
+        shape.rawCoords = {
+            type: 'rect',
+            left: natX,
+            top: natY,
+            width: natW,
+            height: natH,
+            natural: { x: natX, y: natY, w: natW, h: natH },
+            norm: { x: normX, y: normY, w: normW, h: normH }
+        };
+    } else if (shape.type === 'polygon' && shape.points) {
+        const normPoints = shape.points.map(p => ({
+            x: Math.min(1, Math.max(0, ((p.x !== undefined ? p.x : p[0]) - b.x) / b.w)),
+            y: Math.min(1, Math.max(0, ((p.y !== undefined ? p.y : p[1]) - b.y) / b.h))
+        }));
+        const natPoints = normPoints.map(p => ({
+            x: Math.round(p.x * nw),
+            y: Math.round(p.y * nh)
+        }));
+        shape.rawCoords = {
+            type: 'polygon',
+            points: natPoints,
+            natural: { points: natPoints },
+            norm: { points: normPoints }
+        };
+    }
+};
+
 // Recalculate shape positions on canvas from stored natural/norm coordinates
 const recalculateShapeCanvasPositions = () => {
     if (!canvasImageObj.value) return;
@@ -161,13 +208,31 @@ const recalculateShapeCanvasPositions = () => {
                 ch = Math.round((natH / nh) * b.h);
             }
             return { ...shape, x: cx, y: cy, w: cw, h: ch };
-        } else if (shape.type === 'polygon' && (coords.points || coords.natural?.points)) {
-            const rawPts = coords.natural?.points || coords.points;
-            const cPts = rawPts.map(p => ({
-                x: Math.round(b.x + ((p.x || p[0]) / nw) * b.w),
-                y: Math.round(b.y + ((p.y || p[1]) / nh) * b.h)
-            }));
-            return { ...shape, points: cPts };
+        } else if (shape.type === 'polygon') {
+            if (coords.norm && coords.norm.points && coords.norm.points.length >= 3) {
+                const cPts = coords.norm.points.map(p => ({
+                    x: Math.round(b.x + p.x * b.w),
+                    y: Math.round(b.y + p.y * b.h)
+                }));
+                return { ...shape, points: cPts };
+            } else if (coords.natural?.points || coords.points) {
+                const rawPts = coords.natural?.points || coords.points;
+                const cPts = rawPts.map(p => {
+                    const px = p.x !== undefined ? p.x : p[0];
+                    const py = p.y !== undefined ? p.y : p[1];
+                    if (px <= 1.01 && py <= 1.01 && nw > 1) {
+                        return {
+                            x: Math.round(b.x + px * b.w),
+                            y: Math.round(b.y + py * b.h)
+                        };
+                    }
+                    return {
+                        x: Math.round(b.x + (px / nw) * b.w),
+                        y: Math.round(b.y + (py / nh) * b.h)
+                    };
+                });
+                return { ...shape, points: cPts };
+            }
         }
         return shape;
     });
@@ -846,6 +911,9 @@ const handleCanvasMouseUp = (e) => {
         activeHandleIndex.value = null;
         activeVertexIndex.value = null;
         dragOriginalShape.value = null;
+        if (selectedShapeObj.value) {
+            updateShapeRawCoords(selectedShapeObj.value);
+        }
         redrawCanvas();
         return;
     }
@@ -884,6 +952,7 @@ const handleCanvasMouseUp = (e) => {
                     w: Math.round(width),
                     h: Math.round(height)
                 };
+                updateShapeRawCoords(newShape);
 
                 shapes.value = [...filtered, newShape];
                 selectedShapeId.value = newShape.id;
@@ -911,6 +980,7 @@ const handleCanvasMouseUp = (e) => {
                     w: Math.round(width),
                     h: Math.round(height)
                 };
+                updateShapeRawCoords(newShape);
 
                 shapes.value = [...filtered, newShape];
                 selectedShapeId.value = newShape.id;
@@ -945,6 +1015,7 @@ const handleCanvasDoubleClick = () => {
                 type: 'polygon',
                 points: [...polygonPoints.value]
             };
+            updateShapeRawCoords(newShape);
 
             shapes.value = [...filtered, newShape];
             selectedShapeId.value = newShape.id;
@@ -970,6 +1041,7 @@ const handleCanvasDoubleClick = () => {
                 type: 'polygon',
                 points: [...polygonPoints.value]
             };
+            updateShapeRawCoords(newShape);
 
             shapes.value = [...filtered, newShape];
             selectedShapeId.value = newShape.id;
@@ -1108,7 +1180,7 @@ const executeAutoSplit = () => {
         const floorTop = Math.round(currentBottom - floorHeight);
         const floorLabel = fl.floor_number < 0 ? `${fl.floor_number}-yerto'la` : `${fl.floor_number}-qavat`;
 
-        newShapes.push({
+        const s = {
             id: fl.id,
             floorId: fl.id,
             floor: fl.floor_number,
@@ -1118,7 +1190,9 @@ const executeAutoSplit = () => {
             y: floorTop,
             w: Math.round(box.w),
             h: floorHeight
-        });
+        };
+        updateShapeRawCoords(s);
+        newShapes.push(s);
 
         currentBottom = floorTop;
     });
@@ -1154,6 +1228,7 @@ const alignAllFloorWidths = () => {
         if (s.type === 'rect') {
             s.x = targetX;
             s.w = targetW;
+            updateShapeRawCoords(s);
         }
     });
 
@@ -1214,13 +1289,13 @@ const handleSave = async () => {
                         norm: { x: normX, y: normY, w: normW, h: normH }
                     };
                 } else if (s.type === 'polygon' && s.points) {
-                    const natPoints = s.points.map(p => ({
-                        x: Math.round(Math.min(1, Math.max(0, (p.x - b.x) / b.w)) * nw),
-                        y: Math.round(Math.min(1, Math.max(0, (p.y - b.y) / b.h)) * nh)
-                    }));
                     const normPoints = s.points.map(p => ({
-                        x: Math.min(1, Math.max(0, (p.x - b.x) / b.w)),
-                        y: Math.min(1, Math.max(0, (p.y - b.y) / b.h))
+                        x: Math.min(1, Math.max(0, ((p.x !== undefined ? p.x : p[0]) - b.x) / b.w)),
+                        y: Math.min(1, Math.max(0, ((p.y !== undefined ? p.y : p[1]) - b.y) / b.h))
+                    }));
+                    const natPoints = normPoints.map(p => ({
+                        x: Math.round(p.x * nw),
+                        y: Math.round(p.y * nh)
                     }));
                     shapeJson = {
                         type: 'polygon',
@@ -1238,10 +1313,19 @@ const handleSave = async () => {
             });
 
             const targetUrl = route('admin.facility.buildings.save_facade_floors', selectedBuilding.value.id);
-            await axios.post(targetUrl, {
+            const res = await axios.post(targetUrl, {
                 floors: floorCoords,
                 facade_data: { shapes: shapes.value }
             });
+
+            // Update in-memory floor objects so switching scopes doesn't lose data
+            floorCoords.forEach(fc => {
+                const fl = availableFloors.value.find(f => f.id === fc.id);
+                if (fl) {
+                    fl.facade_polygon = fc.facade_polygon;
+                }
+            });
+            shapes.value.forEach(s => updateShapeRawCoords(s));
 
             isError.value = false;
             message.value = '✅ Barcha qavat koordinatalari muvaffaqiyatli saqlandi!';
@@ -1275,13 +1359,13 @@ const handleSave = async () => {
                             norm: { x: normX, y: normY, w: normW, h: normH }
                         };
                     } else if (shape.type === 'polygon' && shape.points) {
-                        const natPoints = shape.points.map(p => ({
-                            x: Math.round(((p.x - b.x) / b.w) * nw),
-                            y: Math.round(((p.y - b.y) / b.h) * nh)
-                        }));
                         const normPoints = shape.points.map(p => ({
-                            x: (p.x - b.x) / b.w,
-                            y: (p.y - b.y) / b.h
+                            x: Math.min(1, Math.max(0, ((p.x !== undefined ? p.x : p[0]) - b.x) / b.w)),
+                            y: Math.min(1, Math.max(0, ((p.y !== undefined ? p.y : p[1]) - b.y) / b.h))
+                        }));
+                        const natPoints = normPoints.map(p => ({
+                            x: Math.round(p.x * nw),
+                            y: Math.round(p.y * nh)
                         }));
                         shapeJson = {
                             type: 'polygon',
@@ -1305,7 +1389,22 @@ const handleSave = async () => {
             });
 
             const targetUrl = route('admin.facility.floors.save_shapes', floor.id);
-            await axios.post(targetUrl, { shapes: unitShapesPayload });
+            const res = await axios.post(targetUrl, { shapes: unitShapesPayload });
+
+            // Update in-memory unit objects and shapes rawCoords
+            unitShapesPayload.forEach(usp => {
+                const u = floorUnits.value.find(uItem => uItem.unit_number === usp.unit_number || uItem.id === usp.id);
+                if (u) {
+                    u.svg_polygon = usp.svg_polygon;
+                }
+                if (selectedFloorObj.value && selectedFloorObj.value.units) {
+                    const fu = selectedFloorObj.value.units.find(uItem => uItem.unit_number === usp.unit_number || uItem.id === usp.id);
+                    if (fu) {
+                        fu.svg_polygon = usp.svg_polygon;
+                    }
+                }
+            });
+            shapes.value.forEach(s => updateShapeRawCoords(s));
 
             isError.value = false;
             message.value = '✅ Qavat xonadonlari va chizmalari muvaffaqiyatli saqlandi!';

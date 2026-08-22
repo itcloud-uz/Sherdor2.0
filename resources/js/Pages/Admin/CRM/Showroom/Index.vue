@@ -62,6 +62,24 @@ const activeFloorBlueprintUrl = computed(() => {
 
 const floorBlueprintNaturalSize = ref({ width: 1200, height: 800 });
 
+const loadFloorBlueprintDimensions = (url) => {
+    if (!url) return;
+    const img = new Image();
+    img.onload = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+            floorBlueprintNaturalSize.value = {
+                width: img.naturalWidth,
+                height: img.naturalHeight
+            };
+        }
+    };
+    img.src = url;
+};
+
+watch(activeFloorBlueprintUrl, (newUrl) => {
+    loadFloorBlueprintDimensions(newUrl);
+}, { immediate: true });
+
 const getUnitSvgShape = (unit) => {
     if (!unit || !unit.svg_polygon) return null;
     try {

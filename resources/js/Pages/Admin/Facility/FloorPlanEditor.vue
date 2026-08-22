@@ -468,25 +468,91 @@ const drawShapes = (context, currentShapes) => {
     });
 };
 
-const drawResizeHandles = (context, shape) => {
-    const handles = [
-        [shape.x, shape.y],
-        [shape.x + shape.w, shape.y],
-        [shape.x + shape.w, shape.y + shape.h],
-        [shape.x, shape.y + shape.h],
-        [shape.x + shape.w / 2, shape.y],
-        [shape.x + shape.w / 2, shape.y + shape.h],
-        [shape.x, shape.y + shape.h / 2],
-        [shape.x + shape.w, shape.y + shape.h / 2]
-    ];
+// Active Dragging State for Moving & Resizing
+const dragAction = ref('none'); // 'none', 'move_shape', 'resize_handle', 'drag_vertex'
+const activeHandleIndex = ref(null); // 0..7
+const activeVertexIndex = ref(null); // index of polygon point
+const dragStartPos = ref({ x: 0, y: 0 });
+const dragOriginalShape = ref(null);
 
-    context.fillStyle = '#fbbf24';
-    context.strokeStyle = '#000000';
-    context.lineWidth = 1.5;
-    handles.forEach((handle) => {
-        context.fillRect(handle[0] - 5, handle[1] - 5, 10, 10);
-        context.strokeRect(handle[0] - 5, handle[1] - 5, 10, 10);
-    });
+// Get 8 handles for rectangle shape
+const getShapeHandles = (shape) => {
+    if (!shape || shape.type !== 'rect') return [];
+    return [
+        { index: 0, x: shape.x, y: shape.y, cursor: 'nwse-resize' }, // Top-Left
+        { index: 1, x: shape.x + shape.w / 2, y: shape.y, cursor: 'ns-resize' }, // Top-Middle
+        { index: 2, x: shape.x + shape.w, y: shape.y, cursor: 'nesw-resize' }, // Top-Right
+        { index: 3, x: shape.x + shape.w, y: shape.y + shape.h / 2, cursor: 'ew-resize' }, // Middle-Right
+        { index: 4, x: shape.x + shape.w, y: shape.y + shape.h, cursor: 'nwse-resize' }, // Bottom-Right
+        { index: 5, x: shape.x + shape.w / 2, y: shape.y + shape.h, cursor: 'ns-resize' }, // Bottom-Middle
+        { index: 6, x: shape.x, y: shape.y + shape.h, cursor: 'nesw-resize' }, // Bottom-Left
+        { index: 7, x: shape.x, y: shape.y + shape.h / 2, cursor: 'ew-resize' }, // Middle-Left
+    ];
+};
+
+// Check if point is inside rectangle
+const isPointInRect = (x, y, rx, ry, rw, rh) => {
+    return x >= rx && x <= rx + rw && y >= ry && y <= ry + rh;
+};
+
+// Check if point is inside polygon
+const isPointInPolygon = (x, y, points) => {
+    if (!points || points.length < 3) return false;
+    let inside = false;
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+        const xi = points[i].x || points[i][0], yi = points[i].y || points[i][1];
+        const xj = points[j].x || points[j][0], yj = points[j].y || points[j][1];
+        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+};
+
+// Check if point hits a handle (within 9px tolerance)
+const getHandleUnderPoint = (shape, x, y) => {
+    if (!shape || shape.type !== 'rect') return null;
+    const handles = getShapeHandles(shape);
+    for (const h of handles) {
+        if (Math.abs(x - h.x) <= 9 && Math.abs(y - h.y) <= 9) {
+            return h;
+        }
+    }
+    return null;
+};
+
+// Check if point hits a polygon vertex (within 9px tolerance)
+const getVertexUnderPoint = (shape, x, y) => {
+    if (!shape || shape.type !== 'polygon' || !shape.points) return null;
+    for (let i = 0; i < shape.points.length; i++) {
+        const pt = shape.points[i];
+        const px = pt.x || pt[0], py = pt.y || pt[1];
+        if (Math.abs(x - px) <= 9 && Math.abs(y - py) <= 9) {
+            return { index: i, x: px, y: py };
+        }
+    }
+    return null;
+};
+
+const drawResizeHandles = (context, shape) => {
+    if (shape.type === 'rect') {
+        const handles = getShapeHandles(shape);
+        context.fillStyle = '#fbbf24';
+        context.strokeStyle = '#000000';
+        context.lineWidth = 1.5;
+        handles.forEach((h) => {
+            context.fillRect(h.x - 5, h.y - 5, 10, 10);
+            context.strokeRect(h.x - 5, h.y - 5, 10, 10);
+        });
+    } else if (shape.type === 'polygon' && shape.points) {
+        context.fillStyle = '#fbbf24';
+        context.strokeStyle = '#000000';
+        context.lineWidth = 1.5;
+        shape.points.forEach((pt) => {
+            const px = pt.x || pt[0], py = pt.y || pt[1];
+            context.fillRect(px - 5, py - 5, 10, 10);
+            context.strokeRect(px - 5, py - 5, 10, 10);
+        });
+    }
 };
 
 const getCentroid = (points) => {
@@ -551,38 +617,82 @@ const handleBlueprintUpload = (e) => {
 const handleCanvasMouseDown = (e) => {
     if (!canvasElement.value) return;
 
-    if (editorScope.value === 'facade' && !selectedFloor.value) {
-        isError.value = true;
-        message.value = '⚠️ Avval chap tarafdan qavatni tanlang!';
-        setTimeout(() => message.value = '', 3000);
-        return;
-    }
-
-    if (editorScope.value === 'floor' && !selectedUnitId.value) {
-        isError.value = true;
-        message.value = '⚠️ Avval chap tarafdan xonadonni tanlang!';
-        setTimeout(() => message.value = '', 3000);
-        return;
-    }
-
     const rect = canvasElement.value.getBoundingClientRect();
     const x = (e.clientX - rect.left) / (zoom.value / 100);
     const y = (e.clientY - rect.top) / (zoom.value / 100);
 
-    if (drawingMode.value === 'select') {
-        const clickedShape = shapes.value.find(
-            (s) => s.type === 'rect' && x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h
-        );
-        selectedShapeId.value = clickedShape?.id || null;
-        if (clickedShape) {
-            if (editorScope.value === 'facade') {
-                selectedFloor.value = clickedShape.floor;
-            } else {
-                selectedUnitId.value = clickedShape.unitId || clickedShape.id;
-            }
+    const activeShape = selectedShapeObj.value;
+
+    // 1. Check if clicking on 8 resize handles of selected shape
+    if (activeShape && activeShape.type === 'rect') {
+        const handle = getHandleUnderPoint(activeShape, x, y);
+        if (handle) {
+            dragAction.value = 'resize_handle';
+            activeHandleIndex.value = handle.index;
+            dragStartPos.value = { x, y };
+            dragOriginalShape.value = { ...activeShape };
+            return;
         }
+    }
+
+    // 2. Check if clicking on polygon vertex point of selected shape
+    if (activeShape && activeShape.type === 'polygon') {
+        const vertex = getVertexUnderPoint(activeShape, x, y);
+        if (vertex) {
+            dragAction.value = 'drag_vertex';
+            activeVertexIndex.value = vertex.index;
+            dragStartPos.value = { x, y };
+            dragOriginalShape.value = {
+                ...activeShape,
+                points: activeShape.points.map(p => ({ x: p.x || p[0], y: p.y || p[1] }))
+            };
+            return;
+        }
+    }
+
+    // 3. Check if clicking inside any shape to select and move it
+    const clickedShape = shapes.value.find(s => {
+        if (s.type === 'rect') return isPointInRect(x, y, s.x, s.y, s.w, s.h);
+        if (s.type === 'polygon') return isPointInPolygon(x, y, s.points);
+        return false;
+    });
+
+    if (clickedShape) {
+        selectedShapeId.value = clickedShape.id;
+        if (editorScope.value === 'facade') {
+            selectedFloor.value = clickedShape.floor;
+        } else {
+            selectedUnitId.value = clickedShape.unitId || clickedShape.id;
+        }
+
+        // Initiate move dragging
+        dragAction.value = 'move_shape';
+        dragStartPos.value = { x, y };
+        dragOriginalShape.value = {
+            ...clickedShape,
+            points: clickedShape.points ? clickedShape.points.map(p => ({ x: p.x || p[0], y: p.y || p[1] })) : null
+        };
+        redrawCanvas();
+        return;
+    }
+
+    // 4. If in empty space:
+    if (drawingMode.value === 'select') {
+        selectedShapeId.value = null;
         redrawCanvas();
     } else if (drawingMode.value === 'rect') {
+        if (editorScope.value === 'facade' && !selectedFloor.value) {
+            isError.value = true;
+            message.value = '⚠️ Avval chap tarafdan qavatni tanlang!';
+            setTimeout(() => message.value = '', 3000);
+            return;
+        }
+        if (editorScope.value === 'floor' && !selectedUnitId.value) {
+            isError.value = true;
+            message.value = '⚠️ Avval chap tarafdan xonadonni tanlang!';
+            setTimeout(() => message.value = '', 3000);
+            return;
+        }
         isDrawing.value = true;
         startPos.value = [x, y];
     } else if (drawingMode.value === 'polygon') {
@@ -597,6 +707,87 @@ const handleCanvasMouseMove = (e) => {
     const x = (e.clientX - rect.left) / (zoom.value / 100);
     const y = (e.clientY - rect.top) / (zoom.value / 100);
 
+    // A. Handle Resizing Handle
+    if (dragAction.value === 'resize_handle' && dragOriginalShape.value) {
+        const orig = dragOriginalShape.value;
+        const dx = x - dragStartPos.value.x;
+        const dy = y - dragStartPos.value.y;
+
+        const shape = shapes.value.find(s => s.id === selectedShapeId.value);
+        if (shape && shape.type === 'rect') {
+            let nx = orig.x, ny = orig.y, nw = orig.w, nh = orig.h;
+
+            switch (activeHandleIndex.value) {
+                case 0: // Top-Left
+                    nx = orig.x + dx; ny = orig.y + dy; nw = orig.w - dx; nh = orig.h - dy; break;
+                case 1: // Top-Middle
+                    ny = orig.y + dy; nh = orig.h - dy; break;
+                case 2: // Top-Right
+                    ny = orig.y + dy; nw = orig.w + dx; nh = orig.h - dy; break;
+                case 3: // Middle-Right
+                    nw = orig.w + dx; break;
+                case 4: // Bottom-Right
+                    nw = orig.w + dx; nh = orig.h + dy; break;
+                case 5: // Bottom-Middle
+                    nh = orig.h + dy; break;
+                case 6: // Bottom-Left
+                    nx = orig.x + dx; nw = orig.w - dx; nh = orig.h + dy; break;
+                case 7: // Middle-Left
+                    nx = orig.x + dx; nw = orig.w - dx; break;
+            }
+
+            if (nw > 8 && nh > 8) {
+                shape.x = Math.round(nx);
+                shape.y = Math.round(ny);
+                shape.w = Math.round(nw);
+                shape.h = Math.round(nh);
+            }
+            redrawCanvas();
+        }
+        return;
+    }
+
+    // B. Handle Dragging Polygon Vertex
+    if (dragAction.value === 'drag_vertex' && dragOriginalShape.value && activeVertexIndex.value !== null) {
+        const orig = dragOriginalShape.value;
+        const shape = shapes.value.find(s => s.id === selectedShapeId.value);
+        if (shape && shape.type === 'polygon' && shape.points) {
+            const origPt = orig.points[activeVertexIndex.value];
+            const dx = x - dragStartPos.value.x;
+            const dy = y - dragStartPos.value.y;
+
+            shape.points[activeVertexIndex.value] = {
+                x: Math.round(origPt.x + dx),
+                y: Math.round(origPt.y + dy)
+            };
+            redrawCanvas();
+        }
+        return;
+    }
+
+    // C. Handle Moving Entire Shape
+    if (dragAction.value === 'move_shape' && dragOriginalShape.value) {
+        const orig = dragOriginalShape.value;
+        const dx = x - dragStartPos.value.x;
+        const dy = y - dragStartPos.value.y;
+
+        const shape = shapes.value.find(s => s.id === selectedShapeId.value);
+        if (shape) {
+            if (shape.type === 'rect') {
+                shape.x = Math.round(orig.x + dx);
+                shape.y = Math.round(orig.y + dy);
+            } else if (shape.type === 'polygon' && orig.points) {
+                shape.points = orig.points.map(p => ({
+                    x: Math.round(p.x + dx),
+                    y: Math.round(p.y + dy)
+                }));
+            }
+            redrawCanvas();
+        }
+        return;
+    }
+
+    // D. Live Rectangle Drawing Preview
     if (isDrawing.value && startPos.value && drawingMode.value === 'rect') {
         redrawCanvas();
 
@@ -615,11 +806,50 @@ const handleCanvasMouseMove = (e) => {
         context.fillRect(rx, ry, rw, rh);
         context.strokeRect(rx, ry, rw, rh);
         context.setLineDash([]);
+        return;
     }
+
+    // E. Dynamic Cursor Update on Hover
+    const activeShape = selectedShapeObj.value;
+    if (activeShape && activeShape.type === 'rect') {
+        const handle = getHandleUnderPoint(activeShape, x, y);
+        if (handle) {
+            canvasElement.value.style.cursor = handle.cursor;
+            return;
+        }
+    }
+    if (activeShape && activeShape.type === 'polygon') {
+        const vertex = getVertexUnderPoint(activeShape, x, y);
+        if (vertex) {
+            canvasElement.value.style.cursor = 'grab';
+            return;
+        }
+    }
+    if (activeShape) {
+        const isInside = activeShape.type === 'rect' 
+            ? isPointInRect(x, y, activeShape.x, activeShape.y, activeShape.w, activeShape.h)
+            : isPointInPolygon(x, y, activeShape.points);
+        if (isInside) {
+            canvasElement.value.style.cursor = 'move';
+            return;
+        }
+    }
+
+    canvasElement.value.style.cursor = drawingMode.value === 'select' ? 'default' : 'crosshair';
 };
 
 const handleCanvasMouseUp = (e) => {
     if (!canvasElement.value) return;
+
+    if (dragAction.value !== 'none') {
+        dragAction.value = 'none';
+        activeHandleIndex.value = null;
+        activeVertexIndex.value = null;
+        dragOriginalShape.value = null;
+        redrawCanvas();
+        return;
+    }
+
     if (!isDrawing.value || !startPos.value) {
         isDrawing.value = false;
         return;

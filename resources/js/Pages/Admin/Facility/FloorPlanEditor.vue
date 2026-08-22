@@ -1425,6 +1425,75 @@ const drawnFloors = computed(() => new Set(shapes.value.map(s => s.floor)));
 const drawnUnits = computed(() => new Set(shapes.value.map(s => s.unit_number || s.unitId)));
 const selectedShapeObj = computed(() => shapes.value.find(s => s.id === selectedShapeId.value) || null);
 
+// Clone Floor Plan to Other Floors State & Logic
+const showCloneModal = ref(false);
+const cloneTargetFloorIds = ref([]);
+const cloneCopyBlueprint = ref(true);
+const cloneCopyShapes = ref(true);
+const isCloning = ref(false);
+
+const openCloneFloorModal = () => {
+    if (!selectedFloorObj.value) return;
+    cloneTargetFloorIds.value = availableFloors.value
+        .filter(f => f.id !== selectedFloorObj.value.id && f.floor_number > 0)
+        .map(f => f.id);
+    cloneCopyBlueprint.value = true;
+    cloneCopyShapes.value = true;
+    showCloneModal.value = true;
+};
+
+const toggleSelectAllCloneFloors = () => {
+    const otherFloors = availableFloors.value.filter(f => f.id !== selectedFloorObj.value?.id && f.floor_number > 0);
+    if (cloneTargetFloorIds.value.length === otherFloors.length) {
+        cloneTargetFloorIds.value = [];
+    } else {
+        cloneTargetFloorIds.value = otherFloors.map(f => f.id);
+    }
+};
+
+const executeCloneFloor = async () => {
+    const sourceFloor = selectedFloorObj.value;
+    if (!sourceFloor || cloneTargetFloorIds.value.length === 0) {
+        isError.value = true;
+        message.value = '⚠️ Kamida bitta qabul qiluvchi qavatni tanlang!';
+        setTimeout(() => message.value = '', 3000);
+        return;
+    }
+
+    try {
+        isCloning.value = true;
+        isError.value = false;
+        message.value = '📋 Qavatlar nusxalanmoqda...';
+
+        const targetUrl = route('admin.facility.floors.clone_to_floors', sourceFloor.id);
+        const res = await axios.post(targetUrl, {
+            target_floor_ids: cloneTargetFloorIds.value,
+            copy_blueprint: cloneCopyBlueprint.value,
+            copy_shapes: cloneCopyShapes.value
+        });
+
+        if (res.data?.buildings && selectedBuilding.value) {
+            const currentBld = res.data.buildings.find(b => b.id === selectedBuilding.value.id);
+            if (currentBld) {
+                if (currentBld.floors) selectedBuilding.value.floors = currentBld.floors;
+                if (currentBld.podezes) selectedBuilding.value.podezes = currentBld.podezes;
+            }
+        }
+
+        showCloneModal.value = false;
+        isError.value = false;
+        message.value = `✓ ${cloneTargetFloorIds.value.length} ta qavatga muvaffaqiyatli nusxalandi!`;
+        setTimeout(() => message.value = '', 4000);
+    } catch(err) {
+        console.error('Clone error:', err);
+        isError.value = true;
+        message.value = '❌ Nusxalashda xatolik: ' + (err.response?.data?.message || err.message || 'Xatolik');
+        setTimeout(() => message.value = '', 4000);
+    } finally {
+        isCloning.value = false;
+    }
+};
+
 onMounted(() => {
     window.addEventListener('resize', updateCanvasSize);
     nextTick(() => {
@@ -1603,6 +1672,17 @@ onUnmounted(() => {
                         class="hidden"
                     />
                 </label>
+
+                <!-- Clone Floor to Other Floors (Scope: Floor) -->
+                <button
+                    v-if="editorScope === 'floor'"
+                    @click="openCloneFloorModal"
+                    class="h-8 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                    title="Ushbu qavat chizmasi va xonadonlar koordinatalarini boshqa qavatlarga nusxalash"
+                >
+                    <span>📋</span>
+                    <span>Qavatni Nusxalash</span>
+                </button>
 
                 <button
                     v-if="selectedShapeId"
@@ -1983,6 +2063,104 @@ onUnmounted(() => {
                         class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center gap-1.5"
                     >
                         <span>✨</span> Tekis Taqsimlash
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clone Floor Modal (Tipovoy Qavatlarga Nusxalash) -->
+        <div v-if="showCloneModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-slate-800 space-y-4 animate-in fade-in zoom-in duration-150">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold border border-blue-200">
+                            📋
+                        </div>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">Qavat Chizmasini Boshqa Qavatlarga Nusxalash</h3>
+                            <p class="text-xs text-slate-500 font-medium">{{ selectedFloorObj?.floor_number }}-qavat chizmasi va xonadonlar joylashuvini ko'chirish</p>
+                        </div>
+                    </div>
+                    <button @click="showCloneModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold cursor-pointer">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="space-y-3.5 text-xs font-bold">
+                    <!-- Info Box -->
+                    <div class="p-3.5 bg-blue-50/80 border border-blue-200 rounded-2xl text-blue-900 space-y-1">
+                        <p class="font-extrabold flex items-center gap-1.5">
+                            <span>💡</span> Tipovoy Qavatlar Avtomatizatsiyasi
+                        </p>
+                        <p class="text-[11px] font-normal leading-relaxed text-blue-800">
+                            Agar binoda boshqa qavatlarning chizmasi va xonadonlar joylashuvi shu qavat bilan bir xil bo'lsa, ularning barchasiga bir tugma orqali 1 soniyada nusxalashingiz mumkin.
+                        </p>
+                    </div>
+
+                    <!-- Target Floors Multi-Select Grid -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-slate-800 font-extrabold text-xs">Qaysi qavatlarga nusxalansin?</label>
+                            <button 
+                                type="button" 
+                                @click="toggleSelectAllCloneFloors" 
+                                class="text-[11px] text-blue-600 hover:text-blue-800 underline font-bold cursor-pointer"
+                            >
+                                {{ cloneTargetFloorIds.length === availableFloors.filter(f => f.id !== selectedFloorObj?.id && f.floor_number > 0).length ? 'Barchasini bekor qilish' : 'Barchasini tanlash' }}
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-50 border border-slate-200 rounded-2xl">
+                            <label 
+                                v-for="fl in availableFloors.filter(f => f.id !== selectedFloorObj?.id && f.floor_number > 0)" 
+                                :key="'clone-fl-' + fl.id"
+                                class="flex items-center gap-1.5 p-2 rounded-xl border text-xs cursor-pointer transition-all"
+                                :class="cloneTargetFloorIds.includes(fl.id) ? 'bg-blue-50 border-blue-300 text-blue-900 font-black shadow-xs' : 'bg-white border-slate-200 text-slate-600 font-medium hover:bg-slate-100'"
+                            >
+                                <input 
+                                    type="checkbox" 
+                                    :value="fl.id" 
+                                    v-model="cloneTargetFloorIds" 
+                                    class="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                                />
+                                <span>{{ fl.floor_number }}-qavat</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" v-model="cloneCopyBlueprint" class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4" />
+                            <div>
+                                <span class="text-slate-900 font-extrabold text-xs">📐 Qavat chizmasi rasmini (Blueprint) ham ko'chirish</span>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" v-model="cloneCopyShapes" class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4" />
+                            <div>
+                                <span class="text-slate-900 font-extrabold text-xs">⬛ Xonadonlarning barcha chizma koordinatalari (SVG)ni ko'chirish</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                    <button
+                        @click="showCloneModal = false"
+                        class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                    >
+                        Bekor qilish
+                    </button>
+                    <button
+                        @click="executeCloneFloor"
+                        :disabled="isCloning || cloneTargetFloorIds.length === 0"
+                        class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                        <span>{{ isCloning ? '⏳' : '✨' }}</span>
+                        <span>{{ isCloning ? 'Nusxalanmoqda...' : `${cloneTargetFloorIds.length} ta Qavatga Nusxalash` }}</span>
                     </button>
                 </div>
             </div>

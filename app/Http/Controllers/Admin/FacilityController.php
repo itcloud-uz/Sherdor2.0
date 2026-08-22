@@ -1986,6 +1986,66 @@ class FacilityController extends Controller
         return redirect()->back()->with('message', 'Qavat chizmasi muvaffaqiyatli yuklandi!');
     }
 
+    public function cloneFloorToOtherFloors(Request $request, $floorId)
+    {
+        $sourceFloor = Floor::with('units')->findOrFail($floorId);
+
+        $validated = $request->validate([
+            'target_floor_ids' => 'required|array|min:1',
+            'target_floor_ids.*' => 'integer',
+            'copy_blueprint' => 'nullable|boolean',
+            'copy_shapes' => 'nullable|boolean',
+        ]);
+
+        $copyBlueprint = $request->boolean('copy_blueprint', true);
+        $copyShapes = $request->boolean('copy_shapes', true);
+
+        DB::transaction(function () use ($sourceFloor, $validated, $copyBlueprint, $copyShapes) {
+            $sourceUnits = $sourceFloor->units->sortBy('id')->values();
+
+            foreach ($validated['target_floor_ids'] as $targetId) {
+                if ($targetId == $sourceFloor->id) continue;
+                $targetFloor = Floor::with('units')->find($targetId);
+                if (!$targetFloor) continue;
+
+                // 1. Copy blueprint image path
+                if ($copyBlueprint && $sourceFloor->blueprint_path) {
+                    $targetFloor->update([
+                        'blueprint_path' => $sourceFloor->blueprint_path
+                    ]);
+                }
+
+                // 2. Copy unit shapes and specs
+                if ($copyShapes && $sourceUnits->count() > 0) {
+                    $targetUnits = $targetFloor->units->sortBy('id')->values();
+
+                    foreach ($sourceUnits as $index => $sUnit) {
+                        if (!$sUnit->svg_polygon) continue;
+
+                        if (isset($targetUnits[$index])) {
+                            $targetUnits[$index]->update([
+                                'svg_polygon' => $sUnit->svg_polygon,
+                                'rooms_count' => $targetUnits[$index]->rooms_count ?: $sUnit->rooms_count,
+                                'area_sqm' => $targetUnits[$index]->area_sqm ?: $sUnit->area_sqm,
+                                'type' => $sUnit->type ?? 'residential',
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Qavat chizmasi va xonadonlar tanlangan qavatlarga muvaffaqiyatli nusxalandi!",
+                'buildings' => Building::with(['podezes.floors.units', 'floors.units'])->get()
+            ]);
+        }
+
+        return redirect()->back()->with('message', 'Qavat chizmasi va xonadonlar tanlangan qavatlarga muvaffaqiyatli nusxalandi!');
+    }
+
     public function uploadBuildingFacade(Request $request, $buildingId)
     {
         $building = Building::findOrFail($buildingId);

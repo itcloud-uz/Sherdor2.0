@@ -1118,16 +1118,32 @@ onUnmounted(() => {
 
                     <!-- Facade Mode Form -->
                     <div v-if="editorMode === 'facade'" class="space-y-4">
-                        <div v-if="selectedShape">
-                            <label class="text-xs font-bold text-gray-500 uppercase block mb-1">Ushbu chiziq tegishli qavat:</label>
-                            <select v-model="selectedShape.floor_id" class="w-full text-xs font-bold rounded-xl border-gray-200 p-2.5 focus:ring-blue-500">
-                                <option v-for="f in availableFloors" :key="f.id" :value="f.id">
-                                    {{ f.floor_number < 0 ? `${f.floor_number}-yerto'la` : `${f.floor_number}-qavat` }}
-                                </option>
-                            </select>
+                        <div v-if="selectedShape" class="space-y-3 bg-blue-50/50 p-3.5 rounded-2xl border border-blue-100">
+                            <div>
+                                <label class="text-xs font-bold text-gray-700 uppercase block mb-1">Ushbu chiziq tegishli qavat:</label>
+                                <select v-model="selectedShape.floor_id" class="w-full text-xs font-bold rounded-xl border-gray-200 p-2.5 focus:ring-blue-500 bg-white">
+                                    <option v-for="f in availableFloors" :key="f.id" :value="f.id">
+                                        {{ f.floor_number < 0 ? `${f.floor_number}-yerto'la` : `${f.floor_number}-qavat` }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div v-if="selectedShape.shape_data" class="grid grid-cols-2 gap-2 text-[11px] font-mono text-gray-600 bg-white p-2.5 rounded-xl border border-gray-100">
+                                <div><b>X:</b> {{ Math.round(selectedShape.shape_data.left || 0) }}</div>
+                                <div><b>Y:</b> {{ Math.round(selectedShape.shape_data.top || 0) }}</div>
+                                <div><b>W:</b> {{ Math.round(selectedShape.shape_data.width || 0) }}px</div>
+                                <div><b>H:</b> {{ Math.round(selectedShape.shape_data.height || 0) }}px</div>
+                            </div>
+
+                            <button 
+                                @click="deleteSelectedShape"
+                                class="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl border border-red-200 transition-all flex items-center justify-center gap-1"
+                            >
+                                <span>🗑️</span> Ushbu shaklni o'chirish
+                            </button>
                         </div>
                         <div v-else class="text-xs text-gray-400 font-semibold p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-center">
-                            Fasadda qavatni belgilash uchun yuqoridan To'rtburchak yoki Ko'pburchak vositasini tanlab chizing.
+                            Fasadda qavatni belgilash uchun yuqoridan To'rtburchak yoki Ko'pburchak vositasini tanlab chizing yoki pastdan qavatni tanlang.
                         </div>
 
                         <!-- All Floors Facade Status List -->

@@ -1,8 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Canvas, Rect, Polygon, Circle, Line, Point, util, FabricImage } from 'fabric';
+import { Head, Link } from '@inertiajs/vue3';
+import axios from 'axios';
 
 const props = defineProps({
     buildings: {
@@ -19,12 +18,7 @@ const props = defineProps({
     }
 });
 
-const page = usePage();
-
-// Editor Mode: 'facade' (Bino Fasadi Muharriri) | 'floor_plan' (Qavat Chizmasi Muharriri)
-const editorMode = ref('facade');
-
-// Selected Building and Floor
+// Selected Building
 const selectedBuildingId = ref(props.initialBuildingId || (props.buildings.length > 0 ? props.buildings[0].id : null));
 const selectedBuilding = computed(() => {
     return props.buildings.find(b => b.id === Number(selectedBuildingId.value)) || null;
@@ -41,7 +35,6 @@ const availableFloors = computed(() => {
             if (p.floors) list.push(...p.floors);
         });
     }
-    // Remove duplicates
     const unique = [];
     const map = new Map();
     for (const item of list) {
@@ -53,1153 +46,785 @@ const availableFloors = computed(() => {
     return unique.sort((a, b) => a.floor_number - b.floor_number);
 });
 
-const selectedFloorId = ref(props.initialFloorId || (availableFloors.value.length > 0 ? availableFloors.value[0].id : null));
-
-// Ensure valid selectedFloorId when building changes
-watch(selectedBuilding, (newB) => {
-    if (newB && availableFloors.value.length > 0) {
-        if (!availableFloors.value.some(f => f.id === selectedFloorId.value)) {
-            selectedFloorId.value = availableFloors.value[0].id;
-        }
-    } else {
-        selectedFloorId.value = null;
-    }
-    loadCurrentModeData();
-}, { immediate: true });
-
-const selectedFloor = computed(() => {
-    return availableFloors.value.find(f => f.id === Number(selectedFloorId.value)) || null;
-});
-
 // Canvas & Editor State
-const canvasContainerRef = ref(null);
-const canvasElementRef = ref(null);
-let fabricCanvas = null;
-
-const currentTool = ref('select'); // 'select', 'rectangle', 'polygon'
-const zoomLevel = ref(1);
-const isSaving = ref(false);
-const saveSuccessMessage = ref('');
-const isUploading = ref(false);
+const canvasRef = useRefCanvas();
 const fileInputRef = ref(null);
-const facadeFileInputRef = ref(null);
 
-// Active Shapes & Selection State
-const shapes = ref([]); // For Floor Plan Units
-const facadeFloorShapes = ref([]); // For Facade Floor bands
-const selectedShape = ref(null);
-const selectedItemIndex = ref(-1);
+function useRefCanvas() {
+    return ref(null);
+}
 
-// Polygon Drawing In-Progress State
-const isDrawingPolygon = ref(false);
+const canvasElement = ref(null);
+const ctx = ref(null);
+const facadeImageObj = ref(null);
+const facadeImageUrl = ref(null);
+
+const shapes = ref([]);
+const selectedFloor = ref(null);
+const drawingMode = ref('rect'); // 'select', 'rect', 'polygon'
+const isDrawing = ref(false);
+const startPos = ref(null);
+const zoom = ref(100);
+const message = ref('');
+const selectedShapeId = ref(null);
+const isSaving = ref(false);
+
+// Polygon in-progress drawing points
 const polygonPoints = ref([]);
-const tempLines = [];
-let activePolygonPreview = null;
 
-// Natural dimensions
-const currentImageDimensions = ref({ width: 1200, height: 800 });
+// Image natural size & render size
+const imgRenderBounds = ref({ x: 50, y: 50, w: 800, h: 600 });
 
-// Status colors
-const STATUS_COLORS = {
-    available: { fill: 'rgba(16, 185, 129, 0.35)', stroke: '#10b981', text: '#065f46', label: 'Sotuvda' },
-    reserved: { fill: 'rgba(245, 158, 11, 0.4)', stroke: '#f59e0b', text: '#92400e', label: 'Bron qilingan' },
-    sold: { fill: 'rgba(239, 68, 68, 0.4)', stroke: '#ef4444', text: '#991b1b', label: 'Sotilgan' }
-};
-
-// Safe Pointer retrieval for Fabric.js 7
-const getPointerCoords = (opt) => {
-    if (opt.scenePoint) {
-        return { x: opt.scenePoint.x, y: opt.scenePoint.y };
-    }
-    if (opt.viewportPoint && fabricCanvas) {
-        const vpt = fabricCanvas.viewportTransform || [1, 0, 0, 1, 0, 0];
-        return {
-            x: (opt.viewportPoint.x - vpt[4]) / vpt[0],
-            y: (opt.viewportPoint.y - vpt[5]) / vpt[3]
-        };
-    }
-    return { x: opt.e?.offsetX || 0, y: opt.e?.offsetY || 0 };
-};
-
-// Initialize Canvas
-const initCanvas = () => {
-    if (!canvasContainerRef.value || !canvasElementRef.value) return;
-
-    if (fabricCanvas) {
-        fabricCanvas.dispose();
-    }
-
-    const containerWidth = canvasContainerRef.value.clientWidth || 900;
-    const containerHeight = Math.max(580, window.innerHeight - 280);
-
-    fabricCanvas = new Canvas(canvasElementRef.value, {
-        width: containerWidth,
-        height: containerHeight,
-        backgroundColor: '#0f172a',
-        selection: true,
-        preserveObjectStacking: true,
-        fireRightClick: true,
-        stopContextMenu: true
-    });
-
-    fabricCanvas.on('selection:created', (e) => onCanvasObjectSelected(e.selected?.[0]));
-    fabricCanvas.on('selection:updated', (e) => onCanvasObjectSelected(e.selected?.[0]));
-    fabricCanvas.on('selection:cleared', onCanvasSelectionCleared);
-
-    fabricCanvas.on('object:modified', (e) => {
-        if (e.target && e.target.shapeMeta) {
-            syncFabricObjectToMeta(e.target);
-        }
-    });
-
-    // Rectangle Drag Drawing State
-    const isDraggingRect = ref(false);
-    let rectStartPos = null;
-    let rectPreviewObj = null;
-
-    // Drawing handlers
-    fabricCanvas.on('mouse:down', (opt) => {
-        if (opt.e.button === 2) {
-            // Right click cancels polygon
-            if (isDrawingPolygon.value) {
-                cancelPolygonDrawing();
-            }
-            if (isDraggingRect.value) {
-                if (rectPreviewObj) fabricCanvas.remove(rectPreviewObj);
-                isDraggingRect.value = false;
-                rectStartPos = null;
-                rectPreviewObj = null;
-            }
-            return;
-        }
-
-        const pointer = getPointerCoords(opt);
-
-        if (currentTool.value === 'rectangle') {
-            rectStartPos = pointer;
-            isDraggingRect.value = true;
-            rectPreviewObj = new Rect({
-                left: pointer.x,
-                top: pointer.y,
-                width: 1,
-                height: 1,
-                fill: 'rgba(59, 130, 246, 0.35)',
-                stroke: '#3b82f6',
-                strokeWidth: 2,
-                strokeDashArray: [4, 4],
-                selectable: false,
-                evented: false
-            });
-            fabricCanvas.add(rectPreviewObj);
-        } else if (currentTool.value === 'polygon') {
-            handlePolygonPointAdd(pointer);
-        }
-    });
-
-    fabricCanvas.on('mouse:move', (opt) => {
-        const pointer = getPointerCoords(opt);
-        if (isDraggingRect.value && rectStartPos && rectPreviewObj) {
-            const left = Math.min(rectStartPos.x, pointer.x);
-            const top = Math.min(rectStartPos.y, pointer.y);
-            const width = Math.max(2, Math.abs(pointer.x - rectStartPos.x));
-            const height = Math.max(2, Math.abs(pointer.y - rectStartPos.y));
-            rectPreviewObj.set({ left, top, width, height });
-            fabricCanvas.renderAll();
-        } else if (isDrawingPolygon.value && polygonPoints.value.length > 0) {
-            updatePolygonPreview(pointer);
-        }
-    });
-
-    fabricCanvas.on('mouse:up', (opt) => {
-        if (isDraggingRect.value && rectStartPos) {
-            const pointer = getPointerCoords(opt);
-            if (rectPreviewObj) {
-                fabricCanvas.remove(rectPreviewObj);
-                rectPreviewObj = null;
-            }
-            const width = Math.abs(pointer.x - rectStartPos.x);
-            const height = Math.abs(pointer.y - rectStartPos.y);
-            const left = Math.min(rectStartPos.x, pointer.x);
-            const top = Math.min(rectStartPos.y, pointer.y);
-
-            if (width > 15 && height > 15) {
-                createRectangleWithBounds(left, top, width, height);
-            } else {
-                createRectangleAt(pointer.x, pointer.y);
-            }
-            isDraggingRect.value = false;
-            rectStartPos = null;
-            currentTool.value = 'select';
-        }
-    });
-
-    fabricCanvas.on('mouse:dblclick', () => {
-        if (isDrawingPolygon.value && polygonPoints.value.length >= 3) {
-            finishPolygonDrawing();
-        }
-    });
-
-    loadCurrentModeData();
-};
-
-// Mode switcher handler
-const switchEditorMode = (mode) => {
-    editorMode.value = mode;
-    currentTool.value = 'select';
-    if (isDrawingPolygon.value) cancelPolygonDrawing();
-    loadCurrentModeData();
-};
-
-// Load Data depending on mode
-const loadCurrentModeData = () => {
-    if (!fabricCanvas) return;
-    if (editorMode.value === 'facade') {
-        loadFacadeModeData();
-    } else {
-        loadFloorPlanModeData();
-    }
-};
-
-// Load Background Image
-const loadBackgroundImage = async (imageUrl) => {
-    if (!fabricCanvas) return;
-
-    if (!imageUrl) {
-        fabricCanvas.backgroundImage = null;
-        fabricCanvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-        fabricCanvas.renderAll();
-        return;
-    }
-
+// Parse coordinates
+const parseCoordinates = (raw) => {
+    if (!raw) return null;
+    if (typeof raw === 'object') return raw;
     try {
-        const img = await FabricImage.fromURL(imageUrl, { crossOrigin: 'anonymous' });
-        if (!img || !fabricCanvas) return;
-
-        const imgWidth = img.width || 1200;
-        const imgHeight = img.height || 800;
-        currentImageDimensions.value = { width: imgWidth, height: imgHeight };
-
-        const containerWidth = canvasContainerRef.value?.clientWidth || 900;
-        const containerHeight = Math.max(580, window.innerHeight - 280);
-
-        fabricCanvas.setDimensions({ width: containerWidth, height: containerHeight });
-
-        const scaleX = (containerWidth - 40) / imgWidth;
-        const scaleY = (containerHeight - 40) / imgHeight;
-        const scale = Math.min(scaleX, scaleY);
-
-        const posX = (containerWidth - imgWidth * scale) / 2;
-        const posY = (containerHeight - imgHeight * scale) / 2;
-
-        img.set({
-            originX: 'left',
-            originY: 'top',
-            left: 0,
-            top: 0,
-            scaleX: 1,
-            scaleY: 1,
-            selectable: false,
-            evented: false
-        });
-
-        fabricCanvas.backgroundImage = img;
-        fabricCanvas.setViewportTransform([scale, 0, 0, scale, posX, posY]);
-        fabricCanvas.renderAll();
-    } catch (err) {
-        console.error('Error loading background image', err);
-    }
-};
-
-// Parse coordinates helper
-const parseCoordinates = (shapeString) => {
-    if (!shapeString) return null;
-    try {
-        if (typeof shapeString === 'object') return shapeString;
-        return JSON.parse(shapeString);
-    } catch (e) {
+        return JSON.parse(raw);
+    } catch(e) {
         return null;
     }
 };
 
-// ==========================================
-// 1. FACADE MODE DATA & LOGIC
-// ==========================================
-const loadFacadeModeData = () => {
-    if (!fabricCanvas || !selectedBuilding.value) return;
+// Initialize building data and floors
+const loadBuildingData = () => {
+    if (!selectedBuilding.value) return;
 
-    fabricCanvas.clear();
-    facadeFloorShapes.value = [];
-    selectedShape.value = null;
-    selectedItemIndex.value = -1;
+    shapes.value = [];
+    selectedShapeId.value = null;
 
+    // Set initial selected floor
+    if (availableFloors.value.length > 0 && !selectedFloor.value) {
+        selectedFloor.value = availableFloors.value[0].floor_number;
+    }
+
+    // Set facade image
     const bgUrl = selectedBuilding.value.facade_image 
         ? `/storage/${selectedBuilding.value.facade_image}` 
-        : (selectedBuilding.value.photo_path ? `/storage/${selectedBuilding.value.photo_path}` : (selectedBuilding.value.showroom_images?.[0] ? `/storage/${selectedBuilding.value.showroom_images[0]}` : null));
+        : (selectedBuilding.value.photo_path ? `/storage/${selectedBuilding.value.photo_path}` : '/images/clean-building-facade.jpg');
 
-    loadBackgroundImage(bgUrl);
+    loadImage(bgUrl);
 
-    const loadedBands = [];
+    // Load existing floor shapes from DB
+    const loaded = [];
     availableFloors.value.forEach((floor) => {
         const coords = parseCoordinates(floor.facade_polygon);
-        const shapeMeta = {
-            id: floor.id,
-            floor_id: floor.id,
-            floor_number: floor.floor_number,
-            shape_data: coords || null,
-            fabricObject: null
-        };
-
         if (coords) {
-            let fabricObj = null;
             if (coords.type === 'rect') {
-                fabricObj = new Rect({
-                    left: coords.left,
-                    top: coords.top,
-                    width: coords.width,
-                    height: coords.height,
-                    fill: 'rgba(59, 130, 246, 0.35)',
-                    stroke: '#60a5fa',
-                    strokeWidth: 2,
-                    cornerColor: '#3b82f6',
-                    cornerSize: 8,
-                    transparentCorners: false
+                loaded.push({
+                    id: floor.id,
+                    floorId: floor.id,
+                    floor: floor.floor_number,
+                    floorLabel: floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat`,
+                    type: 'rect',
+                    x: coords.left || coords.x || 100,
+                    y: coords.top || coords.y || 100,
+                    w: coords.width || coords.w || 200,
+                    h: coords.height || coords.h || 60
                 });
             } else if (coords.type === 'polygon' && coords.points) {
-                fabricObj = new Polygon(coords.points, {
-                    fill: 'rgba(59, 130, 246, 0.35)',
-                    stroke: '#60a5fa',
-                    strokeWidth: 2,
-                    cornerColor: '#3b82f6',
-                    cornerSize: 8,
-                    transparentCorners: false
+                loaded.push({
+                    id: floor.id,
+                    floorId: floor.id,
+                    floor: floor.floor_number,
+                    floorLabel: floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat`,
+                    type: 'polygon',
+                    points: coords.points
                 });
             }
-
-            if (fabricObj) {
-                fabricObj.shapeMeta = shapeMeta;
-                shapeMeta.fabricObject = fabricObj;
-                fabricCanvas.add(fabricObj);
-            }
         }
-
-        loadedBands.push(shapeMeta);
     });
 
-    facadeFloorShapes.value = loadedBands;
-    fabricCanvas.renderAll();
+    shapes.value = loaded;
+    nextTick(() => redrawCanvas());
 };
 
-// ==========================================
-// 2. FLOOR PLAN MODE DATA & LOGIC
-// ==========================================
-const loadFloorPlanModeData = () => {
-    if (!fabricCanvas || !selectedFloor.value) return;
+watch(selectedBuilding, () => {
+    loadBuildingData();
+}, { immediate: true });
 
-    fabricCanvas.clear();
-    shapes.value = [];
-    selectedShape.value = null;
-    selectedItemIndex.value = -1;
-
-    const bgUrl = selectedFloor.value.blueprint_path 
-        ? `/storage/${selectedFloor.value.blueprint_path}` 
-        : (selectedBuilding.value?.blueprint_path ? `/storage/${selectedBuilding.value.blueprint_path}` : null);
-
-    loadBackgroundImage(bgUrl);
-
-    const floorUnits = selectedFloor.value.units || [];
-    const loadedShapes = [];
-
-    floorUnits.forEach((unit) => {
-        const coords = parseCoordinates(unit.svg_polygon);
-        const statusConfig = STATUS_COLORS[unit.status] || STATUS_COLORS.available;
-
-        const shapeItem = {
-            id: unit.id,
-            unit_number: unit.unit_number,
-            type: unit.type || 'residential',
-            area_sqm: unit.area_sqm,
-            price: unit.price,
-            status: unit.status || 'available',
-            rooms_count: unit.rooms_count || 1,
-            podyezd: unit.podyezd || 1,
-            shape_data: coords,
-            fabricObject: null
-        };
-
-        if (coords) {
-            let fabricObj = null;
-            if (coords.type === 'rect') {
-                fabricObj = new Rect({
-                    left: coords.left,
-                    top: coords.top,
-                    width: coords.width,
-                    height: coords.height,
-                    fill: statusConfig.fill,
-                    stroke: statusConfig.stroke,
-                    strokeWidth: 2.5,
-                    cornerColor: '#3b82f6',
-                    cornerSize: 8,
-                    transparentCorners: false
-                });
-            } else if (coords.type === 'polygon' && coords.points) {
-                fabricObj = new Polygon(coords.points, {
-                    fill: statusConfig.fill,
-                    stroke: statusConfig.stroke,
-                    strokeWidth: 2.5,
-                    cornerColor: '#3b82f6',
-                    cornerSize: 8,
-                    transparentCorners: false
-                });
-            }
-
-            if (fabricObj) {
-                fabricObj.shapeMeta = shapeItem;
-                shapeItem.fabricObject = fabricObj;
-                fabricCanvas.add(fabricObj);
-            }
-        }
-
-        loadedShapes.push(shapeItem);
-    });
-
-    shapes.value = loadedShapes;
-    fabricCanvas.renderAll();
-};
-
-const selectFloorForDrawing = (floorId) => {
-    const item = facadeFloorShapes.value.find(f => f.floor_id === floorId);
-    if (item && item.fabricObject) {
-        fabricCanvas.setActiveObject(item.fabricObject);
-        fabricCanvas.renderAll();
-        onCanvasObjectSelected(item.fabricObject);
-    } else if (item) {
-        fabricCanvas.discardActiveObject();
-        fabricCanvas.renderAll();
-        selectedShape.value = item;
-    }
-};
-
-// Create Rectangle with custom bounds helper
-const createRectangleWithBounds = (left, top, width, height) => {
-    const statusConfig = STATUS_COLORS.available;
-
-    if (editorMode.value === 'facade') {
-        let targetFloorId = selectedShape.value?.floor_id;
-        let unassigned = facadeFloorShapes.value.find(f => f.floor_id === targetFloorId);
-        if (!unassigned) {
-            unassigned = facadeFloorShapes.value.find(f => !f.shape_data) || facadeFloorShapes.value[0];
-            targetFloorId = unassigned ? unassigned.floor_id : availableFloors.value[0]?.id;
-        }
-
-        const newMeta = {
-            id: targetFloorId,
-            floor_id: targetFloorId,
-            floor_number: unassigned?.floor_number || 1,
-            shape_data: {
-                type: 'rect',
-                left: Math.round(left),
-                top: Math.round(top),
-                width: Math.round(width),
-                height: Math.round(height)
-            },
-            fabricObject: null
-        };
-
-        const rect = new Rect({
-            left: Math.round(left),
-            top: Math.round(top),
-            width: Math.round(width),
-            height: Math.round(height),
-            fill: 'rgba(59, 130, 246, 0.35)',
-            stroke: '#60a5fa',
-            strokeWidth: 2,
-            cornerColor: '#3b82f6',
-            cornerSize: 8,
-            transparentCorners: false
-        });
-
-        rect.shapeMeta = newMeta;
-        newMeta.fabricObject = rect;
-        fabricCanvas.add(rect);
-        fabricCanvas.setActiveObject(rect);
-        fabricCanvas.renderAll();
-
-        if (unassigned) {
-            unassigned.shape_data = newMeta.shape_data;
-            unassigned.fabricObject = rect;
-            rect.shapeMeta = unassigned;
-            selectedShape.value = unassigned;
-        } else {
-            facadeFloorShapes.value.push(newMeta);
-            selectedShape.value = newMeta;
-        }
-        onCanvasObjectSelected(rect);
-    } else {
-        // Floor Plan Mode
-        const nextNum = (shapes.value.length + 1).toString();
-        const newShapeMeta = {
-            id: null,
-            unit_number: nextNum,
-            type: 'residential',
-            area_sqm: 60,
-            price: 500000000,
-            status: 'available',
-            rooms_count: 2,
-            podyezd: 1,
-            shape_data: {
-                type: 'rect',
-                left: Math.round(left),
-                top: Math.round(top),
-                width: Math.round(width),
-                height: Math.round(height)
-            },
-            fabricObject: null
-        };
-
-        const rect = new Rect({
-            left: Math.round(left),
-            top: Math.round(top),
-            width: Math.round(width),
-            height: Math.round(height),
-            fill: statusConfig.fill,
-            stroke: statusConfig.stroke,
-            strokeWidth: 2.5,
-            cornerColor: '#3b82f6',
-            cornerSize: 8,
-            transparentCorners: false
-        });
-
-        rect.shapeMeta = newShapeMeta;
-        newShapeMeta.fabricObject = rect;
-        fabricCanvas.add(rect);
-        fabricCanvas.setActiveObject(rect);
-        shapes.value.push(newShapeMeta);
-        selectedShape.value = newShapeMeta;
-        fabricCanvas.renderAll();
-        onCanvasObjectSelected(rect);
-    }
-};
-
-// Create Rectangle Helper
-const createRectangleAt = (x, y) => {
-    const rectW = Math.round(currentImageDimensions.value.width * 0.16) || 120;
-    const rectH = Math.round(currentImageDimensions.value.height * 0.08) || 60;
-};
-
-// Polygon Drawing Handlers
-const handlePolygonPointAdd = (pointer) => {
-    if (!isDrawingPolygon.value) {
-        isDrawingPolygon.value = true;
-        polygonPoints.value = [];
-    }
-
-    polygonPoints.value.push({ x: pointer.x, y: pointer.y });
-
-    // Add small visual guide circle
-    const pointCircle = new Circle({
-        radius: 4,
-        fill: '#3b82f6',
-        stroke: '#ffffff',
-        strokeWidth: 1.5,
-        left: pointer.x,
-        top: pointer.y,
-        originX: 'center',
-        originY: 'center',
-        selectable: false,
-        evented: false
-    });
-    tempLines.push(pointCircle);
-    fabricCanvas.add(pointCircle);
-    fabricCanvas.renderAll();
-};
-
-const updatePolygonPreview = (pointer) => {
-    if (activePolygonPreview) {
-        fabricCanvas.remove(activePolygonPreview);
-    }
-
-    const currentPoints = [...polygonPoints.value, { x: pointer.x, y: pointer.y }];
-    activePolygonPreview = new Polygon(currentPoints, {
-        fill: editorMode.value === 'facade' ? 'rgba(59, 130, 246, 0.25)' : 'rgba(16, 185, 129, 0.25)',
-        stroke: '#3b82f6',
-        strokeWidth: 1.5,
-        strokeDashArray: [4, 4],
-        selectable: false,
-        evented: false
-    });
-
-    fabricCanvas.add(activePolygonPreview);
-    fabricCanvas.renderAll();
-};
-
-const finishPolygonDrawing = () => {
-    if (polygonPoints.value.length < 3) {
-        cancelPolygonDrawing();
+// Load Image into Canvas
+const loadImage = (url) => {
+    if (!url) {
+        facadeImageObj.value = null;
+        facadeImageUrl.value = null;
+        redrawCanvas();
         return;
     }
 
-    tempLines.forEach(l => fabricCanvas.remove(l));
-    tempLines.length = 0;
-    if (activePolygonPreview) {
-        fabricCanvas.remove(activePolygonPreview);
-        activePolygonPreview = null;
-    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        facadeImageObj.value = img;
+        facadeImageUrl.value = url;
 
-    const pts = [...polygonPoints.value];
-    isDrawingPolygon.value = false;
-    polygonPoints.value = [];
-    currentTool.value = 'select';
+        const cw = canvasElement.value?.width || 900;
+        const ch = canvasElement.value?.height || 700;
 
-    if (editorMode.value === 'facade') {
-        const unassigned = facadeFloorShapes.value.find(f => !f.shape_data) || facadeFloorShapes.value[0];
-        const floorId = unassigned ? unassigned.floor_id : availableFloors.value[0]?.id;
+        const scaleX = (cw - 80) / img.width;
+        const scaleY = (ch - 80) / img.height;
+        const scale = Math.min(scaleX, scaleY, 1);
 
-        const newMeta = {
-            id: floorId,
-            floor_id: floorId,
-            floor_number: unassigned?.floor_number || 1,
-            shape_data: { type: 'polygon', points: pts },
-            fabricObject: null
-        };
+        const rw = img.width * scale;
+        const rh = img.height * scale;
+        const rx = (cw - rw) / 2;
+        const ry = (ch - rh) / 2;
 
-        const poly = new Polygon(pts, {
-            fill: 'rgba(59, 130, 246, 0.35)',
-            stroke: '#60a5fa',
-            strokeWidth: 2,
-            cornerColor: '#3b82f6',
-            cornerSize: 8,
-            transparentCorners: false
-        });
-
-        poly.shapeMeta = newMeta;
-        newMeta.fabricObject = poly;
-        fabricCanvas.add(poly);
-        fabricCanvas.setActiveObject(poly);
-        fabricCanvas.renderAll();
-
-        if (unassigned) {
-            unassigned.shape_data = newMeta.shape_data;
-            unassigned.fabricObject = poly;
-            poly.shapeMeta = unassigned;
-        } else {
-            facadeFloorShapes.value.push(newMeta);
-        }
-        onCanvasObjectSelected(poly);
-    } else {
-        const statusConfig = STATUS_COLORS.available;
-        const nextNum = (shapes.value.length + 1).toString();
-        const newShapeMeta = {
-            id: null,
-            unit_number: nextNum,
-            type: 'residential',
-            area_sqm: 60,
-            price: 500000000,
-            status: 'available',
-            rooms_count: 2,
-            podyezd: 1,
-            shape_data: { type: 'polygon', points: pts },
-            fabricObject: null
-        };
-
-        const poly = new Polygon(pts, {
-            fill: statusConfig.fill,
-            stroke: statusConfig.stroke,
-            strokeWidth: 2.5,
-            cornerColor: '#3b82f6',
-            cornerSize: 8,
-            transparentCorners: false
-        });
-
-        poly.shapeMeta = newShapeMeta;
-        newShapeMeta.fabricObject = poly;
-
-        fabricCanvas.add(poly);
-        fabricCanvas.setActiveObject(poly);
-        fabricCanvas.renderAll();
-
-        shapes.value.push(newShapeMeta);
-        onCanvasObjectSelected(poly);
-    }
-};
-
-const cancelPolygonDrawing = () => {
-    isDrawingPolygon.value = false;
-    polygonPoints.value = [];
-    tempLines.forEach(l => fabricCanvas.remove(l));
-    tempLines.length = 0;
-    if (activePolygonPreview) {
-        fabricCanvas.remove(activePolygonPreview);
-        activePolygonPreview = null;
-    }
-    fabricCanvas.renderAll();
-};
-
-// Sync Fabric Object to Meta Data
-const syncFabricObjectToMeta = (obj) => {
-    if (!obj || !obj.shapeMeta) return;
-    const meta = obj.shapeMeta;
-
-    if (obj.type === 'rect') {
-        const left = Math.round(obj.left);
-        const top = Math.round(obj.top);
-        const width = Math.round(obj.width * (obj.scaleX || 1));
-        const height = Math.round(obj.height * (obj.scaleY || 1));
-
-        meta.shape_data = { type: 'rect', left, top, width, height };
-    } else if (obj.type === 'polygon') {
-        const matrix = obj.calcTransformMatrix();
-        const absolutePoints = (obj.points || []).map(p => {
-            const pt = util.transformPoint(
-                new Point(p.x - obj.pathOffset.x, p.y - obj.pathOffset.y),
-                matrix
-            );
-            return { x: Math.round(pt.x), y: Math.round(pt.y) };
-        });
-
-        meta.shape_data = { type: 'polygon', points: absolutePoints };
-    }
-};
-
-// Selection Handling
-const onCanvasObjectSelected = (obj) => {
-    if (!obj || !obj.shapeMeta) return;
-    selectedShape.value = obj.shapeMeta;
-    if (editorMode.value === 'facade') {
-        selectedItemIndex.value = facadeFloorShapes.value.findIndex(s => s === obj.shapeMeta);
-    } else {
-        selectedItemIndex.value = shapes.value.findIndex(s => s === obj.shapeMeta);
-    }
-};
-
-const onCanvasSelectionCleared = () => {
-    selectedShape.value = null;
-    selectedItemIndex.value = -1;
-};
-
-// Delete Selected Shape
-const deleteSelectedShape = () => {
-    if (!fabricCanvas || !selectedShape.value) return;
-    const obj = selectedShape.value.fabricObject;
-    if (obj) {
-        fabricCanvas.remove(obj);
-    }
-    if (editorMode.value === 'facade') {
-        selectedShape.value.shape_data = null;
-        selectedShape.value.fabricObject = null;
-    } else {
-        shapes.value = shapes.value.filter(s => s !== selectedShape.value);
-    }
-    selectedShape.value = null;
-    selectedItemIndex.value = -1;
-    fabricCanvas.renderAll();
-};
-
-// Zoom Helpers
-const resetZoom = () => {
-    if (!fabricCanvas) return;
-    zoomLevel.value = 1;
-    const imgWidth = currentImageDimensions.value.width;
-    const imgHeight = currentImageDimensions.value.height;
-    const containerWidth = canvasContainerRef.value?.clientWidth || 900;
-    const containerHeight = Math.max(580, window.innerHeight - 280);
-    const scale = Math.min((containerWidth - 40) / imgWidth, (containerHeight - 40) / imgHeight);
-    const posX = (containerWidth - imgWidth * scale) / 2;
-    const posY = (containerHeight - imgHeight * scale) / 2;
-    fabricCanvas.setViewportTransform([scale, 0, 0, scale, posX, posY]);
-    fabricCanvas.renderAll();
-};
-
-const setZoom = (factor) => {
-    if (!fabricCanvas) return;
-    let newZoom = zoomLevel.value * factor;
-    newZoom = Math.max(0.4, Math.min(4, newZoom));
-    zoomLevel.value = newZoom;
-    const center = fabricCanvas.getCenterPoint ? fabricCanvas.getCenterPoint() : new Point((fabricCanvas.width || 900) / 2, (fabricCanvas.height || 600) / 2);
-    fabricCanvas.zoomToPoint(center, newZoom);
-};
-
-// Save Action
-const saveAllData = async () => {
-    if (editorMode.value === 'facade') {
-        await saveFacadeData();
-    } else {
-        await saveFloorPlanData();
-    }
-};
-
-const saveFacadeData = async () => {
-    if (!selectedBuilding.value) return;
-    isSaving.value = true;
-    saveSuccessMessage.value = '';
-
-    fabricCanvas.getObjects().forEach(obj => syncFabricObjectToMeta(obj));
-
-    const payload = {
-        floors: facadeFloorShapes.value.map(f => ({
-            id: f.floor_id,
-            facade_polygon: f.shape_data ? JSON.stringify(f.shape_data) : null
-        }))
+        imgRenderBounds.value = { x: rx, y: ry, w: rw, h: rh };
+        redrawCanvas();
     };
+    img.src = url;
+};
 
-    try {
-        const res = await axios.post(route('admin.facility.buildings.save_facade_floors', selectedBuilding.value.id), payload);
-        saveSuccessMessage.value = 'Bino fasadi va qavatlar muvaffaqiyatli saqlandi!';
-        setTimeout(() => { saveSuccessMessage.value = ''; }, 3500);
-    } catch (err) {
-        console.error('Error saving facade', err);
-        alert('Xatolik: Saqlashda muammo yuz berdi!');
-    } finally {
-        isSaving.value = false;
+// Canvas drawing functions
+const redrawCanvas = () => {
+    const canvas = canvasElement.value;
+    if (!canvas) return;
+    const context = ctx.value || canvas.getContext('2d');
+    if (!context) return;
+    ctx.value = context;
+
+    // Background
+    context.fillStyle = '#0f172a';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw facade image if exists
+    if (facadeImageObj.value) {
+        const b = imgRenderBounds.value;
+        context.drawImage(facadeImageObj.value, b.x, b.y, b.w, b.h);
+        context.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        context.lineWidth = 1;
+        context.strokeRect(b.x, b.y, b.w, b.h);
+    } else {
+        context.fillStyle = '#1e293b';
+        context.fillRect(50, 50, canvas.width - 100, canvas.height - 100);
+        context.fillStyle = '#94a3b8';
+        context.font = 'bold 16px Arial';
+        context.textAlign = 'center';
+        context.fillText('Fasad rasmini yuklash uchun yuqoridagi tugmani bosing', canvas.width / 2, canvas.height / 2);
     }
-};
 
-const saveFloorPlanData = async () => {
-    if (!selectedFloor.value) return;
-    isSaving.value = true;
-    saveSuccessMessage.value = '';
+    // Draw all shapes
+    drawShapes(context, shapes.value);
 
-    fabricCanvas.getObjects().forEach(obj => syncFabricObjectToMeta(obj));
+    // Draw polygon preview if in-progress
+    if (drawingMode.value === 'polygon' && polygonPoints.value.length > 0) {
+        context.strokeStyle = '#38bdf8';
+        context.fillStyle = 'rgba(56, 189, 248, 0.2)';
+        context.lineWidth = 2;
+        context.setLineDash([4, 4]);
 
-    const payload = {
-        shapes: shapes.value.map(s => ({
-            id: s.id,
-            unit_number: s.unit_number,
-            type: s.type,
-            area_sqm: s.area_sqm,
-            price: s.price,
-            status: s.status,
-            rooms_count: s.rooms_count,
-            podyezd: s.podyezd,
-            shape_data: s.shape_data,
-            svg_polygon: s.shape_data ? JSON.stringify(s.shape_data) : null
-        }))
-    };
-
-    try {
-        const res = await axios.post(route('admin.facility.floors.save_shapes', selectedFloor.value.id), payload);
-        saveSuccessMessage.value = 'Qavat xonadonlari muvaffaqiyatli saqlandi!';
-        setTimeout(() => { saveSuccessMessage.value = ''; }, 3500);
-    } catch (err) {
-        console.error('Error saving floor shapes', err);
-        alert('Xatolik: Saqlashda muammo yuz berdi!');
-    } finally {
-        isSaving.value = false;
-    }
-};
-
-// Upload Blueprint for Floor
-const triggerBlueprintUpload = () => {
-    fileInputRef.value?.click();
-};
-
-const onBlueprintFileSelected = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !selectedFloor.value) return;
-
-    const formData = new FormData();
-    formData.append('blueprint', file);
-
-    isUploading.value = true;
-    try {
-        const res = await axios.post(route('admin.facility.floors.upload_blueprint', selectedFloor.value.id), formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        if (res.data?.blueprint_url) {
-            await loadBackgroundImage(res.data.blueprint_url);
-            saveSuccessMessage.value = 'Qavat chizmasi yuklandi!';
-            setTimeout(() => { saveSuccessMessage.value = ''; }, 3000);
+        context.beginPath();
+        context.moveTo(polygonPoints.value[0].x, polygonPoints.value[0].y);
+        for (let i = 1; i < polygonPoints.value.length; i++) {
+            context.lineTo(polygonPoints.value[i].x, polygonPoints.value[i].y);
         }
-    } catch (err) {
-        alert('Fayl yuklashda xatolik yuz berdi!');
-    } finally {
-        isUploading.value = false;
+        context.stroke();
+        context.setLineDash([]);
+
+        polygonPoints.value.forEach(p => {
+            context.fillStyle = '#38bdf8';
+            context.beginPath();
+            context.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            context.fill();
+        });
     }
 };
 
-// Upload Facade Image for Building
-const triggerFacadeUpload = () => {
-    facadeFileInputRef.value?.click();
+// Draw all shapes with handles & labels
+const drawShapes = (context, currentShapes) => {
+    currentShapes.forEach((shape) => {
+        const isSelected = shape.id === selectedShapeId.value;
+
+        if (shape.type === 'rect') {
+            context.strokeStyle = isSelected ? '#FFD700' : '#22C55E';
+            context.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.28)' : 'rgba(34, 197, 94, 0.22)';
+            context.lineWidth = isSelected ? 3 : 2;
+
+            context.fillRect(shape.x, shape.y, shape.w, shape.h);
+            context.strokeRect(shape.x, shape.y, shape.w, shape.h);
+
+            // Label
+            context.fillStyle = '#FFFFFF';
+            context.font = 'bold 13px sans-serif';
+            context.textAlign = 'left';
+            context.fillText(shape.floorLabel || `${shape.floor}-qavat`, shape.x + 8, shape.y + 20);
+
+            // Selection handles
+            if (isSelected) {
+                drawResizeHandles(context, shape);
+            }
+        } else if (shape.type === 'polygon') {
+            context.strokeStyle = isSelected ? '#FFD700' : '#10B981';
+            context.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.28)' : 'rgba(16, 185, 129, 0.22)';
+            context.lineWidth = isSelected ? 3 : 2;
+
+            if (shape.points && shape.points.length > 0) {
+                context.beginPath();
+                context.moveTo(shape.points[0].x || shape.points[0][0], shape.points[0].y || shape.points[0][1]);
+                for (let i = 1; i < shape.points.length; i++) {
+                    const pt = shape.points[i];
+                    context.lineTo(pt.x || pt[0], pt.y || pt[1]);
+                }
+                context.closePath();
+                context.fill();
+                context.stroke();
+
+                // Centroid Label
+                const centroid = getCentroid(shape.points);
+                context.fillStyle = '#FFFFFF';
+                context.font = 'bold 13px sans-serif';
+                context.textAlign = 'center';
+                context.fillText(shape.floorLabel || `${shape.floor}-qavat`, centroid.x, centroid.y);
+            }
+        }
+    });
 };
 
-const onFacadeFileSelected = async (e) => {
-    const file = e.target.files[0];
+const drawResizeHandles = (context, shape) => {
+    const handles = [
+        [shape.x, shape.y],
+        [shape.x + shape.w, shape.y],
+        [shape.x + shape.w, shape.y + shape.h],
+        [shape.x, shape.y + shape.h],
+        [shape.x + shape.w / 2, shape.y],
+        [shape.x + shape.w / 2, shape.y + shape.h],
+        [shape.x, shape.y + shape.h / 2],
+        [shape.x + shape.w, shape.y + shape.h / 2]
+    ];
+
+    context.fillStyle = '#FFD700';
+    context.strokeStyle = '#000000';
+    context.lineWidth = 1;
+    handles.forEach((handle) => {
+        context.fillRect(handle[0] - 4, handle[1] - 4, 8, 8);
+        context.strokeRect(handle[0] - 4, handle[1] - 4, 8, 8);
+    });
+};
+
+const getCentroid = (points) => {
+    let sx = 0, sy = 0;
+    points.forEach(p => {
+        sx += (p.x || p[0]);
+        sy += (p.y || p[1]);
+    });
+    return { x: sx / points.length, y: sy / points.length };
+};
+
+// Image Upload Handler
+const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
     if (!file || !selectedBuilding.value) return;
 
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const imageData = event.target?.result;
+        loadImage(imageData);
+        message.value = "✓ Fasad rasmi yuklandi!";
+        setTimeout(() => message.value = '', 3000);
+    };
+    reader.readAsDataURL(file);
+
+    // Also upload to server
     const formData = new FormData();
     formData.append('facade', file);
+    axios.post(route('admin.facility.buildings.upload_facade', selectedBuilding.value.id), formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }).catch(() => {});
+};
 
-    isUploading.value = true;
-    try {
-        const res = await axios.post(route('admin.facility.buildings.upload_facade', selectedBuilding.value.id), formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        if (res.data?.facade_url) {
-            await loadBackgroundImage(res.data.facade_url);
-            saveSuccessMessage.value = 'Bino fasadi surati yuklandi!';
-            setTimeout(() => { saveSuccessMessage.value = ''; }, 3000);
+// Canvas Mouse Events
+const handleCanvasMouseDown = (e) => {
+    if (!canvasElement.value) return;
+
+    if (!selectedFloor.value) {
+        message.value = '⚠️ Avval chap tarafdan qavatni tanlang!';
+        setTimeout(() => message.value = '', 3000);
+        return;
+    }
+
+    const rect = canvasElement.value.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / (zoom.value / 100);
+    const y = (e.clientY - rect.top) / (zoom.value / 100);
+
+    if (drawingMode.value === 'select') {
+        const clickedShape = shapes.value.find(
+            (s) => s.type === 'rect' && x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h
+        );
+        selectedShapeId.value = clickedShape?.id || null;
+        if (clickedShape) {
+            selectedFloor.value = clickedShape.floor;
         }
-    } catch (err) {
-        alert('Fasad yuklashda xatolik yuz berdi!');
-    } finally {
-        isUploading.value = false;
+        redrawCanvas();
+    } else if (drawingMode.value === 'rect') {
+        isDrawing.value = true;
+        startPos.value = [x, y];
+    } else if (drawingMode.value === 'polygon') {
+        polygonPoints.value.push({ x, y });
+        redrawCanvas();
     }
 };
+
+const handleCanvasMouseMove = (e) => {
+    if (!canvasElement.value) return;
+    const rect = canvasElement.value.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / (zoom.value / 100);
+    const y = (e.clientY - rect.top) / (zoom.value / 100);
+
+    if (isDrawing.value && startPos.value && drawingMode.value === 'rect') {
+        redrawCanvas();
+
+        const context = ctx.value;
+        if (!context) return;
+        context.strokeStyle = '#22C55E';
+        context.fillStyle = 'rgba(34, 197, 94, 0.25)';
+        context.lineWidth = 2;
+        context.setLineDash([4, 4]);
+
+        const rx = Math.min(startPos.value[0], x);
+        const ry = Math.min(startPos.value[1], y);
+        const rw = Math.abs(x - startPos.value[0]);
+        const rh = Math.abs(y - startPos.value[1]);
+
+        context.fillRect(rx, ry, rw, rh);
+        context.strokeRect(rx, ry, rw, rh);
+        context.setLineDash([]);
+    }
+};
+
+const handleCanvasMouseUp = (e) => {
+    if (!canvasElement.value) return;
+    if (!isDrawing.value || !startPos.value) {
+        isDrawing.value = false;
+        return;
+    }
+
+    const rect = canvasElement.value.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / (zoom.value / 100);
+    const y = (e.clientY - rect.top) / (zoom.value / 100);
+
+    if (drawingMode.value === 'rect') {
+        const width = Math.abs(x - startPos.value[0]);
+        const height = Math.abs(y - startPos.value[1]);
+        const left = Math.min(startPos.value[0], x);
+        const top = Math.min(startPos.value[1], y);
+
+        if (width > 10 && height > 10) {
+            // Find target floor object
+            const floorObj = availableFloors.value.find(f => f.floor_number === selectedFloor.value);
+            const floorId = floorObj ? floorObj.id : Date.now();
+            const floorLabel = floorObj ? (floorObj.floor_number < 0 ? `${floorObj.floor_number}-yerto'la` : `${floorObj.floor_number}-qavat`) : `${selectedFloor.value}-qavat`;
+
+            // Remove existing shape for this floor if replacing
+            const filtered = shapes.value.filter(s => s.floor !== selectedFloor.value);
+
+            const newShape = {
+                id: floorId,
+                floorId: floorId,
+                floor: selectedFloor.value,
+                floorLabel: floorLabel,
+                type: 'rect',
+                x: Math.round(left),
+                y: Math.round(top),
+                w: Math.round(width),
+                h: Math.round(height)
+            };
+
+            shapes.value = [...filtered, newShape];
+            selectedShapeId.value = newShape.id;
+            redrawCanvas();
+
+            message.value = `✓ ${floorLabel} chizildi!`;
+            setTimeout(() => message.value = '', 2500);
+        }
+    }
+
+    isDrawing.value = false;
+    startPos.value = null;
+};
+
+// Finish Polygon with Double Click
+const handleCanvasDoubleClick = () => {
+    if (drawingMode.value === 'polygon' && polygonPoints.value.length >= 3) {
+        const floorObj = availableFloors.value.find(f => f.floor_number === selectedFloor.value);
+        const floorId = floorObj ? floorObj.id : Date.now();
+        const floorLabel = floorObj ? (floorObj.floor_number < 0 ? `${floorObj.floor_number}-yerto'la` : `${floorObj.floor_number}-qavat`) : `${selectedFloor.value}-qavat`;
+
+        const filtered = shapes.value.filter(s => s.floor !== selectedFloor.value);
+
+        const newShape = {
+            id: floorId,
+            floorId: floorId,
+            floor: selectedFloor.value,
+            floorLabel: floorLabel,
+            type: 'polygon',
+            points: [...polygonPoints.value]
+        };
+
+        shapes.value = [...filtered, newShape];
+        selectedShapeId.value = newShape.id;
+        polygonPoints.value = [];
+        redrawCanvas();
+
+        message.value = `✓ ${floorLabel} ko'pburchak chizildi!`;
+        setTimeout(() => message.value = '', 2500);
+    }
+};
+
+// Select floor from left list
+const handleSelectFloor = (floorNum) => {
+    selectedFloor.value = floorNum;
+    const existing = shapes.value.find(s => s.floor === floorNum);
+    selectedShapeId.value = existing?.id || null;
+    redrawCanvas();
+};
+
+// Delete selected shape
+const handleDeleteShape = () => {
+    if (!selectedShapeId.value) return;
+    const filtered = shapes.value.filter(s => s.id !== selectedShapeId.value);
+    shapes.value = filtered;
+    selectedShapeId.value = null;
+    redrawCanvas();
+    message.value = "🗑️ Shakl o'chirildi!";
+    setTimeout(() => message.value = '', 2000);
+};
+
+// Save shapes to database
+const handleSave = async () => {
+    if (!selectedBuilding.value) return;
+    if (shapes.value.length === 0) {
+        message.value = '⚠️ Hech qanday shakl chizilmagan!';
+        setTimeout(() => message.value = '', 3000);
+        return;
+    }
+
+    try {
+        isSaving.value = true;
+        message.value = '💾 Saqlash jarayonida...';
+
+        const floorCoords = shapes.value.map(s => {
+            const floorObj = availableFloors.value.find(f => f.floor_number === s.floor);
+            let shapeJson = null;
+            if (s.type === 'rect') {
+                shapeJson = { type: 'rect', left: s.x, top: s.y, width: s.w, height: s.h };
+            } else if (s.type === 'polygon') {
+                shapeJson = { type: 'polygon', points: s.points };
+            }
+            return {
+                floor_id: floorObj?.id || s.id,
+                polygon: shapeJson
+            };
+        });
+
+        const res = await axios.post(route('admin.facility.buildings.save_facade', selectedBuilding.value.id), {
+            floors: floorCoords,
+            facade_data: { shapes: shapes.value }
+        });
+
+        if (res.data?.success) {
+            message.value = '✅ Barcha qavat koordinatalari muvaffaqiyatli saqlandi!';
+        } else {
+            message.value = '✅ Saqlandi ✓';
+        }
+        setTimeout(() => message.value = '', 3500);
+    } catch(err) {
+        message.value = '❌ Saqlashda xatolik yuz berdi!';
+    } finally {
+        isSaving.value = false;
+    }
+};
+
+const drawnFloors = computed(() => new Set(shapes.value.map(s => s.floor)));
+const selectedShapeObj = computed(() => shapes.value.find(s => s.id === selectedShapeId.value) || null);
 
 onMounted(() => {
     nextTick(() => {
-        initCanvas();
+        if (canvasElement.value) {
+            ctx.value = canvasElement.value.getContext('2d');
+            loadBuildingData();
+        }
     });
-});
-
-onUnmounted(() => {
-    if (fabricCanvas) {
-        fabricCanvas.dispose();
-    }
 });
 </script>
 
 <template>
-    <Head title="3D Maket va Fasad Muharriri" />
-    <AdminLayout>
-        <template #header>
-            <div class="flex items-center justify-between w-full">
-                <div class="flex items-center gap-4">
-                    <span class="font-extrabold text-xl text-gray-800 tracking-tight">📐 3D Maket / Fasad Muharriri</span>
-                    
-                    <!-- Mode Switcher -->
-                    <div class="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200">
-                        <button 
-                            @click="switchEditorMode('facade')"
-                            class="px-4 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5"
-                            :class="editorMode === 'facade' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'"
-                        >
-                            <span>🏢</span> Bino Fasadi Muharriri
-                        </button>
-                        <button 
-                            @click="switchEditorMode('floor_plan')"
-                            class="px-4 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5"
-                            :class="editorMode === 'floor_plan' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'"
-                        >
-                            <span>📐</span> Qavat Chizmasi Muharriri
-                        </button>
-                    </div>
-                </div>
+    <Head title="3D Maket / Fasad Muharriri" />
 
-                <div class="flex items-center gap-3">
-                    <Link :href="route('admin.crm.showroom')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5">
-                        <span>👁️</span> Shou-roomda ko'rish
-                    </Link>
-                </div>
-            </div>
-        </template>
+    <!-- 100% Full-Screen Dark Standalone Editor Matching User Code Exactly -->
+    <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden bg-gray-900 font-sans text-gray-100 select-none">
+        
+        <!-- Header Toolbar -->
+        <div class="bg-gray-800 border-b border-gray-700 px-6 py-3.5 flex items-center justify-between shadow-lg">
+            <!-- Left: Building Dropdown -->
+            <div class="flex items-center gap-4">
+                <span class="text-white font-extrabold text-base flex items-center gap-2">
+                    <span>📐</span> 3D Maket / Fasad Muharriri
+                </span>
 
-        <div class="flex flex-col gap-4 h-[calc(100vh-140px)]">
-            <!-- Top Controls Bar -->
-            <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100">
-                <!-- Building & Floor Selector -->
-                <div class="flex flex-wrap items-center gap-4">
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs font-bold text-gray-500 uppercase">Bino:</label>
-                        <select v-model="selectedBuildingId" class="border-gray-200 rounded-xl text-xs font-bold text-gray-800 p-2 min-w-[180px]">
-                            <option v-for="b in buildings" :key="b.id" :value="b.id">
-                                {{ b.name }} ({{ b.block_name || 'Asosiy' }})
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="flex items-center gap-2" v-if="editorMode === 'floor_plan'">
-                        <label class="text-xs font-bold text-gray-500 uppercase">Qavat:</label>
-                        <select v-model="selectedFloorId" @change="loadFloorPlanModeData" class="border-gray-200 rounded-xl text-xs font-bold text-gray-800 p-2 min-w-[140px]">
-                            <option v-for="f in availableFloors" :key="f.id" :value="f.id">
-                                {{ f.floor_number < 0 ? `${f.floor_number}-yerto'la` : `${f.floor_number}-qavat` }}
-                            </option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Drawing Tools -->
-                <div class="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
-                    <button
-                        @click="currentTool = 'select'"
-                        :class="currentTool === 'select' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-200'"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
-                    >
-                        <span>👆</span> Tanlash (Select)
-                    </button>
-                    <button
-                        @click="currentTool = 'rectangle'"
-                        :class="currentTool === 'rectangle' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-200'"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
-                    >
-                        <span>⬛</span> To'rtburchak (Rect)
-                    </button>
-                    <button
-                        @click="currentTool = 'polygon'"
-                        :class="currentTool === 'polygon' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-700 hover:bg-gray-200'"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
-                    >
-                        <span>⬡</span> Ko'pburchak (Polygon)
-                    </button>
-
-                    <div class="w-px h-5 bg-gray-200 mx-1"></div>
-
-                    <!-- Zoom Controls -->
-                    <button @click="setZoom(1.2)" class="px-2.5 py-1 text-gray-700 hover:bg-gray-200 rounded-lg text-xs font-bold">🔍+</button>
-                    <button @click="setZoom(0.8)" class="px-2.5 py-1 text-gray-700 hover:bg-gray-200 rounded-lg text-xs font-bold">🔍-</button>
-                    <button @click="resetZoom" class="px-2.5 py-1 text-gray-700 hover:bg-gray-200 rounded-lg text-xs font-bold">100%</button>
-                </div>
-
-                <!-- Upload Image & Save Buttons -->
-                <div class="flex items-center gap-3">
-                    <input ref="fileInputRef" type="file" accept="image/*" class="hidden" @change="onBlueprintFileSelected" />
-                    <input ref="facadeFileInputRef" type="file" accept="image/*" class="hidden" @change="onFacadeFileSelected" />
-
-                    <button
-                        v-if="editorMode === 'facade'"
-                        @click="triggerFacadeUpload"
-                        :disabled="isUploading"
-                        class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5"
-                    >
-                        <span>🖼️</span> Fasad Surati Yuklash
-                    </button>
-                    <button
-                        v-else
-                        @click="triggerBlueprintUpload"
-                        :disabled="isUploading"
-                        class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5"
-                    >
-                        <span>🗺️</span> Qavat Chizmasi Yuklash
-                    </button>
-
-                    <button
-                        @click="saveAllData"
-                        :disabled="isSaving"
-                        class="px-5 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2"
-                    >
-                        <span v-if="isSaving">⏳</span>
-                        <span v-else>💾</span>
-                        <span>Barchasini Saqlash</span>
-                    </button>
-                </div>
+                <select 
+                    v-model="selectedBuildingId" 
+                    class="bg-gray-700 hover:bg-gray-600 text-white font-bold text-xs px-4 py-2 rounded-xl border border-gray-600 focus:ring-blue-500 cursor-pointer"
+                >
+                    <option v-for="b in buildings" :key="b.id" :value="b.id">
+                        {{ b.name }} ({{ b.block_name || 'Asosiy' }})
+                    </option>
+                </select>
             </div>
 
-            <!-- Success Alert -->
-            <div v-if="saveSuccessMessage" class="bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md flex items-center justify-between animate-in fade-in duration-200">
-                <span>✅ {{ saveSuccessMessage }}</span>
-                <button @click="saveSuccessMessage = ''" class="text-white/80 hover:text-white">✕</button>
-            </div>
+            <!-- Right: Drawing & Action Tools -->
+            <div class="flex items-center gap-2">
+                <!-- Tool buttons -->
+                <button
+                    @click="drawingMode = 'select'"
+                    :class="drawingMode === 'select' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                    title="Tanlash (Select)"
+                >
+                    <span>👆</span> Tanlash (Select)
+                </button>
 
-            <!-- Main Canvas Area & Properties Sidebar -->
-            <div class="flex-1 flex gap-4 min-h-0">
-                <!-- Canvas Viewport -->
-                <div ref="canvasContainerRef" class="flex-1 bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden relative flex items-center justify-center shadow-inner">
-                    <canvas ref="canvasElementRef"></canvas>
+                <button
+                    @click="drawingMode = 'rect'"
+                    :class="drawingMode === 'rect' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                    title="To'rtburchak (Rectangle)"
+                >
+                    <span>⬛</span> To'rtburchak (Rect)
+                </button>
 
-                    <!-- Hint Overlay for Polygon -->
-                    <div v-if="isDrawingPolygon" class="absolute bottom-4 left-4 bg-black/75 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-white text-xs font-semibold flex items-center gap-2">
-                        <span>💡</span> Nuqtalarni belgilang. Yakunlash uchun oxirgi nuqtani <b>ikki marta bosing (Double-Click)</b>. Bekor qilish uchun <b>sichqoncha o'ng tugmasi</b>.
-                    </div>
-                </div>
+                <button
+                    @click="drawingMode = 'polygon'"
+                    :class="drawingMode === 'polygon' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                    title="Ko'pburchak (Polygon)"
+                >
+                    <span>⬡</span> Ko'pburchak (Polygon)
+                </button>
 
-                <!-- Properties Sidebar -->
-                <div class="w-80 bg-white rounded-3xl border border-gray-100 p-5 overflow-y-auto flex flex-col gap-4 shadow-sm text-gray-800">
-                    <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                        <h3 class="font-extrabold text-sm text-gray-900 tracking-tight">
-                            {{ editorMode === 'facade' ? 'Qavat Fasad Koordinatasi' : 'Xonadon Parametrlari' }}
-                        </h3>
-                        <button 
-                            v-if="selectedShape"
-                            @click="deleteSelectedShape" 
-                            class="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-all"
-                        >
-                            O'chirish
-                        </button>
-                    </div>
+                <div class="border-l border-gray-700 h-6 mx-2"></div>
 
-                    <!-- Facade Mode Form -->
-                    <div v-if="editorMode === 'facade'" class="space-y-4">
-                        <div v-if="selectedShape" class="space-y-3 bg-blue-50/50 p-3.5 rounded-2xl border border-blue-100">
-                            <div>
-                                <label class="text-xs font-bold text-gray-700 uppercase block mb-1">Ushbu chiziq tegishli qavat:</label>
-                                <select v-model="selectedShape.floor_id" class="w-full text-xs font-bold rounded-xl border-gray-200 p-2.5 focus:ring-blue-500 bg-white">
-                                    <option v-for="f in availableFloors" :key="f.id" :value="f.id">
-                                        {{ f.floor_number < 0 ? `${f.floor_number}-yerto'la` : `${f.floor_number}-qavat` }}
-                                    </option>
-                                </select>
-                            </div>
+                <!-- Zoom controls -->
+                <button
+                    @click="zoom = Math.min(zoom + 10, 200); redrawCanvas();"
+                    class="px-3 py-2 bg-gray-700 text-gray-200 hover:bg-gray-600 rounded-xl text-xs font-bold transition-all"
+                    title="Zoom in"
+                >
+                    🔍+
+                </button>
 
-                            <div v-if="selectedShape.shape_data" class="grid grid-cols-2 gap-2 text-[11px] font-mono text-gray-600 bg-white p-2.5 rounded-xl border border-gray-100">
-                                <div><b>X:</b> {{ Math.round(selectedShape.shape_data.left || 0) }}</div>
-                                <div><b>Y:</b> {{ Math.round(selectedShape.shape_data.top || 0) }}</div>
-                                <div><b>W:</b> {{ Math.round(selectedShape.shape_data.width || 0) }}px</div>
-                                <div><b>H:</b> {{ Math.round(selectedShape.shape_data.height || 0) }}px</div>
-                            </div>
+                <span class="text-white font-mono font-bold text-xs w-12 text-center">{{ zoom }}%</span>
 
-                            <button 
-                                @click="deleteSelectedShape"
-                                class="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl border border-red-200 transition-all flex items-center justify-center gap-1"
-                            >
-                                <span>🗑️</span> Ushbu shaklni o'chirish
-                            </button>
-                        </div>
-                        <div v-else class="text-xs text-gray-400 font-semibold p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-center">
-                            Fasadda qavatni belgilash uchun yuqoridan To'rtburchak yoki Ko'pburchak vositasini tanlab chizing yoki pastdan qavatni tanlang.
-                        </div>
+                <button
+                    @click="zoom = Math.max(zoom - 10, 50); redrawCanvas();"
+                    class="px-3 py-2 bg-gray-700 text-gray-200 hover:bg-gray-600 rounded-xl text-xs font-bold transition-all"
+                    title="Zoom out"
+                >
+                    🔍-
+                </button>
 
-                        <!-- All Floors Facade Status List -->
-                        <div class="mt-4 pt-4 border-t border-gray-100">
-                            <h4 class="text-xs font-extrabold text-gray-700 uppercase tracking-wider mb-2">Qavatlar ro'yxati (Tanlash uchun bosing):</h4>
-                            <div class="space-y-1.5 max-h-72 overflow-y-auto">
-                                <div 
-                                    v-for="item in facadeFloorShapes" 
-                                    :key="'fl-item-' + item.floor_id"
-                                    @click="selectFloorForDrawing(item.floor_id)"
-                                    class="p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all cursor-pointer select-none"
-                                    :class="selectedShape?.floor_id === item.floor_id ? 'ring-2 ring-blue-500 bg-blue-50/80 border-blue-300 text-blue-900 shadow-sm' : (item.shape_data ? 'bg-emerald-50/60 border-emerald-200 text-emerald-800 hover:bg-emerald-100/60' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100')"
-                                >
-                                    <span>{{ item.floor_number < 0 ? `${item.floor_number}-yerto'la` : `${item.floor_number}-qavat` }}</span>
-                                    <span class="text-[10px] px-2 py-0.5 rounded-full font-black" :class="item.shape_data ? 'bg-emerald-200 text-emerald-900' : 'bg-gray-200 text-gray-600'">
-                                        {{ item.shape_data ? 'Chizilgan ✓' : 'Chizilmagan' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <button
+                    @click="zoom = 100; redrawCanvas();"
+                    class="px-2.5 py-2 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded-xl text-xs font-bold"
+                    title="Reset Zoom"
+                >
+                    100%
+                </button>
 
-                    <!-- Floor Plan Mode Form -->
-                    <div v-else-if="editorMode === 'floor_plan'" class="space-y-3">
-                        <div v-if="selectedShape" class="space-y-3">
-                            <div>
-                                <label class="text-xs font-bold text-gray-500 block mb-1">Xonadon raqami:</label>
-                                <input v-model="selectedShape.unit_number" class="w-full text-xs font-bold rounded-xl border-gray-200 p-2.5 focus:ring-blue-500" />
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-gray-500 block mb-1">Maydoni (m²):</label>
-                                <input v-model.number="selectedShape.area_sqm" type="number" step="0.1" class="w-full text-xs font-bold rounded-xl border-gray-200 p-2.5 focus:ring-blue-500" />
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-gray-500 block mb-1">Narxi (UZS):</label>
-                                <input v-model.number="selectedShape.price" type="number" class="w-full text-xs font-bold rounded-xl border-gray-200 p-2.5 focus:ring-blue-500" />
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-gray-500 block mb-1">Xonalar soni:</label>
-                                <input v-model.number="selectedShape.rooms_count" type="number" min="1" class="w-full text-xs font-bold rounded-xl border-gray-200 p-2.5 focus:ring-blue-500" />
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-gray-500 block mb-1">Holati:</label>
-                                <select v-model="selectedShape.status" class="w-full text-xs font-bold rounded-xl border-gray-200 p-2.5 focus:ring-blue-500">
-                                    <option value="available">Sotuvda</option>
-                                    <option value="reserved">Bron qilingan</option>
-                                    <option value="sold">Sotilgan</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div v-else class="text-xs text-gray-400 font-semibold p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200 text-center">
-                            Chizilgan xonadon ustiga bosing yoki yangi shakl chizing.
-                        </div>
-                    </div>
-                </div>
+                <div class="border-l border-gray-700 h-6 mx-2"></div>
+
+                <!-- Upload button -->
+                <label class="px-3.5 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow transition-all">
+                    <span>🖼️</span> Fasad Surati Yuklash
+                    <input
+                        ref="fileInputRef"
+                        type="file"
+                        accept="image/*"
+                        @change="handleImageUpload"
+                        class="hidden"
+                    />
+                </label>
+
+                <!-- Delete button -->
+                <button
+                    v-if="selectedShapeId"
+                    @click="handleDeleteShape"
+                    class="px-3.5 py-2 bg-red-600 text-white hover:bg-red-700 rounded-xl font-bold text-xs transition-all flex items-center gap-1 shadow"
+                >
+                    <span>🗑️</span> O'chirish
+                </button>
+
+                <!-- Save button -->
+                <button
+                    @click="handleSave"
+                    :disabled="isSaving"
+                    class="px-5 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl font-black text-xs flex items-center gap-1.5 shadow-lg transition-all"
+                >
+                    <span>{{ isSaving ? '⏳' : '💾' }}</span>
+                    <span>Barchasini Saqlash</span>
+                </button>
+
+                <!-- View in Showroom -->
+                <Link
+                    :href="route('admin.crm.showroom')"
+                    class="px-3.5 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ml-2"
+                >
+                    <span>👁️</span> Shou-room
+                </Link>
             </div>
         </div>
-    </AdminLayout>
+
+        <!-- Main Content Grid -->
+        <div class="flex flex-1 overflow-hidden">
+            
+            <!-- Sidebar: Floors List (LEFT) -->
+            <div class="w-64 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto flex flex-col gap-3">
+                <div class="flex items-center justify-between pb-2 border-b border-gray-700">
+                    <h3 class="text-white font-extrabold text-sm uppercase tracking-wide">Qavatlar Ro'yxati</h3>
+                    <span class="text-xs text-gray-400 font-mono">{{ drawnFloors.size }}/{{ availableFloors.length }}</span>
+                </div>
+
+                <div class="space-y-1.5 flex-1 overflow-y-auto pr-1">
+                    <button
+                        v-for="floor in availableFloors"
+                        :key="'fl-btn-' + floor.id"
+                        @click="handleSelectFloor(floor.floor_number)"
+                        class="w-full p-2.5 rounded-xl font-bold text-xs transition-all text-left flex items-center justify-between"
+                        :class="selectedFloor === floor.floor_number 
+                            ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400' 
+                            : (drawnFloors.has(floor.floor_number) ? 'bg-gray-700/80 text-emerald-300 hover:bg-gray-700' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700')"
+                    >
+                        <span>{{ floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat` }}</span>
+                        <span 
+                            class="text-[10px] px-2 py-0.5 rounded-full font-black"
+                            :class="drawnFloors.has(floor.floor_number) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-600 text-gray-400'"
+                        >
+                            {{ drawnFloors.has(floor.floor_number) ? 'Chizildi ✓' : 'Chizilmagan' }}
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas Viewport (CENTER) -->
+            <div class="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden bg-gray-950 relative">
+                <div
+                    :style="{
+                        transform: `scale(${zoom / 100})`,
+                        transformOrigin: 'center',
+                        transition: 'transform 0.15s ease-out'
+                    }"
+                >
+                    <canvas
+                        ref="canvasElement"
+                        width="900"
+                        height="700"
+                        @mousedown="handleCanvasMouseDown"
+                        @mousemove="handleCanvasMouseMove"
+                        @mouseup="handleCanvasMouseUp"
+                        @mouseleave="handleCanvasMouseUp"
+                        @dblclick="handleCanvasDoubleClick"
+                        class="bg-gray-900 rounded-2xl shadow-2xl border-2 border-gray-700 cursor-crosshair"
+                    ></canvas>
+                </div>
+
+                <!-- Hint overlay -->
+                <div v-if="drawingMode === 'polygon'" class="absolute bottom-4 left-6 bg-black/80 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-white text-xs font-semibold">
+                    💡 Nuqtalarni belgilang. Yakunlash uchun oxirgi nuqtani <b>ikki marta bosing (Double-Click)</b>.
+                </div>
+            </div>
+
+            <!-- Right Sidebar: Details & Coordinates (RIGHT) -->
+            <div class="w-80 bg-gray-800 border-l border-gray-700 p-5 overflow-y-auto flex flex-col gap-4">
+                <h3 class="text-white font-extrabold text-sm uppercase tracking-wide pb-2 border-b border-gray-700">
+                    Qavat Koordinatasi
+                </h3>
+
+                <!-- Selected Floor Info Card -->
+                <div v-if="selectedFloor" class="bg-gray-700/80 p-3.5 rounded-2xl border border-gray-600">
+                    <p class="text-gray-200 text-xs font-bold">
+                        <strong class="text-blue-400">Tanlangan qavat:</strong> 
+                        {{ selectedFloor < 0 ? `${selectedFloor}-yerto'la` : `${selectedFloor}-qavat` }}
+                    </p>
+                    <p class="text-gray-400 text-[11px] mt-1.5">
+                        {{ drawingMode === 'rect' ? "Fasad rasmida sichqoncha bilan to'rtburchak tortib chizing." : (drawingMode === 'polygon' ? "Nuqtalarni bosib ko'pburchak chizing." : "Shaklni tanlash va o'zgartirish rejimi.") }}
+                    </p>
+                </div>
+
+                <div v-else class="bg-amber-900/40 p-3.5 rounded-2xl border border-amber-600/50 text-amber-300 text-xs font-bold">
+                    ⚠️ Avval chap tarafdagi qavatlar ro'yxatidan qavatni tanlang.
+                </div>
+
+                <!-- Live Message Alert -->
+                <div v-if="message" class="bg-blue-600/90 text-white p-3 rounded-xl border border-blue-400 text-xs font-bold shadow-md animate-in fade-in duration-150">
+                    {{ message }}
+                </div>
+
+                <!-- Selected Shape Inspector -->
+                <div v-if="selectedShapeObj" class="bg-gray-700/90 p-4 rounded-2xl border border-gray-600 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-black text-amber-400">Tanlangan Shakl:</span>
+                        <span class="text-xs font-bold text-white">{{ selectedShapeObj.floorLabel }}</span>
+                    </div>
+
+                    <div v-if="selectedShapeObj.type === 'rect'" class="grid grid-cols-2 gap-2 text-[11px] font-mono text-gray-300 bg-gray-800 p-2.5 rounded-xl border border-gray-700">
+                        <div><b>X:</b> {{ selectedShapeObj.x }}</div>
+                        <div><b>Y:</b> {{ selectedShapeObj.y }}</div>
+                        <div><b>W:</b> {{ selectedShapeObj.w }}px</div>
+                        <div><b>H:</b> {{ selectedShapeObj.h }}px</div>
+                    </div>
+
+                    <button 
+                        @click="handleDeleteShape"
+                        class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5"
+                    >
+                        <span>🗑️</span> Ushbu shaklni o'chirish
+                    </button>
+                </div>
+
+                <!-- Shapes List -->
+                <div class="flex-1 flex flex-col gap-2 mt-2">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-white font-bold text-xs uppercase">Chizilgan Shakllar:</h4>
+                        <span class="text-xs font-mono text-emerald-400 font-bold">{{ shapes.length }} ta</span>
+                    </div>
+
+                    <div class="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                        <div
+                            v-for="(shape, idx) in shapes"
+                            :key="'shape-item-' + shape.id"
+                            @click="selectedShapeId = shape.id; selectedFloor = shape.floor; redrawCanvas();"
+                            class="p-2.5 rounded-xl cursor-pointer transition-all border text-xs font-bold flex flex-col gap-1"
+                            :class="selectedShapeId === shape.id 
+                                ? 'bg-emerald-900/60 border-emerald-400 text-white ring-1 ring-emerald-400' 
+                                : 'bg-gray-700/60 border-gray-600 text-gray-300 hover:bg-gray-700'"
+                        >
+                            <div class="flex items-center justify-between">
+                                <span>{{ idx + 1 }}. {{ shape.floorLabel }}</span>
+                                <span class="text-[10px] text-gray-400 uppercase font-mono">{{ shape.type }}</span>
+                            </div>
+                            <div v-if="shape.type === 'rect'" class="text-[10px] font-mono text-gray-400">
+                                x={{ shape.x }} y={{ shape.y }} w={{ shape.w }} h={{ shape.h }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Bottom Status Bar -->
+        <div class="bg-gray-800 border-t border-gray-700 px-6 py-2.5 text-gray-400 text-xs flex items-center justify-between font-bold">
+            <div>
+                <span v-if="selectedFloor" class="text-white">
+                    <strong class="text-blue-400">{{ selectedFloor < 0 ? `${selectedFloor}-yerto'la` : `${selectedFloor}-qavat` }}</strong> — 
+                    {{ drawingMode === 'rect' ? "To'rtburchak chizish rejimi" : (drawingMode === 'select' ? "Tanlash rejimi" : "Ko'pburchak chizish rejimi") }}
+                </span>
+                <span v-else class="text-amber-400">⚠️ Qavatni tanlang</span>
+            </div>
+            <div>
+                <strong class="text-emerald-400">{{ shapes.length }}</strong> shakl chizildi • <strong class="text-blue-400">{{ drawnFloors.size }}</strong> ta qavat qamrab olindi
+            </div>
+        </div>
+
+    </div>
 </template>

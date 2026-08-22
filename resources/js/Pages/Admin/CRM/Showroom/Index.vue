@@ -43,8 +43,91 @@ const goToNextBlock = () => {
     selectedBuildingId.value = availableBlocks.value[nextIndex].id;
 };
 
-// View mode: 'facade' (Image 1) vs 'shaxmatka' (Image 2)
+// View mode: 'facade' vs 'floor_plan' vs 'shaxmatka'
 const viewMode = ref('facade');
+const activeFloor = ref(null);
+const hoveredUnit = ref(null);
+
+const openFloorPlan = (floor) => {
+    activeFloor.value = floor;
+    viewMode.value = 'floor_plan';
+};
+
+const activeFloorBlueprintUrl = computed(() => {
+    if (!activeFloor.value) return '/images/clean-building-facade.jpg';
+    return activeFloor.value.blueprint_path 
+        ? `/storage/${activeFloor.value.blueprint_path}` 
+        : '/images/clean-building-facade.jpg';
+});
+
+const floorBlueprintNaturalSize = ref({ width: 1200, height: 800 });
+
+const getUnitSvgShape = (unit) => {
+    if (!unit || !unit.svg_polygon) return null;
+    try {
+        const parsed = typeof unit.svg_polygon === 'object' ? unit.svg_polygon : JSON.parse(unit.svg_polygon);
+        const nw = floorBlueprintNaturalSize.value.width;
+        const nh = floorBlueprintNaturalSize.value.height;
+
+        if (parsed.norm) {
+            if (parsed.type === 'rect') {
+                return {
+                    type: 'rect',
+                    x: Math.round(parsed.norm.x * nw),
+                    y: Math.round(parsed.norm.y * nh),
+                    width: Math.round(parsed.norm.w * nw),
+                    height: Math.round(parsed.norm.h * nh)
+                };
+            }
+            if (parsed.type === 'polygon' && parsed.norm.points) {
+                const ptsStr = parsed.norm.points.map(p => `${Math.round(p.x * nw)},${Math.round(p.y * nh)}`).join(' ');
+                return { type: 'polygon', points: ptsStr };
+            }
+        }
+
+        if (parsed.type === 'rect') {
+            const natX = parsed.natural?.x ?? parsed.left ?? parsed.x ?? 0;
+            const natY = parsed.natural?.y ?? parsed.top ?? parsed.y ?? 0;
+            const natW = parsed.natural?.w ?? parsed.width ?? parsed.w ?? nw;
+            const natH = parsed.natural?.h ?? parsed.height ?? parsed.h ?? 40;
+            return {
+                type: 'rect',
+                x: Math.round(natX),
+                y: Math.round(natY),
+                width: Math.round(natW),
+                height: Math.round(natH)
+            };
+        }
+
+        if (parsed.type === 'polygon') {
+            const pts = parsed.natural?.points || parsed.points;
+            if (pts && pts.length >= 3) {
+                const ptsStr = pts.map(p => `${p.x || p[0]},${p.y || p[1]}`).join(' ');
+                return { type: 'polygon', points: ptsStr };
+            }
+        }
+    } catch(e) {}
+    return null;
+};
+
+const getUnitFillColor = (unit, isHovered) => {
+    if (isHovered) return 'rgba(59, 130, 246, 0.5)';
+    if (unit.status === 'sold') return 'rgba(239, 68, 68, 0.4)';
+    if (unit.status === 'reserved' || unit.status === 'booked') return 'rgba(245, 158, 11, 0.4)';
+    return 'rgba(16, 185, 129, 0.4)';
+};
+
+const getUnitStrokeColor = (unit) => {
+    if (unit.status === 'sold') return '#ef4444';
+    if (unit.status === 'reserved' || unit.status === 'booked') return '#f59e0b';
+    return '#10b981';
+};
+
+const onUnitClick = (unit) => {
+    if (unit.status === 'available') {
+        openUnitModal(unit);
+    }
+};
 
 // All floors sorted for selected building (e.g. 1 to 16)
 const sortedFloors = computed(() => {
@@ -309,7 +392,7 @@ const filterUnitsList = (units) => {
                             class="cursor-pointer transition-all duration-200"
                             @mouseenter="onFloorHover(floor)"
                             @mouseleave="onFloorLeave"
-                            @click="viewMode = 'shaxmatka'"
+                            @click="openFloorPlan(floor)"
                         >
                             <template v-if="getFloorFacadeShape(floor, idx, sortedFloors.length)">
                                 <rect 
@@ -347,7 +430,7 @@ const filterUnitsList = (units) => {
                     >
                         <div 
                             v-if="hoveredFloor"
-                            @click="viewMode = 'shaxmatka'"
+                            @click="openFloorPlan(hoveredFloor)"
                             class="absolute right-8 md:right-16 top-1/4 z-50 w-96 bg-white shadow-2xl rounded-3xl p-6 text-gray-800 border border-gray-100 cursor-pointer pointer-events-auto"
                         >
                             <!-- Green Angled Pointer Line (Exact Image 1) -->
@@ -386,6 +469,152 @@ const filterUnitsList = (units) => {
                                     </span>
                                 </div>
                             </div>
+
+                            <!-- Click hint -->
+                            <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-orange-600 font-extrabold">
+                                <span>📐 Qavat chizmasiga o'tish uchun bosing</span>
+                                <span>→</span>
+                            </div>
+                        </div>
+                    </transition>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- 2. FULL SCREEN 2D FLOOR PLAN & UNITS (QAVATNING TO'LIQ CHIZMASI VA UYLAR)  -->
+        <!-- ========================================================================= -->
+        <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col relative w-full h-full overflow-hidden bg-slate-950">
+            <!-- Floor Plan Top Bar -->
+            <div class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-8 py-3.5 bg-white/20 backdrop-blur-md border-b border-white/20 text-gray-800">
+                <button 
+                    @click="viewMode = 'facade'" 
+                    class="text-sm font-bold text-gray-800 hover:text-black transition-colors flex items-center gap-1.5 drop-shadow-sm"
+                >
+                    <span class="text-base">←</span>
+                    <span>Bino fasadiga qaytish</span>
+                </button>
+
+                <div class="flex items-center gap-2">
+                    <span class="font-black text-sm text-gray-900 drop-shadow-sm">
+                        🏢 {{ selectedBuilding?.name }} ({{ selectedBuilding?.block_name || 'A-1 Blok' }}) › 📐 {{ activeFloor?.floor_number < 0 ? `${activeFloor?.floor_number}-yerto'la` : `${activeFloor?.floor_number}-Qavat` }} Chizmasi
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button 
+                        @click="viewMode = 'shaxmatka'"
+                        class="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-black rounded-xl shadow-md transition-all"
+                    >
+                        Blok Shaxmatkasiga o'tish →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Blueprint & Interactive Unit Polygons SVG Viewport -->
+            <div class="flex-1 w-full h-full flex items-center justify-center overflow-hidden relative">
+                <div class="relative w-full h-full flex items-center justify-center">
+                    <svg 
+                        class="w-full h-full block select-none pointer-events-auto" 
+                        :viewBox="`0 0 ${floorBlueprintNaturalSize.width} ${floorBlueprintNaturalSize.height}`"
+                        preserveAspectRatio="xMidYMid meet"
+                    >
+                        <!-- Background Floor Blueprint Image -->
+                        <image 
+                            :href="activeFloorBlueprintUrl" 
+                            x="0" 
+                            y="0" 
+                            :width="floorBlueprintNaturalSize.width" 
+                            :height="floorBlueprintNaturalSize.height" 
+                            preserveAspectRatio="xMidYMid meet"
+                        />
+
+                        <!-- Interactive Unit Polygons -->
+                        <g 
+                            v-for="unit in (activeFloor?.units || [])" 
+                            :key="'unit-svg-' + unit.id"
+                            class="cursor-pointer transition-all duration-200"
+                            @mouseenter="hoveredUnit = unit"
+                            @mouseleave="hoveredUnit = null"
+                            @click="onUnitClick(unit)"
+                        >
+                            <template v-if="getUnitSvgShape(unit)">
+                                <rect 
+                                    v-if="getUnitSvgShape(unit).type === 'rect'"
+                                    :x="getUnitSvgShape(unit).x"
+                                    :y="getUnitSvgShape(unit).y"
+                                    :width="getUnitSvgShape(unit).width"
+                                    :height="getUnitSvgShape(unit).height"
+                                    :fill="getUnitFillColor(unit, hoveredUnit?.id === unit.id)"
+                                    :stroke="hoveredUnit?.id === unit.id ? '#FFFFFF' : getUnitStrokeColor(unit)"
+                                    :stroke-width="hoveredUnit?.id === unit.id ? 3.5 : 2"
+                                    class="transition-all duration-200"
+                                />
+
+                                <polygon 
+                                    v-else-if="getUnitSvgShape(unit).type === 'polygon'"
+                                    :points="getUnitSvgShape(unit).points"
+                                    :fill="getUnitFillColor(unit, hoveredUnit?.id === unit.id)"
+                                    :stroke="hoveredUnit?.id === unit.id ? '#FFFFFF' : getUnitStrokeColor(unit)"
+                                    :stroke-width="hoveredUnit?.id === unit.id ? 3.5 : 2"
+                                    class="transition-all duration-200"
+                                />
+                            </template>
+                        </g>
+                    </svg>
+
+                    <!-- Unit Tooltip Card on Hover -->
+                    <transition
+                        enter-active-class="transition duration-200 ease-out"
+                        enter-from-class="opacity-0 translate-x-6 scale-95"
+                        enter-to-class="opacity-100 translate-x-0 scale-100"
+                        leave-active-class="transition duration-150 ease-in"
+                        leave-from-class="opacity-100 translate-x-0 scale-100"
+                        leave-to-class="opacity-0 translate-x-6 scale-95"
+                    >
+                        <div 
+                            v-if="hoveredUnit"
+                            class="absolute right-8 md:right-16 top-1/4 z-50 w-96 bg-white shadow-2xl rounded-3xl p-6 text-gray-800 border border-gray-100 pointer-events-auto"
+                        >
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <h3 class="text-2xl font-black text-slate-900">
+                                    {{ hoveredUnit.unit_number }}-xonadon
+                                </h3>
+                                <span 
+                                    class="px-3 py-1 rounded-full text-xs font-black uppercase"
+                                    :class="hoveredUnit.status === 'sold' ? 'bg-red-100 text-red-700' : (hoveredUnit.status === 'reserved' || hoveredUnit.status === 'booked' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')"
+                                >
+                                    {{ hoveredUnit.status === 'sold' ? '🔴 Sotilgan' : (hoveredUnit.status === 'reserved' || hoveredUnit.status === 'booked' ? '🟡 Band' : '🟢 Sotuvda') }}
+                                </span>
+                            </div>
+
+                            <div class="py-3 space-y-2 text-xs font-bold">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">Qavat:</span>
+                                    <span class="text-slate-800 font-extrabold">{{ activeFloor?.floor_number }}-qavat</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">Xonalar soni:</span>
+                                    <span class="text-slate-800 font-extrabold">{{ hoveredUnit.rooms_count || 1 }}-xona</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">Umumiy maydoni:</span>
+                                    <span class="text-slate-800 font-extrabold">{{ hoveredUnit.area_sqm }} m²</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">Umumiy narxi:</span>
+                                    <span class="text-emerald-600 font-black text-sm">{{ formatSoM(hoveredUnit.price) }}</span>
+                                </div>
+                            </div>
+
+                            <button
+                                v-if="hoveredUnit.status === 'available'"
+                                @click="openUnitModal(hoveredUnit)"
+                                class="w-full mt-2 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-lg shadow-orange-500/30 transition-all flex items-center justify-center gap-2"
+                            >
+                                <span>📝</span>
+                                <span>Shartnoma / Bron Qilish</span>
+                            </button>
                         </div>
                     </transition>
                 </div>

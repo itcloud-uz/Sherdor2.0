@@ -48,6 +48,7 @@ const availableFloors = computed(() => {
 
 // Canvas & Editor State
 const fileInputRef = ref(null);
+const canvasContainerRef = ref(null);
 const canvasElement = ref(null);
 const ctx = ref(null);
 const facadeImageObj = ref(null);
@@ -68,7 +69,7 @@ const isSaving = ref(false);
 const polygonPoints = ref([]);
 
 // Image natural size & render size
-const imgRenderBounds = ref({ x: 50, y: 50, w: 800, h: 600 });
+const imgRenderBounds = ref({ x: 0, y: 0, w: 800, h: 600 });
 
 // Parse coordinates
 const parseCoordinates = (raw) => {
@@ -81,6 +82,35 @@ const parseCoordinates = (raw) => {
     }
 };
 
+// Update Canvas Size dynamically based on container
+const updateCanvasSize = () => {
+    if (!canvasContainerRef.value || !canvasElement.value) return;
+    const cw = canvasContainerRef.value.clientWidth || 1000;
+    const ch = canvasContainerRef.value.clientHeight || 750;
+
+    canvasElement.value.width = cw;
+    canvasElement.value.height = ch;
+
+    if (facadeImageObj.value) {
+        const img = facadeImageObj.value;
+        // Scale to fill 96% of container area
+        const scaleX = (cw - 30) / img.width;
+        const scaleY = (ch - 30) / img.height;
+        const scale = Math.min(scaleX, scaleY);
+
+        const rw = Math.round(img.width * scale);
+        const rh = Math.round(img.height * scale);
+        const rx = Math.round((cw - rw) / 2);
+        const ry = Math.round((ch - rh) / 2);
+
+        imgRenderBounds.value = { x: rx, y: ry, w: rw, h: rh };
+    } else {
+        imgRenderBounds.value = { x: 40, y: 40, w: cw - 80, h: ch - 80 };
+    }
+
+    redrawCanvas();
+};
+
 // Initialize building data and floors
 const loadBuildingData = () => {
     if (!selectedBuilding.value) return;
@@ -88,12 +118,10 @@ const loadBuildingData = () => {
     shapes.value = [];
     selectedShapeId.value = null;
 
-    // Set initial selected floor
     if (availableFloors.value.length > 0 && !selectedFloor.value) {
         selectedFloor.value = availableFloors.value[0].floor_number;
     }
 
-    // Set facade image
     const bgUrl = selectedBuilding.value.facade_image 
         ? `/storage/${selectedBuilding.value.facade_image}` 
         : (selectedBuilding.value.photo_path ? `/storage/${selectedBuilding.value.photo_path}` : '/images/clean-building-facade.jpg');
@@ -131,7 +159,7 @@ const loadBuildingData = () => {
     });
 
     shapes.value = loaded;
-    nextTick(() => redrawCanvas());
+    nextTick(() => updateCanvasSize());
 };
 
 watch(selectedBuilding, () => {
@@ -152,21 +180,7 @@ const loadImage = (url) => {
     img.onload = () => {
         facadeImageObj.value = img;
         facadeImageUrl.value = url;
-
-        const cw = canvasElement.value?.width || 900;
-        const ch = canvasElement.value?.height || 700;
-
-        const scaleX = (cw - 80) / img.width;
-        const scaleY = (ch - 80) / img.height;
-        const scale = Math.min(scaleX, scaleY, 1);
-
-        const rw = img.width * scale;
-        const rh = img.height * scale;
-        const rx = (cw - rw) / 2;
-        const ry = (ch - rh) / 2;
-
-        imgRenderBounds.value = { x: rx, y: ry, w: rw, h: rh };
-        redrawCanvas();
+        updateCanvasSize();
     };
     img.src = url;
 };
@@ -179,22 +193,22 @@ const redrawCanvas = () => {
     if (!context) return;
     ctx.value = context;
 
-    // Background
-    context.fillStyle = '#0f172a';
+    // Deep Dark Slate background for best 3D contrast
+    context.fillStyle = '#090d16';
     context.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw facade image if exists
+    // Draw facade image (Big and sharp)
     if (facadeImageObj.value) {
         const b = imgRenderBounds.value;
         context.drawImage(facadeImageObj.value, b.x, b.y, b.w, b.h);
-        context.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        context.lineWidth = 1;
+        context.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        context.lineWidth = 1.5;
         context.strokeRect(b.x, b.y, b.w, b.h);
     } else {
         context.fillStyle = '#1e293b';
-        context.fillRect(50, 50, canvas.width - 100, canvas.height - 100);
+        context.fillRect(40, 40, canvas.width - 80, canvas.height - 80);
         context.fillStyle = '#94a3b8';
-        context.font = 'bold 15px sans-serif';
+        context.font = 'bold 16px sans-serif';
         context.textAlign = 'center';
         context.fillText('Fasad rasmini yuklash uchun yuqoridagi tugmani bosing', canvas.width / 2, canvas.height / 2);
     }
@@ -205,9 +219,9 @@ const redrawCanvas = () => {
     // Draw polygon preview if in-progress
     if (drawingMode.value === 'polygon' && polygonPoints.value.length > 0) {
         context.strokeStyle = '#f97316';
-        context.fillStyle = 'rgba(249, 115, 22, 0.2)';
-        context.lineWidth = 2;
-        context.setLineDash([4, 4]);
+        context.fillStyle = 'rgba(249, 115, 22, 0.25)';
+        context.lineWidth = 2.5;
+        context.setLineDash([6, 6]);
 
         context.beginPath();
         context.moveTo(polygonPoints.value[0].x, polygonPoints.value[0].y);
@@ -220,7 +234,7 @@ const redrawCanvas = () => {
         polygonPoints.value.forEach(p => {
             context.fillStyle = '#f97316';
             context.beginPath();
-            context.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            context.arc(p.x, p.y, 5, 0, Math.PI * 2);
             context.fill();
         });
     }
@@ -233,7 +247,7 @@ const drawShapes = (context, currentShapes) => {
 
         if (shape.type === 'rect') {
             context.strokeStyle = isSelected ? '#fbbf24' : '#f97316';
-            context.fillStyle = isSelected ? 'rgba(251, 191, 36, 0.35)' : 'rgba(249, 115, 22, 0.22)';
+            context.fillStyle = isSelected ? 'rgba(251, 191, 36, 0.38)' : 'rgba(249, 115, 22, 0.25)';
             context.lineWidth = isSelected ? 3 : 2;
 
             context.fillRect(shape.x, shape.y, shape.w, shape.h);
@@ -243,7 +257,7 @@ const drawShapes = (context, currentShapes) => {
             context.fillStyle = '#FFFFFF';
             context.font = 'bold 13px sans-serif';
             context.textAlign = 'left';
-            context.fillText(shape.floorLabel || `${shape.floor}-qavat`, shape.x + 8, shape.y + 20);
+            context.fillText(shape.floorLabel || `${shape.floor}-qavat`, shape.x + 10, shape.y + 22);
 
             // Selection handles
             if (isSelected) {
@@ -251,7 +265,7 @@ const drawShapes = (context, currentShapes) => {
             }
         } else if (shape.type === 'polygon') {
             context.strokeStyle = isSelected ? '#fbbf24' : '#ea580c';
-            context.fillStyle = isSelected ? 'rgba(251, 191, 36, 0.35)' : 'rgba(234, 88, 12, 0.22)';
+            context.fillStyle = isSelected ? 'rgba(251, 191, 36, 0.38)' : 'rgba(234, 88, 12, 0.25)';
             context.lineWidth = isSelected ? 3 : 2;
 
             if (shape.points && shape.points.length > 0) {
@@ -265,7 +279,6 @@ const drawShapes = (context, currentShapes) => {
                 context.fill();
                 context.stroke();
 
-                // Centroid Label
                 const centroid = getCentroid(shape.points);
                 context.fillStyle = '#FFFFFF';
                 context.font = 'bold 13px sans-serif';
@@ -290,10 +303,10 @@ const drawResizeHandles = (context, shape) => {
 
     context.fillStyle = '#fbbf24';
     context.strokeStyle = '#000000';
-    context.lineWidth = 1;
+    context.lineWidth = 1.5;
     handles.forEach((handle) => {
-        context.fillRect(handle[0] - 4, handle[1] - 4, 8, 8);
-        context.strokeRect(handle[0] - 4, handle[1] - 4, 8, 8);
+        context.fillRect(handle[0] - 5, handle[1] - 5, 10, 10);
+        context.strokeRect(handle[0] - 5, handle[1] - 5, 10, 10);
     });
 };
 
@@ -321,7 +334,7 @@ const handleImageUpload = (e) => {
     };
     reader.readAsDataURL(file);
 
-    // Also upload to server
+    // Upload to server
     const formData = new FormData();
     formData.append('facade', file);
     axios.post(route('admin.facility.buildings.upload_facade', selectedBuilding.value.id), formData, {
@@ -374,9 +387,9 @@ const handleCanvasMouseMove = (e) => {
         const context = ctx.value;
         if (!context) return;
         context.strokeStyle = '#f97316';
-        context.fillStyle = 'rgba(249, 115, 22, 0.25)';
+        context.fillStyle = 'rgba(249, 115, 22, 0.28)';
         context.lineWidth = 2;
-        context.setLineDash([4, 4]);
+        context.setLineDash([5, 5]);
 
         const rx = Math.min(startPos.value[0], x);
         const ry = Math.min(startPos.value[1], y);
@@ -407,12 +420,10 @@ const handleCanvasMouseUp = (e) => {
         const top = Math.min(startPos.value[1], y);
 
         if (width > 10 && height > 10) {
-            // Find target floor object
             const floorObj = availableFloors.value.find(f => f.floor_number === selectedFloor.value);
             const floorId = floorObj ? floorObj.id : Date.now();
             const floorLabel = floorObj ? (floorObj.floor_number < 0 ? `${floorObj.floor_number}-yerto'la` : `${floorObj.floor_number}-qavat`) : `${selectedFloor.value}-qavat`;
 
-            // Remove existing shape for this floor if replacing
             const filtered = shapes.value.filter(s => s.floor !== selectedFloor.value);
 
             const newShape = {
@@ -549,6 +560,7 @@ const drawnFloors = computed(() => new Set(shapes.value.map(s => s.floor)));
 const selectedShapeObj = computed(() => shapes.value.find(s => s.id === selectedShapeId.value) || null);
 
 onMounted(() => {
+    window.addEventListener('resize', updateCanvasSize);
     nextTick(() => {
         if (canvasElement.value) {
             ctx.value = canvasElement.value.getContext('2d');
@@ -556,34 +568,40 @@ onMounted(() => {
         }
     });
 });
+
+onUnmounted(() => {
+    window.removeEventListener('resize', updateCanvasSize);
+});
 </script>
 
 <template>
     <Head title="3D Maket / Fasad Muharriri" />
 
-    <!-- Clean, Minimalist, White & Orange Theme Full-Screen Layout -->
-    <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden bg-[#f8fafc] font-sans text-slate-800 select-none">
+    <!-- Clean, Unified, Minimalist White & Orange Studio -->
+    <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden bg-[#f1f5f9] font-sans text-slate-800 select-none">
         
-        <!-- Header Toolbar (White Minimalist with Orange Accents) -->
-        <div class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-sm">
-            <!-- Left: Back button & Building Dropdown -->
-            <div class="flex items-center gap-4">
+        <!-- Clean Unified Navbar (Height 56px, perfectly aligned elements) -->
+        <header class="h-14 bg-white border-b border-slate-200 px-5 flex items-center justify-between shadow-sm shrink-0 z-10">
+            <!-- Left: Back Button & Building Selector -->
+            <div class="flex items-center gap-3">
                 <Link
                     :href="route('admin.dashboard')"
-                    class="px-3.5 py-2 bg-slate-100 hover:bg-orange-50 hover:text-orange-600 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 shadow-sm"
+                    class="h-9 px-3.5 bg-slate-100 hover:bg-orange-50 hover:text-orange-600 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5"
                     title="Boshqaruv paneliga qaytish"
                 >
                     <span>←</span> Ortga qaytish
                 </Link>
 
+                <div class="h-5 w-px bg-slate-200"></div>
+
                 <div class="flex items-center gap-2">
-                    <span class="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
-                        <span class="text-orange-500">📐</span> 3D Maket / Fasad Muharriri
+                    <span class="font-black text-xs text-slate-900 flex items-center gap-1">
+                        <span class="text-orange-500">📐</span> Fasad Muharriri
                     </span>
 
                     <select 
                         v-model="selectedBuildingId" 
-                        class="bg-slate-50 hover:bg-slate-100 text-slate-900 font-bold text-xs px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer transition-all ml-2"
+                        class="h-9 bg-slate-50 hover:bg-slate-100 text-slate-900 font-bold text-xs px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
                     >
                         <option v-for="b in buildings" :key="b.id" :value="b.id">
                             {{ b.name }} ({{ b.block_name || 'Asosiy' }})
@@ -592,15 +610,15 @@ onMounted(() => {
                 </div>
             </div>
 
-            <!-- Right: Drawing & Action Tools -->
+            <!-- Center: Drawing Tools & Zoom -->
             <div class="flex items-center gap-2">
-                <!-- Tool buttons -->
-                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 gap-1">
+                <!-- Tool Segmented Control -->
+                <div class="h-9 bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200">
                     <button
                         @click="drawingMode = 'select'"
                         :class="drawingMode === 'select' ? 'bg-orange-500 text-white shadow-sm font-black' : 'text-slate-700 hover:bg-white'"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
-                        title="Tanlash (Select)"
+                        class="h-7 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        title="Tanlash"
                     >
                         <span>👆</span> Tanlash
                     </button>
@@ -608,8 +626,8 @@ onMounted(() => {
                     <button
                         @click="drawingMode = 'rect'"
                         :class="drawingMode === 'rect' ? 'bg-orange-500 text-white shadow-sm font-black' : 'text-slate-700 hover:bg-white'"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
-                        title="To'rtburchak (Rectangle)"
+                        class="h-7 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        title="To'rtburchak"
                     >
                         <span>⬛</span> To'rtburchak
                     </button>
@@ -617,21 +635,19 @@ onMounted(() => {
                     <button
                         @click="drawingMode = 'polygon'"
                         :class="drawingMode === 'polygon' ? 'bg-orange-500 text-white shadow-sm font-black' : 'text-slate-700 hover:bg-white'"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
-                        title="Ko'pburchak (Polygon)"
+                        class="h-7 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        title="Ko'pburchak"
                     >
                         <span>⬡</span> Ko'pburchak
                     </button>
                 </div>
 
-                <div class="border-l border-slate-200 h-6 mx-1"></div>
-
-                <!-- Zoom controls -->
-                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 gap-1">
+                <!-- Zoom Controls -->
+                <div class="h-9 bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200">
                     <button
                         @click="zoom = Math.min(zoom + 10, 200); redrawCanvas();"
-                        class="px-2 py-1 text-slate-700 hover:bg-white rounded-lg text-xs font-bold transition-all"
-                        title="Zoom in"
+                        class="h-7 px-2 text-slate-700 hover:bg-white rounded-lg text-xs font-bold"
+                        title="Kattalashtirish"
                     >
                         🔍+
                     </button>
@@ -640,26 +656,26 @@ onMounted(() => {
 
                     <button
                         @click="zoom = Math.max(zoom - 10, 50); redrawCanvas();"
-                        class="px-2 py-1 text-slate-700 hover:bg-white rounded-lg text-xs font-bold transition-all"
-                        title="Zoom out"
+                        class="h-7 px-2 text-slate-700 hover:bg-white rounded-lg text-xs font-bold"
+                        title="Kichiklashtirish"
                     >
                         🔍-
                     </button>
 
                     <button
                         @click="zoom = 100; redrawCanvas();"
-                        class="px-2 py-1 text-slate-600 hover:bg-white rounded-lg text-xs font-bold"
-                        title="Reset Zoom"
+                        class="h-7 px-2 text-slate-600 hover:bg-white rounded-lg text-xs font-bold"
+                        title="100% asl o'lcham"
                     >
                         100%
                     </button>
                 </div>
+            </div>
 
-                <div class="border-l border-slate-200 h-6 mx-1"></div>
-
-                <!-- Upload button -->
-                <label class="px-3.5 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-sm transition-all">
-                    <span>🖼️</span> Fasad Surati Yuklash
+            <!-- Right: Upload, Delete & Save -->
+            <div class="flex items-center gap-2">
+                <label class="h-9 px-3.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
+                    <span>🖼️</span> Fasad Yuklash
                     <input
                         ref="fileInputRef"
                         type="file"
@@ -669,46 +685,43 @@ onMounted(() => {
                     />
                 </label>
 
-                <!-- Delete button -->
                 <button
                     v-if="selectedShapeId"
                     @click="handleDeleteShape"
-                    class="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1 shadow-sm"
+                    class="h-9 px-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
                 >
                     <span>🗑️</span> O'chirish
                 </button>
 
-                <!-- Save button (Orange Accent) -->
                 <button
                     @click="handleSave"
                     :disabled="isSaving"
-                    class="px-5 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl font-black text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all cursor-pointer"
+                    class="h-9 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl font-black text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all cursor-pointer"
                 >
                     <span>{{ isSaving ? '⏳' : '💾' }}</span>
                     <span>Barchasini Saqlash</span>
                 </button>
 
-                <!-- View in Showroom -->
                 <Link
                     :href="route('admin.crm.showroom')"
-                    class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ml-1 shadow-sm"
+                    class="h-9 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm"
                 >
                     <span>👁️</span> Shou-room
                 </Link>
             </div>
-        </div>
+        </header>
 
-        <!-- Main Content Area -->
-        <div class="flex flex-1 overflow-hidden p-4 gap-4 bg-[#f8fafc]">
+        <!-- Main Workspace Area -->
+        <main class="flex flex-1 overflow-hidden p-3 gap-3">
             
-            <!-- Sidebar: Floors List (LEFT - White Card) -->
-            <div class="w-64 bg-white border border-slate-200/90 rounded-2xl p-4 overflow-y-auto flex flex-col gap-3 shadow-sm">
+            <!-- Left Sidebar: Floors List -->
+            <aside class="w-60 bg-white border border-slate-200/90 rounded-2xl p-3.5 overflow-y-auto flex flex-col gap-2.5 shadow-sm shrink-0">
                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <h3 class="text-slate-900 font-extrabold text-xs uppercase tracking-wider">Qavatlar Ro'yxati</h3>
-                    <span class="text-xs font-mono font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">{{ drawnFloors.size }}/{{ availableFloors.length }}</span>
+                    <h3 class="text-slate-900 font-black text-xs uppercase tracking-wider">Qavatlar Ro'yxati</h3>
+                    <span class="text-[11px] font-mono font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">{{ drawnFloors.size }}/{{ availableFloors.length }}</span>
                 </div>
 
-                <div class="space-y-1.5 flex-1 overflow-y-auto pr-1">
+                <div class="space-y-1 flex-1 overflow-y-auto pr-1">
                     <button
                         v-for="floor in availableFloors"
                         :key="'fl-btn-' + floor.id"
@@ -727,27 +740,29 @@ onMounted(() => {
                         </span>
                     </button>
                 </div>
-            </div>
+            </aside>
 
-            <!-- Canvas Viewport (CENTER - Dark Backdrop for high contrast render) -->
-            <div class="flex-1 flex flex-col items-center justify-center p-3 overflow-hidden bg-slate-900 rounded-3xl border border-slate-800 shadow-inner relative">
+            <!-- Center Canvas Viewport (Maximally Enlarged!) -->
+            <section 
+                ref="canvasContainerRef"
+                class="flex-1 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner relative overflow-hidden flex items-center justify-center"
+            >
                 <div
                     :style="{
                         transform: `scale(${zoom / 100})`,
                         transformOrigin: 'center',
                         transition: 'transform 0.15s ease-out'
                     }"
+                    class="w-full h-full flex items-center justify-center"
                 >
                     <canvas
                         ref="canvasElement"
-                        width="900"
-                        height="700"
                         @mousedown="handleCanvasMouseDown"
                         @mousemove="handleCanvasMouseMove"
                         @mouseup="handleCanvasMouseUp"
                         @mouseleave="handleCanvasMouseUp"
                         @dblclick="handleCanvasDoubleClick"
-                        class="bg-slate-950 rounded-2xl shadow-2xl border border-slate-700/80 cursor-crosshair"
+                        class="cursor-crosshair block"
                     ></canvas>
                 </div>
 
@@ -755,46 +770,46 @@ onMounted(() => {
                 <div v-if="drawingMode === 'polygon'" class="absolute bottom-4 left-6 bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-700 text-white text-xs font-semibold shadow-lg">
                     💡 Nuqtalarni belgilang. Yakunlash uchun oxirgi nuqtani <b>ikki marta bosing (Double-Click)</b>.
                 </div>
-            </div>
+            </section>
 
-            <!-- Right Sidebar: Details & Coordinates (RIGHT - White Card) -->
-            <div class="w-80 bg-white border border-slate-200/90 rounded-2xl p-5 overflow-y-auto flex flex-col gap-4 shadow-sm">
-                <h3 class="text-slate-900 font-extrabold text-xs uppercase tracking-wider pb-2 border-b border-slate-100">
+            <!-- Right Sidebar: Coordinates & Shapes Inspector -->
+            <aside class="w-72 bg-white border border-slate-200/90 rounded-2xl p-4 overflow-y-auto flex flex-col gap-3 shadow-sm shrink-0">
+                <h3 class="text-slate-900 font-black text-xs uppercase tracking-wider pb-2 border-b border-slate-100">
                     Qavat Koordinatasi
                 </h3>
 
-                <!-- Selected Floor Info Card -->
-                <div v-if="selectedFloor" class="bg-orange-50/70 p-3.5 rounded-2xl border border-orange-200/80">
+                <!-- Selected Floor Info -->
+                <div v-if="selectedFloor" class="bg-orange-50/80 p-3 rounded-xl border border-orange-200">
                     <p class="text-orange-950 text-xs font-bold">
                         <strong class="text-orange-600">Tanlangan qavat:</strong> 
                         {{ selectedFloor < 0 ? `${selectedFloor}-yerto'la` : `${selectedFloor}-qavat` }}
                     </p>
-                    <p class="text-slate-500 text-[11px] mt-1.5">
-                        {{ drawingMode === 'rect' ? "Fasad rasmida sichqoncha bilan to'rtburchak tortib chizing." : (drawingMode === 'polygon' ? "Nuqtalarni bosib ko'pburchak chizing." : "Shaklni tanlash va o'zgartirish rejimi.") }}
+                    <p class="text-slate-500 text-[11px] mt-1">
+                        {{ drawingMode === 'rect' ? "Fasad rasmida to'rtburchak tortib chizing." : (drawingMode === 'polygon' ? "Nuqtalarni bosib ko'pburchak chizing." : "Shaklni tanlash va o'zgartirish.") }}
                     </p>
                 </div>
 
-                <div v-else class="bg-amber-50 p-3.5 rounded-2xl border border-amber-200 text-amber-800 text-xs font-bold">
-                    ⚠️ Avval chap tarafdagi qavatlar ro'yxatidan qavatni tanlang.
+                <div v-else class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-amber-800 text-xs font-bold">
+                    ⚠️ Avval chap tarafdagi ro'yxatdan qavatni tanlang.
                 </div>
 
                 <!-- Live Message Alert -->
                 <div 
                     v-if="message" 
-                    class="p-3 rounded-xl border text-xs font-bold shadow-sm animate-in fade-in duration-150"
+                    class="p-2.5 rounded-xl border text-xs font-bold shadow-sm animate-in fade-in duration-150"
                     :class="isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'"
                 >
                     {{ message }}
                 </div>
 
-                <!-- Selected Shape Inspector -->
-                <div v-if="selectedShapeObj" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <!-- Selected Shape Coordinates -->
+                <div v-if="selectedShapeObj" class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-black text-orange-600">Tanlangan Shakl:</span>
+                        <span class="text-xs font-black text-orange-600">Tanlangan:</span>
                         <span class="text-xs font-bold text-slate-800">{{ selectedShapeObj.floorLabel }}</span>
                     </div>
 
-                    <div v-if="selectedShapeObj.type === 'rect'" class="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-700 bg-white p-2.5 rounded-xl border border-slate-200">
+                    <div v-if="selectedShapeObj.type === 'rect'" class="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-700 bg-white p-2 rounded-lg border border-slate-200">
                         <div><b>X:</b> {{ selectedShapeObj.x }}</div>
                         <div><b>Y:</b> {{ selectedShapeObj.y }}</div>
                         <div><b>W:</b> {{ selectedShapeObj.w }}px</div>
@@ -803,9 +818,9 @@ onMounted(() => {
 
                     <button 
                         @click="handleDeleteShape"
-                        class="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                        class="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
                     >
-                        <span>🗑️</span> Ushbu shaklni o'chirish
+                        <span>🗑️</span> O'chirish
                     </button>
                 </div>
 
@@ -816,12 +831,12 @@ onMounted(() => {
                         <span class="text-xs font-mono text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded">{{ shapes.length }} ta</span>
                     </div>
 
-                    <div class="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                    <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
                         <div
                             v-for="(shape, idx) in shapes"
                             :key="'shape-item-' + shape.id"
                             @click="selectedShapeId = shape.id; selectedFloor = shape.floor; redrawCanvas();"
-                            class="p-2.5 rounded-xl cursor-pointer transition-all border text-xs font-bold flex flex-col gap-1"
+                            class="p-2 rounded-xl cursor-pointer transition-all border text-xs font-bold flex flex-col gap-0.5"
                             :class="selectedShapeId === shape.id 
                                 ? 'bg-orange-50 border-orange-300 text-orange-950 ring-1 ring-orange-400' 
                                 : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'"
@@ -836,12 +851,11 @@ onMounted(() => {
                         </div>
                     </div>
                 </div>
+            </aside>
+        </main>
 
-            </div>
-        </div>
-
-        <!-- Bottom Status Bar (Clean Minimalist White) -->
-        <div class="bg-white border-t border-slate-200 px-6 py-2.5 text-slate-600 text-xs flex items-center justify-between font-semibold">
+        <!-- Clean Status Bar (Height 32px) -->
+        <footer class="h-8 bg-white border-t border-slate-200 px-5 text-slate-600 text-xs flex items-center justify-between font-semibold shrink-0">
             <div>
                 <span v-if="selectedFloor" class="text-slate-800">
                     <strong class="text-orange-600">{{ selectedFloor < 0 ? `${selectedFloor}-yerto'la` : `${selectedFloor}-qavat` }}</strong> — 
@@ -852,7 +866,7 @@ onMounted(() => {
             <div>
                 <strong class="text-orange-600">{{ shapes.length }}</strong> shakl chizildi • <strong class="text-slate-800">{{ drawnFloors.size }}</strong> ta qavat qamrab olindi
             </div>
-        </div>
+        </footer>
 
     </div>
 </template>

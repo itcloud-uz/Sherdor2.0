@@ -34,10 +34,13 @@ class Building extends Model
         'model_3d_path',
         'basement_floors',
         'showroom_images',
+        'facade_image',
+        'facade_data',
     ];
 
     protected $casts = [
         'showroom_images' => 'array',
+        'facade_data' => 'array',
     ];
 
     public function floors()

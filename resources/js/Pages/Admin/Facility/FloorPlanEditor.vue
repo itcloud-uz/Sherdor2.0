@@ -1016,6 +1016,153 @@ const addNewUnit = () => {
     selectedUnitId.value = newUnit.id;
 };
 
+// Auto-Split Building Generator State
+const showAutoSplitModal = ref(false);
+const autoSplitFromFloor = ref(1);
+const autoSplitToFloor = ref(16);
+const autoSplitMakeCommercialTaller = ref(true); // 1-floor 1.25x taller
+const autoSplitTargetBox = ref(null);
+
+const openAutoSplitModal = () => {
+    if (availableFloors.value.length === 0) {
+        isError.value = true;
+        message.value = '⚠️ Binoda qavatlar mavjud emas!';
+        setTimeout(() => message.value = '', 3000);
+        return;
+    }
+    
+    // Set default floor range
+    const floorNums = availableFloors.value.map(f => f.floor_number).sort((a, b) => a - b);
+    autoSplitFromFloor.value = floorNums[0] || 1;
+    autoSplitToFloor.value = floorNums[floorNums.length - 1] || 16;
+    
+    // Check if there is an existing selected rect or bounds to use as template
+    const selected = selectedShapeObj.value;
+    if (selected && selected.type === 'rect') {
+        autoSplitTargetBox.value = { x: selected.x, y: selected.y, w: selected.w, h: selected.h };
+    } else if (shapes.value.length > 0) {
+        // Calculate overall bounding box of existing shapes
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        shapes.value.forEach(s => {
+            if (s.type === 'rect') {
+                minX = Math.min(minX, s.x);
+                minY = Math.min(minY, s.y);
+                maxX = Math.max(maxX, s.x + s.w);
+                maxY = Math.max(maxY, s.y + s.h);
+            }
+        });
+        if (minX < Infinity) {
+            autoSplitTargetBox.value = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+        } else {
+            const b = imgRenderBounds.value;
+            autoSplitTargetBox.value = { x: Math.round(b.x + b.w * 0.25), y: Math.round(b.y + b.h * 0.05), w: Math.round(b.w * 0.5), h: Math.round(b.h * 0.9) };
+        }
+    } else {
+        const b = imgRenderBounds.value;
+        autoSplitTargetBox.value = { x: Math.round(b.x + b.w * 0.25), y: Math.round(b.y + b.h * 0.05), w: Math.round(b.w * 0.5), h: Math.round(b.h * 0.9) };
+    }
+    
+    showAutoSplitModal.value = true;
+};
+
+// Execute Auto-Split
+const executeAutoSplit = () => {
+    if (!autoSplitTargetBox.value) return;
+
+    const fromNum = Math.min(autoSplitFromFloor.value, autoSplitToFloor.value);
+    const toNum = Math.max(autoSplitFromFloor.value, autoSplitToFloor.value);
+
+    const targetFloors = availableFloors.value
+        .filter(f => f.floor_number >= fromNum && f.floor_number <= toNum)
+        .sort((a, b) => a.floor_number - b.floor_number); // e.g. 1 to 16
+
+    if (targetFloors.length === 0) {
+        isError.value = true;
+        message.value = '⚠️ Tanlangan oraliqda qavatlar topilmadi!';
+        setTimeout(() => message.value = '', 3000);
+        return;
+    }
+
+    const box = autoSplitTargetBox.value;
+
+    // Weight distribution: if commercial 1st floor is taller (weight 1.25), others weight 1.0
+    let totalWeight = 0;
+    const weights = targetFloors.map(fl => {
+        const isCommercial = autoSplitMakeCommercialTaller.value && fl.floor_number === 1;
+        const w = isCommercial ? 1.25 : 1.0;
+        totalWeight += w;
+        return w;
+    });
+
+    const unitHeight = box.h / totalWeight;
+
+    // Remove shapes in this floor range
+    const remainingShapes = shapes.value.filter(s => s.floor < fromNum || s.floor > toNum);
+    const newShapes = [];
+
+    let currentBottom = box.y + box.h;
+
+    // Bottom-to-top layout (1-qavat is at the bottom, 16-qavat is at top)
+    targetFloors.forEach((fl, i) => {
+        const floorHeight = Math.round(weights[i] * unitHeight);
+        const floorTop = Math.round(currentBottom - floorHeight);
+        const floorLabel = fl.floor_number < 0 ? `${fl.floor_number}-yerto'la` : `${fl.floor_number}-qavat`;
+
+        newShapes.push({
+            id: fl.id,
+            floorId: fl.id,
+            floor: fl.floor_number,
+            floorLabel: floorLabel,
+            type: 'rect',
+            x: Math.round(box.x),
+            y: floorTop,
+            w: Math.round(box.w),
+            h: floorHeight
+        });
+
+        currentBottom = floorTop;
+    });
+
+    shapes.value = [...remainingShapes, ...newShapes];
+    selectedShapeId.value = newShapes[0]?.id || null;
+    showAutoSplitModal.value = false;
+    redrawCanvas();
+
+    isError.value = false;
+    message.value = `✓ ${newShapes.length} ta qavat tekis va mukammal taqsimlandi!`;
+    setTimeout(() => message.value = '', 3500);
+};
+
+// Align All Floor Widths & Left position
+const alignAllFloorWidths = () => {
+    if (shapes.value.length === 0) return;
+    
+    // Find reference x and w
+    const selected = selectedShapeObj.value;
+    let targetX = 0, targetW = 0;
+    if (selected && selected.type === 'rect') {
+        targetX = selected.x;
+        targetW = selected.w;
+    } else {
+        const rects = shapes.value.filter(s => s.type === 'rect');
+        if (rects.length === 0) return;
+        targetX = rects[0].x;
+        targetW = rects[0].w;
+    }
+
+    shapes.value.forEach(s => {
+        if (s.type === 'rect') {
+            s.x = targetX;
+            s.w = targetW;
+        }
+    });
+
+    redrawCanvas();
+    isError.value = false;
+    message.value = '✓ Barcha qavatlarning chap va o\'ng chegaralari bitta chiziqqa tekislandi!';
+    setTimeout(() => message.value = '', 3000);
+};
+
 // Delete selected shape
 const handleDeleteShape = () => {
     if (!selectedShapeId.value) return;
@@ -1312,6 +1459,24 @@ onUnmounted(() => {
                         title="100% asl o'lcham"
                     >
                         100%
+                    </button>
+                </div>
+
+                <!-- Auto-Split & Alignment Tools (Facade Mode) -->
+                <div v-if="editorScope === 'facade'" class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <button
+                        @click="openAutoSplitModal"
+                        class="h-7 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs rounded-lg shadow-sm transition-all flex items-center gap-1"
+                        title="Binoning barcha qavatlarini bir martada tekis taqsimlash"
+                    >
+                        <span>⚡</span> Avto-Taqsimlash
+                    </button>
+                    <button
+                        @click="alignAllFloorWidths"
+                        class="h-7 px-2.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-lg border border-slate-200 shadow-xs transition-all flex items-center gap-1"
+                        title="Barcha qavatlarning chap va o'ng chegaralarini bitta to'g'ri chiziqqa tekislash"
+                    >
+                        <span>📏</span> Chegaralarni Tekislash
                     </button>
                 </div>
             </div>
@@ -1652,6 +1817,79 @@ onUnmounted(() => {
                 <strong class="text-orange-600">{{ shapes.length }}</strong> shakl chizildi • <strong class="text-slate-800">{{ editorScope === 'facade' ? drawnFloors.size : drawnUnits.size }}</strong> ta qamrab olindi
             </div>
         </footer>
+
+        <!-- Auto Split Modal -->
+        <div v-if="showAutoSplitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-slate-800 space-y-5 animate-in fade-in zoom-in duration-150">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl font-bold">⚡</div>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">Bino Qavatlarini Tekis Taqsimlash</h3>
+                            <p class="text-xs text-slate-500 font-medium">Barcha qavatlarni bir xil, tekis va chiroyli joylashtirish</p>
+                        </div>
+                    </div>
+                    <button @click="showAutoSplitModal = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold">✕</button>
+                </div>
+
+                <div class="space-y-4 text-xs font-bold">
+                    <!-- Info Box -->
+                    <div class="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl text-blue-900 space-y-1">
+                        <p class="font-extrabold flex items-center gap-1.5">
+                            <span>💡</span> Qanday ishlaydi?
+                        </p>
+                        <p class="text-[11px] font-normal leading-relaxed text-blue-800">
+                            Tizim binoning butun maydonini pastdan tepaga qarab tanlangan barcha qavatlarga 100% teng, tekis va millimetr aniqlikda bo'lib beradi.
+                        </p>
+                    </div>
+
+                    <!-- Floor Range Selection -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-slate-700 mb-1">Boshlang'ich Qavat:</label>
+                            <select v-model="autoSplitFromFloor" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-bold">
+                                <option v-for="fl in availableFloors" :key="'from-' + fl.id" :value="fl.floor_number">
+                                    {{ fl.floor_number < 0 ? `${fl.floor_number}-yerto'la` : `${fl.floor_number}-qavat` }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-700 mb-1">Tugash Qavati:</label>
+                            <select v-model="autoSplitToFloor" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-bold">
+                                <option v-for="fl in availableFloors" :key="'to-' + fl.id" :value="fl.floor_number">
+                                    {{ fl.floor_number < 0 ? `${fl.floor_number}-yerto'la` : `${fl.floor_number}-qavat` }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Commercial First Floor Option -->
+                    <label class="flex items-center gap-2.5 p-3 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 transition-colors">
+                        <input type="checkbox" v-model="autoSplitMakeCommercialTaller" class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4" />
+                        <div>
+                            <span class="text-slate-900 font-extrabold">1-qavatni balandroq qilish (Tijorat / Do'konlar)</span>
+                            <p class="text-[11px] text-slate-500 font-normal">1-qavat shifti baland bo'lgani sababli unga 1.25x ko'proq balandlik beriladi</p>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                    <button
+                        @click="showAutoSplitModal = false"
+                        class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
+                    >
+                        Bekor qilish
+                    </button>
+                    <button
+                        @click="executeAutoSplit"
+                        class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center gap-1.5"
+                    >
+                        <span>✨</span> Tekis Taqsimlash
+                    </button>
+                </div>
+            </div>
+        </div>
 
     </div>
 </template>

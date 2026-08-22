@@ -196,22 +196,8 @@ const getFloorFacadeShape = (floor, index, totalFloors) => {
         } catch(e) {}
     }
 
-    // Auto horizontal band calculation
-    const w = facadeNaturalSize.value.width;
-    const h = facadeNaturalSize.value.height;
-    const total = Math.max(totalFloors, 1);
-    const bandHeight = (h * 0.82) / total;
-    const topMargin = h * 0.05;
-    const floorIndexFromTop = total - (index + 1);
-    const y = topMargin + (floorIndexFromTop * bandHeight);
-
-    return {
-        type: 'rect',
-        x: Math.round(w * 0.12),
-        y: Math.round(y),
-        width: Math.round(w * 0.76),
-        height: Math.round(bandHeight * 0.94)
-    };
+    // If floor has no polygon drawn in editor, do not render a phantom shape
+    return null;
 };
 
 // Floor statistics for Card (Image 1)

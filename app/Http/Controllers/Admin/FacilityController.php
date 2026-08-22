@@ -2025,18 +2025,25 @@ class FacilityController extends Controller
             }
 
             $floorsList = $request->input('floors', []);
+            $updatedFloorIds = [];
             if (!empty($floorsList)) {
                 foreach ($floorsList as $flData) {
                     $targetId = $flData['id'] ?? ($flData['floor_id'] ?? null);
                     $polygonData = $flData['facade_polygon'] ?? ($flData['polygon'] ?? null);
                     if ($targetId) {
-                        $poly = is_array($polygonData) ? json_encode($polygonData) : $polygonData;
+                        $updatedFloorIds[] = $targetId;
+                        $poly = !empty($polygonData) ? (is_array($polygonData) ? json_encode($polygonData) : $polygonData) : null;
                         Floor::where('id', $targetId)->update([
                             'facade_polygon' => $poly
                         ]);
                     }
                 }
             }
+
+            // Also clear facade_polygon for any floors in this building not in the updated list
+            Floor::where('building_id', $building->id)
+                ->whereNotIn('id', $updatedFloorIds)
+                ->update(['facade_polygon' => null]);
         });
 
         if ($request->wantsJson() || $request->ajax()) {

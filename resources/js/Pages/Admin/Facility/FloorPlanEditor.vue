@@ -1194,10 +1194,10 @@ const handleSave = async () => {
                 const floorObj = availableFloors.value.find(f => f.floor_number === s.floor);
                 let shapeJson = null;
                 if (s.type === 'rect') {
-                    const normX = Math.max(0, (s.x - b.x) / b.w);
-                    const normY = Math.max(0, (s.y - b.y) / b.h);
-                    const normW = Math.min(1, s.w / b.w);
-                    const normH = Math.min(1, s.h / b.h);
+                    const normX = Math.min(1, Math.max(0, (s.x - b.x) / b.w));
+                    const normY = Math.min(1, Math.max(0, (s.y - b.y) / b.h));
+                    const normW = Math.min(1 - normX, Math.max(0.001, s.w / b.w));
+                    const normH = Math.min(1 - normY, Math.max(0.001, s.h / b.h));
 
                     const natX = Math.round(normX * nw);
                     const natY = Math.round(normY * nh);
@@ -1215,12 +1215,12 @@ const handleSave = async () => {
                     };
                 } else if (s.type === 'polygon' && s.points) {
                     const natPoints = s.points.map(p => ({
-                        x: Math.round(((p.x - b.x) / b.w) * nw),
-                        y: Math.round(((p.y - b.y) / b.h) * nh)
+                        x: Math.round(Math.min(1, Math.max(0, (p.x - b.x) / b.w)) * nw),
+                        y: Math.round(Math.min(1, Math.max(0, (p.y - b.y) / b.h)) * nh)
                     }));
                     const normPoints = s.points.map(p => ({
-                        x: (p.x - b.x) / b.w,
-                        y: (p.y - b.y) / b.h
+                        x: Math.min(1, Math.max(0, (p.x - b.x) / b.w)),
+                        y: Math.min(1, Math.max(0, (p.y - b.y) / b.h))
                     }));
                     shapeJson = {
                         type: 'polygon',
@@ -1255,10 +1255,10 @@ const handleSave = async () => {
 
                 if (shape) {
                     if (shape.type === 'rect') {
-                        const normX = Math.max(0, (shape.x - b.x) / b.w);
-                        const normY = Math.max(0, (shape.y - b.y) / b.h);
-                        const normW = Math.min(1, shape.w / b.w);
-                        const normH = Math.min(1, shape.h / b.h);
+                        const normX = Math.min(1, Math.max(0, (shape.x - b.x) / b.w));
+                        const normY = Math.min(1, Math.max(0, (shape.y - b.y) / b.h));
+                        const normW = Math.min(1 - normX, Math.max(0.001, shape.w / b.w));
+                        const normH = Math.min(1 - normY, Math.max(0.001, shape.h / b.h));
 
                         const natX = Math.round(normX * nw);
                         const natY = Math.round(normY * nh);

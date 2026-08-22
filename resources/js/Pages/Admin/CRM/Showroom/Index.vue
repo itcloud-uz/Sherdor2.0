@@ -207,14 +207,27 @@ const buildingImageUrl = computed(() => {
 const facadeImageRef = ref(null);
 const facadeNaturalSize = ref({ width: 1200, height: 800 });
 
-const onFacadeImageLoaded = (e) => {
-    if (e.target && e.target.naturalWidth && e.target.naturalHeight) {
-        facadeNaturalSize.value = {
-            width: e.target.naturalWidth,
-            height: e.target.naturalHeight
-        };
-    }
+const loadBuildingImageDimensions = (url) => {
+    if (!url) return;
+    const img = new Image();
+    img.onload = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+            facadeNaturalSize.value = {
+                width: img.naturalWidth,
+                height: img.naturalHeight
+            };
+        }
+    };
+    img.src = url;
 };
+
+watch(buildingImageUrl, (newUrl) => {
+    loadBuildingImageDimensions(newUrl);
+}, { immediate: true });
+
+onMounted(() => {
+    loadBuildingImageDimensions(buildingImageUrl.value);
+});
 
 // Interactive Floor Hovering on Facade
 const hoveredFloor = ref(null);
@@ -335,33 +348,39 @@ const filterUnitsList = (units) => {
         <!-- ========================================================================= -->
         <div v-if="viewMode === 'facade'" class="flex-1 flex flex-col relative w-full h-full overflow-hidden">
             
-            <!-- Exact Image 1 Top Translucent Bar -->
-            <div class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-8 py-3.5 bg-white/20 backdrop-blur-md border-b border-white/20 text-gray-800">
-                <!-- Left: Ortga Qaytish (Returns to CRM Dashboard Image 2) -->
+            <!-- Clean Frosted Top Bar with High Contrast -->
+            <div class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-3 bg-slate-900/80 backdrop-blur-md border-b border-white/10 text-white shadow-lg">
+                <!-- Left: Ortga Qaytish (Returns to CRM Dashboard) -->
                 <Link 
                     :href="route('admin.dashboard')" 
-                    class="text-sm font-bold text-gray-800 hover:text-black transition-colors flex items-center gap-1.5 drop-shadow-sm"
+                    class="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 border border-white/10 shadow-xs"
                 >
-                    <span class="text-base">←</span>
-                    <span>ortga qaytish</span>
+                    <span class="text-sm">←</span>
+                    <span>Boshqaruv paneliga qaytish</span>
                 </Link>
 
-                <!-- Center: Blok Shaxnatkasiga o'tish Button -->
-                <button 
-                    @click="viewMode = 'shaxmatka'"
-                    class="text-sm font-bold text-gray-800 hover:text-black transition-colors drop-shadow-sm"
-                >
-                    Blok Shaxnatkasiga o'tish
-                </button>
+                <!-- Center: Building & Block Switcher -->
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-extrabold text-white tracking-wide flex items-center gap-1.5 drop-shadow">
+                        <span class="text-orange-400">🏢</span> {{ selectedBuilding.name || 'Baraka Residence' }} ({{ selectedBuilding.block_name || selectedBuilding.corpus_name || 'A-1 Blok' }})
+                    </span>
+                    <button 
+                        @click="viewMode = 'shaxmatka'"
+                        class="px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5"
+                    >
+                        <span>📊</span>
+                        <span>Blok Shaxmatkasiga o'tish</span>
+                    </button>
+                </div>
 
                 <!-- Right: Next block -->
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
                     <button 
                         @click="goToNextBlock"
-                        class="text-sm font-bold text-gray-800 hover:text-black transition-colors flex items-center gap-1.5 drop-shadow-sm"
+                        class="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 border border-white/10 shadow-xs"
                     >
                         <span>Keyingi blok</span>
-                        <span class="text-base">→</span>
+                        <span class="text-sm">→</span>
                     </button>
                 </div>
             </div>

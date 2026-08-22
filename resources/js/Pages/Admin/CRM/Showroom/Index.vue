@@ -358,20 +358,20 @@ const filterUnitsList = (units) => {
 <template>
     <Head title="Shou room - 3D Maket - IQS ERP" />
     
-    <!-- 100% FULL SCREEN STANDALONE APP (No admin sidebar wrapper) -->
-    <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden select-none bg-slate-900 font-sans">
+    <!-- 100% FULL SCREEN STANDALONE APP (Clean White & Orange Studio) -->
+    <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden select-none bg-slate-950 font-sans">
 
         <!-- ========================================================================= -->
-        <!-- 1. FULL SCREEN 3D BINO FASADI (EXACT REPLICA OF USER IMAGE 1)             -->
+        <!-- 1. FULL SCREEN 3D BINO FASADI (FASAD KO'RINISHI)                         -->
         <!-- ========================================================================= -->
-        <div v-if="viewMode === 'facade'" class="flex-1 flex flex-col relative w-full h-full overflow-hidden">
+        <div v-if="viewMode === 'facade'" class="flex-1 flex flex-col w-full h-full overflow-hidden">
             
-            <!-- Clean Frosted Top Bar with High Contrast -->
-            <div class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-3 bg-slate-900/80 backdrop-blur-md border-b border-white/10 text-white shadow-lg">
+            <!-- Clean Unified Top Bar (White & Orange Minimalism) -->
+            <header class="h-[54px] bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs shrink-0 z-30">
                 <!-- Left: Ortga Qaytish (Returns to CRM Dashboard) -->
                 <Link 
                     :href="route('admin.dashboard')" 
-                    class="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 border border-white/10 shadow-xs"
+                    class="h-8 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                     <span class="text-sm">←</span>
                     <span>Boshqaruv paneliga qaytish</span>
@@ -379,12 +379,12 @@ const filterUnitsList = (units) => {
 
                 <!-- Center: Building & Block Switcher -->
                 <div class="flex items-center gap-3">
-                    <span class="text-sm font-extrabold text-white tracking-wide flex items-center gap-1.5 drop-shadow">
-                        <span class="text-orange-400">🏢</span> {{ selectedBuilding.name || 'Baraka Residence' }} ({{ selectedBuilding.block_name || selectedBuilding.corpus_name || 'A-1 Blok' }})
+                    <span class="text-xs font-black text-slate-900 tracking-tight flex items-center gap-1.5">
+                        <span class="text-orange-500">🏢</span> {{ selectedBuilding.name || 'Baraka Residence' }} ({{ selectedBuilding.block_name || selectedBuilding.corpus_name || 'A-1 Blok' }})
                     </span>
                     <button 
                         @click="viewMode = 'shaxmatka'"
-                        class="px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5"
+                        class="h-8 px-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                         <span>📊</span>
                         <span>Blok Shaxmatkasiga o'tish</span>
@@ -395,20 +395,19 @@ const filterUnitsList = (units) => {
                 <div class="flex items-center gap-2">
                     <button 
                         @click="goToNextBlock"
-                        class="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 border border-white/10 shadow-xs"
+                        class="h-8 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                         <span>Keyingi blok</span>
                         <span class="text-sm">→</span>
                     </button>
                 </div>
-            </div>
+            </header>
 
-            <!-- Full-Screen 3D Building Viewport -->
-            <div class="flex-1 w-full h-full flex items-center justify-center overflow-hidden relative">
-                <!-- Full-Bleed Building Render with 1:1 Synchronized SVG Coordinates -->
+            <!-- Full-Screen 3D Building Viewport with generous padding (No image clipping) -->
+            <div class="flex-1 w-full h-[calc(100vh-54px)] p-3 md:p-5 flex items-center justify-center overflow-hidden relative bg-slate-950">
                 <div class="relative w-full h-full flex items-center justify-center">
                     <svg 
-                        class="w-full h-full block select-none pointer-events-auto" 
+                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl" 
                         :viewBox="`0 0 ${facadeNaturalSize.width} ${facadeNaturalSize.height}`"
                         preserveAspectRatio="xMidYMid meet"
                     >
@@ -438,8 +437,8 @@ const filterUnitsList = (units) => {
                                     :y="getFloorFacadeShape(floor, idx, sortedFloors.length).y"
                                     :width="getFloorFacadeShape(floor, idx, sortedFloors.length).width"
                                     :height="getFloorFacadeShape(floor, idx, sortedFloors.length).height"
-                                    :fill="hoveredFloor?.id === floor.id ? 'rgba(59, 130, 246, 0.45)' : 'rgba(255, 255, 255, 0.01)'"
-                                    :stroke="hoveredFloor?.id === floor.id ? '#60a5fa' : 'transparent'"
+                                    :fill="hoveredFloor?.id === floor.id ? 'rgba(249, 115, 22, 0.40)' : 'rgba(255, 255, 255, 0.01)'"
+                                    :stroke="hoveredFloor?.id === floor.id ? '#f97316' : 'transparent'"
                                     :stroke-width="hoveredFloor?.id === floor.id ? 3 : 0"
                                     class="transition-all duration-200"
                                 />
@@ -447,8 +446,8 @@ const filterUnitsList = (units) => {
                                 <polygon 
                                     v-else-if="getFloorFacadeShape(floor, idx, sortedFloors.length).type === 'polygon'"
                                     :points="getFloorFacadeShape(floor, idx, sortedFloors.length).points"
-                                    :fill="hoveredFloor?.id === floor.id ? 'rgba(59, 130, 246, 0.45)' : 'rgba(255, 255, 255, 0.01)'"
-                                    :stroke="hoveredFloor?.id === floor.id ? '#60a5fa' : 'transparent'"
+                                    :fill="hoveredFloor?.id === floor.id ? 'rgba(249, 115, 22, 0.40)' : 'rgba(255, 255, 255, 0.01)'"
+                                    :stroke="hoveredFloor?.id === floor.id ? '#f97316' : 'transparent'"
                                     :stroke-width="hoveredFloor?.id === floor.id ? 3 : 0"
                                     class="transition-all duration-200"
                                 />
@@ -456,7 +455,7 @@ const filterUnitsList = (units) => {
                         </g>
                     </svg>
 
-                    <!-- EXACT CARD & GREEN CONNECTOR LINE (IMAGE 1) -->
+                    <!-- Clean Modern Floor Card on Hover (White & Orange Minimalism) -->
                     <transition
                         enter-active-class="transition duration-200 ease-out"
                         enter-from-class="opacity-0 translate-x-6 scale-95"
@@ -468,49 +467,47 @@ const filterUnitsList = (units) => {
                         <div 
                             v-if="hoveredFloor"
                             @click="openFloorPlan(hoveredFloor)"
-                            class="absolute right-8 md:right-16 top-1/4 z-50 w-96 bg-white shadow-2xl rounded-3xl p-6 text-gray-800 border border-gray-100 cursor-pointer pointer-events-auto"
+                            class="absolute right-6 md:right-12 top-1/4 z-50 w-84 bg-white shadow-2xl rounded-3xl p-5 text-slate-800 border border-slate-200/90 cursor-pointer pointer-events-auto animate-in fade-in zoom-in duration-150"
                         >
-                            <!-- Green Angled Pointer Line (Exact Image 1) -->
-                            <div class="absolute -left-20 top-8 w-20 h-1 bg-[#10b981] hidden md:block origin-right -rotate-12">
-                                <div class="absolute -left-2 -top-1 w-3.5 h-3.5 rounded-full bg-[#10b981]"></div>
-                            </div>
-
                             <!-- Header: Blok Name & Qavat Badge -->
-                            <div class="flex items-center justify-between pb-3">
-                                <h3 class="text-2xl font-bold text-[#2563eb] tracking-tight">
-                                    {{ selectedBuilding.block_name || selectedBuilding.corpus_name || 'A-1 Blok' }}
-                                </h3>
-                                <span class="px-3 py-1 bg-[#dcfce7] text-[#15803d] rounded-full text-xs font-bold">
-                                    {{ hoveredFloor.floor_number < 0 ? `${hoveredFloor.floor_number}-Qavat` : `${hoveredFloor.floor_number}-Qavat` }}
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <div>
+                                    <h3 class="text-base font-black text-slate-900 tracking-tight">
+                                        {{ selectedBuilding.block_name || selectedBuilding.corpus_name || 'A-1 Blok' }}
+                                    </h3>
+                                    <p class="text-[11px] text-slate-500 font-medium">{{ selectedBuilding?.name }}</p>
+                                </div>
+                                <span class="px-3 py-1 bg-orange-50 text-orange-600 border border-orange-200 rounded-xl text-xs font-black">
+                                    {{ hoveredFloor.floor_number < 0 ? `${hoveredFloor.floor_number}-Yerto'la` : `${hoveredFloor.floor_number}-Qavat` }}
                                 </span>
                             </div>
 
-                            <!-- Rows matching Image 1 exact content -->
-                            <div class="py-2 space-y-2.5 text-xs font-bold">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-gray-700">Sotuvda mavjud :</span>
-                                    <span class="text-[#15803d]">{{ getFloorStats(hoveredFloor).available || 5 }} xonadon</span>
+                            <!-- Rows matching floor stats -->
+                            <div class="py-3 space-y-2 text-xs font-bold">
+                                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                    <span class="text-slate-600">Sotuvda mavjud:</span>
+                                    <span class="text-emerald-700 font-black">🟢 {{ getFloorStats(hoveredFloor).available || 5 }} ta xonadon</span>
                                 </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-gray-700">Sotilgan :</span>
-                                    <span class="text-[#dc2626]">{{ getFloorStats(hoveredFloor).sold || 3 }} xonadon</span>
+                                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                    <span class="text-slate-600">Sotilgan:</span>
+                                    <span class="text-red-700 font-black">🔴 {{ getFloorStats(hoveredFloor).sold || 3 }} ta xonadon</span>
                                 </div>
-                                <div class="flex items-start justify-between gap-4">
-                                    <span class="text-gray-700 shrink-0">Joylashuv :</span>
-                                    <span class="text-[#2563eb] text-right">{{ getBuildingLocationString(selectedBuilding) }}</span>
+                                <div class="flex items-start justify-between gap-4 p-2">
+                                    <span class="text-slate-500 shrink-0">Joylashuv:</span>
+                                    <span class="text-slate-800 font-extrabold text-right text-[11px]">{{ getBuildingLocationString(selectedBuilding) }}</span>
                                 </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-gray-700">Statusi :</span>
-                                    <span class="text-[#d97706]">
+                                <div class="flex items-center justify-between p-2">
+                                    <span class="text-slate-500">Statusi:</span>
+                                    <span class="text-amber-600 font-extrabold">
                                         {{ selectedBuilding.status || 'Qurilish jarayonida' }}
                                     </span>
                                 </div>
                             </div>
 
-                            <!-- Click hint -->
-                            <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-orange-600 font-extrabold">
-                                <span>📐 Qavat chizmasiga o'tish uchun bosing</span>
-                                <span>→</span>
+                            <!-- Click action button -->
+                            <div class="mt-2 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-center text-xs font-black shadow-md shadow-orange-500/20 flex items-center justify-center gap-2">
+                                <span>📐</span>
+                                <span>Qavat chizmasini ochish →</span>
                             </div>
                         </div>
                     </transition>
@@ -519,24 +516,24 @@ const filterUnitsList = (units) => {
         </div>
 
         <!-- ========================================================================= -->
-        <!-- 2. FULL SCREEN 2D FLOOR PLAN & UNITS (QAVATNING TO'LIQ CHIZMASI VA UYLAR)  -->
+        <!-- 2. FULL SCREEN 2D FLOOR PLAN & UNITS (QAVAT CHIZMASI)                    -->
         <!-- ========================================================================= -->
-        <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col relative w-full h-full overflow-hidden bg-slate-950">
-            <!-- Floor Plan Top Bar -->
-            <div class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-3 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-white shadow-md">
+        <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-slate-950">
+            <!-- Clean Unified Top Bar (Floor Plan) -->
+            <header class="h-[54px] bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs shrink-0 z-30">
                 <button 
                     @click="viewMode = 'facade'" 
-                    class="h-8 px-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                    class="h-8 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                     <span class="text-sm">←</span>
                     <span>Bino fasadiga qaytish</span>
                 </button>
 
                 <div class="flex items-center gap-2">
-                    <span class="font-extrabold text-xs text-slate-100 flex items-center gap-1.5">
-                        <span class="text-orange-400">🏢</span> {{ selectedBuilding?.name }} ({{ selectedBuilding?.block_name || 'A-1 Blok' }}) 
-                        <span class="text-slate-500">›</span> 
-                        <span class="text-amber-400">📐</span> {{ activeFloor?.floor_number < 0 ? `${activeFloor?.floor_number}-yerto'la` : `${activeFloor?.floor_number}-qavat` }} Chizmasi
+                    <span class="font-black text-xs text-slate-900 flex items-center gap-1.5">
+                        <span class="text-orange-500">🏢</span> {{ selectedBuilding?.name }} ({{ selectedBuilding?.block_name || 'A-1 Blok' }}) 
+                        <span class="text-slate-400">›</span> 
+                        <span class="text-amber-500">📐</span> {{ activeFloor?.floor_number < 0 ? `${activeFloor?.floor_number}-yerto'la` : `${activeFloor?.floor_number}-qavat` }} Chizmasi
                     </span>
                 </div>
 
@@ -549,13 +546,13 @@ const filterUnitsList = (units) => {
                         <span>Blok Shaxmatkasiga o'tish →</span>
                     </button>
                 </div>
-            </div>
+            </header>
 
-            <!-- Blueprint & Interactive Unit Polygons SVG Viewport -->
-            <div class="flex-1 w-full h-full flex items-center justify-center overflow-hidden relative">
+            <!-- Blueprint & Interactive Unit Polygons SVG Viewport with generous padding (No image clipping) -->
+            <div class="flex-1 w-full h-[calc(100vh-54px)] p-3 md:p-5 flex items-center justify-center overflow-hidden relative bg-slate-950">
                 <div class="relative w-full h-full flex items-center justify-center">
                     <svg 
-                        class="w-full h-full block select-none pointer-events-auto" 
+                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl" 
                         :viewBox="`0 0 ${floorBlueprintNaturalSize.width} ${floorBlueprintNaturalSize.height}`"
                         preserveAspectRatio="xMidYMid meet"
                     >
@@ -603,7 +600,7 @@ const filterUnitsList = (units) => {
                         </g>
                     </svg>
 
-                    <!-- Unit Tooltip Card on Hover -->
+                    <!-- Unit Tooltip Card on Hover (White & Orange Minimalism) -->
                     <transition
                         enter-active-class="transition duration-200 ease-out"
                         enter-from-class="opacity-0 translate-x-6 scale-95"
@@ -614,14 +611,17 @@ const filterUnitsList = (units) => {
                     >
                         <div 
                             v-if="hoveredUnit"
-                            class="absolute right-8 md:right-16 top-1/4 z-50 w-96 bg-white shadow-2xl rounded-3xl p-6 text-gray-800 border border-gray-100 pointer-events-auto"
+                            class="absolute right-6 md:right-12 top-1/4 z-50 w-84 bg-white shadow-2xl rounded-3xl p-5 text-slate-800 border border-slate-200/90 pointer-events-auto animate-in fade-in zoom-in duration-150"
                         >
                             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                                <h3 class="text-2xl font-black text-slate-900">
-                                    {{ hoveredUnit.unit_number }}-xonadon
-                                </h3>
+                                <div>
+                                    <h3 class="text-base font-black text-slate-900">
+                                        {{ hoveredUnit.unit_number }}-xonadon
+                                    </h3>
+                                    <p class="text-[11px] text-slate-500 font-medium">{{ selectedBuilding?.name }}</p>
+                                </div>
                                 <span 
-                                    class="px-3 py-1 rounded-full text-xs font-black uppercase"
+                                    class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase"
                                     :class="hoveredUnit.status === 'sold' ? 'bg-red-100 text-red-700' : (hoveredUnit.status === 'reserved' || hoveredUnit.status === 'booked' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')"
                                 >
                                     {{ hoveredUnit.status === 'sold' ? '🔴 Sotilgan' : (hoveredUnit.status === 'reserved' || hoveredUnit.status === 'booked' ? '🟡 Band' : '🟢 Sotuvda') }}
@@ -629,28 +629,28 @@ const filterUnitsList = (units) => {
                             </div>
 
                             <div class="py-3 space-y-2 text-xs font-bold">
-                                <div class="flex items-center justify-between">
+                                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
                                     <span class="text-slate-500">Qavat:</span>
-                                    <span class="text-slate-800 font-extrabold">{{ activeFloor?.floor_number }}-qavat</span>
+                                    <span class="text-slate-800 font-black">{{ activeFloor?.floor_number }}-qavat</span>
                                 </div>
-                                <div class="flex items-center justify-between">
+                                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
                                     <span class="text-slate-500">Xonalar soni:</span>
-                                    <span class="text-slate-800 font-extrabold">{{ hoveredUnit.rooms_count || 1 }}-xona</span>
+                                    <span class="text-slate-800 font-black">{{ hoveredUnit.rooms_count || 1 }}-xona</span>
                                 </div>
-                                <div class="flex items-center justify-between">
+                                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
                                     <span class="text-slate-500">Umumiy maydoni:</span>
-                                    <span class="text-slate-800 font-extrabold">{{ hoveredUnit.area_sqm }} m²</span>
+                                    <span class="text-slate-800 font-black">{{ hoveredUnit.area_sqm }} m²</span>
                                 </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-slate-500">Umumiy narxi:</span>
-                                    <span class="text-emerald-600 font-black text-sm">{{ formatSoM(hoveredUnit.price) }}</span>
+                                <div class="flex items-center justify-between bg-orange-50/80 p-2.5 rounded-xl border border-orange-200/80">
+                                    <span class="text-orange-700">Umumiy narxi:</span>
+                                    <span class="text-slate-900 font-black text-sm">{{ formatSoM(hoveredUnit.price) }}</span>
                                 </div>
                             </div>
 
                             <button
                                 v-if="hoveredUnit.status === 'available'"
                                 @click="openUnitModal(hoveredUnit)"
-                                class="w-full mt-2 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-lg shadow-orange-500/30 transition-all flex items-center justify-center gap-2"
+                                class="w-full mt-2 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
                             >
                                 <span>📝</span>
                                 <span>Shartnoma / Bron Qilish</span>
@@ -662,50 +662,43 @@ const filterUnitsList = (units) => {
         </div>
 
         <!-- ========================================================================= -->
-        <!-- 2. FULL SCREEN BLOK SHAXMATKASI (EXACT REPLICA OF USER IMAGE 2 / 3)       -->
+        <!-- 3. FULL SCREEN BLOK SHAXMATKASI (SHAXMATKA KO'RINISHI)                   -->
         <!-- ========================================================================= -->
-        <div v-else-if="viewMode === 'shaxmatka'" class="flex-1 flex flex-col relative w-full h-full overflow-hidden bg-slate-900">
+        <div v-else-if="viewMode === 'shaxmatka'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-[#f8fafc]">
             
-            <!-- Background: Crisp Building Render -->
-            <div class="absolute inset-0 z-0">
-                <img 
-                    :src="buildingImageUrl"
-                    @error="(e) => e.target.src = '/images/clean-building-facade.jpg'"
-                    class="w-full h-full object-cover object-center opacity-85"
-                />
-            </div>
-
-            <!-- Top Header Bar (Exact Image 2) -->
-            <div class="relative z-20 flex flex-wrap items-center justify-between gap-4 px-8 py-3.5 bg-white/20 backdrop-blur-md border-b border-white/20 text-gray-800">
-                <div class="flex items-center gap-5">
+            <!-- Top Header Bar (White & Orange Minimalism) -->
+            <header class="h-[54px] bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs shrink-0 z-30">
+                <div class="flex items-center gap-4">
                     <button 
                         @click="viewMode = 'facade'"
-                        class="text-sm font-bold text-gray-800 hover:text-black transition-colors flex items-center gap-1.5"
+                        class="h-8 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
-                        <span>←</span> ortga qaytish
+                        <span>←</span>
+                        <span>Fasadga qaytish</span>
                     </button>
 
                     <!-- Filter Button -->
                     <div class="relative">
                         <button 
                             @click="showFilterDropdown = !showFilterDropdown"
-                            class="px-5 py-1.5 bg-[#f59e0b] hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                            class="h-8 px-3.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                         >
-                            <span>⚡</span> Filter
+                            <span>⚡</span>
+                            <span>Filter</span>
                         </button>
 
-                        <div v-if="showFilterDropdown" class="absolute left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 z-50 text-gray-800 space-y-3">
-                            <div class="flex justify-between items-center pb-2 border-b border-gray-100">
-                                <h4 class="font-extrabold text-xs uppercase tracking-wider text-gray-600">Qidiruv va Filter</h4>
-                                <button @click="showFilterDropdown = false" class="text-gray-400 hover:text-gray-700">✕</button>
+                        <div v-if="showFilterDropdown" class="absolute left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 text-slate-800 space-y-3">
+                            <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                                <h4 class="font-extrabold text-xs uppercase tracking-wider text-slate-600">Qidiruv va Filter</h4>
+                                <button @click="showFilterDropdown = false" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
                             </div>
                             <div>
-                                <label class="text-xs font-bold text-gray-600 block mb-1">Xonadon raqami:</label>
-                                <input v-model="searchQuery" placeholder="Masalan: A-1-D1..." class="w-full text-xs font-bold rounded-lg border-gray-300 p-2 focus:ring-blue-500" />
+                                <label class="text-xs font-bold text-slate-600 block mb-1">Xonadon raqami:</label>
+                                <input v-model="searchQuery" placeholder="Masalan: A-1-1..." class="w-full text-xs font-bold rounded-xl border-slate-200 p-2 focus:ring-2 focus:ring-orange-500" />
                             </div>
                             <div>
-                                <label class="text-xs font-bold text-gray-600 block mb-1">Holati:</label>
-                                <select v-model="filterStatus" class="w-full text-xs font-bold rounded-lg border-gray-300 p-2 focus:ring-blue-500">
+                                <label class="text-xs font-bold text-slate-600 block mb-1">Holati:</label>
+                                <select v-model="filterStatus" class="w-full text-xs font-bold rounded-xl border-slate-200 p-2 focus:ring-2 focus:ring-orange-500">
                                     <option value="">Barchasi</option>
                                     <option value="available">Sotuvda</option>
                                     <option value="reserved">Bron qilingan</option>
@@ -713,8 +706,8 @@ const filterUnitsList = (units) => {
                                 </select>
                             </div>
                             <div>
-                                <label class="text-xs font-bold text-gray-600 block mb-1">Xonalar soni:</label>
-                                <select v-model="filterRooms" class="w-full text-xs font-bold rounded-lg border-gray-300 p-2 focus:ring-blue-500">
+                                <label class="text-xs font-bold text-slate-600 block mb-1">Xonalar soni:</label>
+                                <select v-model="filterRooms" class="w-full text-xs font-bold rounded-xl border-slate-200 p-2 focus:ring-2 focus:ring-orange-500">
                                     <option value="">Barchasi</option>
                                     <option value="1">1 xona</option>
                                     <option value="2">2 xona</option>
@@ -728,24 +721,24 @@ const filterUnitsList = (units) => {
                     <button 
                         v-if="searchQuery || filterStatus || filterRooms"
                         @click="resetFilters"
-                        class="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1"
+                        class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
                     >
                         <span>✕</span> Filterni tozalash
                     </button>
                 </div>
 
-                <!-- Status Legends (Image 2) -->
-                <div class="flex items-center gap-6 text-xs font-bold text-gray-800">
+                <!-- Status Legends -->
+                <div class="flex items-center gap-6 text-xs font-bold text-slate-700">
                     <div class="flex items-center gap-2">
-                        <span class="w-3.5 h-3.5 rounded-full bg-[#10b981] block"></span>
+                        <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 block shadow-xs"></span>
                         <span>Sotuvda</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="w-3.5 h-3.5 rounded-full bg-[#ef4444] block"></span>
+                        <span class="w-3.5 h-3.5 rounded-full bg-red-500 block shadow-xs"></span>
                         <span>Sotilgan</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="w-3.5 h-3.5 rounded-full bg-[#f59e0b] block"></span>
+                        <span class="w-3.5 h-3.5 rounded-full bg-amber-500 block shadow-xs"></span>
                         <span>Bron qilingan</span>
                     </div>
                 </div>
@@ -754,34 +747,34 @@ const filterUnitsList = (units) => {
                 <div class="flex items-center gap-3">
                     <button 
                         @click="goToNextBlock"
-                        class="text-sm font-bold text-gray-800 hover:text-black transition-colors flex items-center gap-1.5"
+                        class="h-8 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                         <span>Keyingi blok</span>
-                        <span>→</span>
+                        <span class="text-sm">→</span>
                     </button>
                 </div>
-            </div>
+            </header>
 
             <!-- Shaxmatka 2-Columns Grid Layout -->
-            <div class="relative z-10 flex-1 overflow-auto px-10 py-6">
-                <!-- Large Orange Block Header Pill (Image 2: "A-1 blok") -->
+            <div class="flex-1 overflow-auto px-8 py-6 bg-[#f8fafc]">
+                <!-- Clean Orange Block Header Pill -->
                 <div class="mb-6">
-                    <div class="inline-flex items-center px-8 py-2.5 bg-[#f59e0b] text-black rounded-3xl font-black text-3xl tracking-wide shadow-md">
+                    <div class="inline-flex items-center px-6 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-2xl font-black text-xl tracking-tight shadow-md shadow-orange-500/20">
                         {{ selectedBuilding.block_name || selectedBuilding.corpus_name || 'A-1 blok' }}
                     </div>
                 </div>
 
-                <!-- 2-Columns Grid (Image 2) -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-4 max-w-7xl">
+                <!-- 2-Columns Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4 max-w-7xl">
                     <!-- Left Column (Floors 1 to 8) -->
                     <div class="space-y-3">
                         <div 
                             v-for="floor in leftColumnFloors" 
                             :key="'col1-fl-' + floor.id"
-                            class="flex items-center gap-3"
+                            class="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200/80 shadow-xs"
                         >
-                            <!-- Orange Floor Pill Button (Image 2) -->
-                            <div class="px-6 py-2.5 bg-[#f59e0b] text-white font-bold text-base rounded-2xl shadow shrink-0 min-w-[130px] text-center">
+                            <!-- Orange Floor Pill Button -->
+                            <div class="px-4 py-2 bg-slate-900 text-white font-black text-xs rounded-xl shadow-xs shrink-0 min-w-[110px] text-center">
                                 {{ floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat` }}
                             </div>
 
@@ -792,7 +785,7 @@ const filterUnitsList = (units) => {
                                     :key="'unit-btn-' + unit.id"
                                     @click="openUnitModal(unit)"
                                     :class="getUnitColorClass(unit)"
-                                    class="px-3.5 py-2.5 rounded-xl font-bold text-xs shadow transition-all duration-150 hover:scale-105 active:scale-95 flex items-center justify-center shrink-0 min-w-[70px]"
+                                    class="px-3 py-2 rounded-xl font-black text-xs shadow-xs transition-all duration-150 hover:scale-105 active:scale-95 flex items-center justify-center shrink-0 min-w-[65px] cursor-pointer"
                                 >
                                     {{ unit.unit_number }}
                                 </button>
@@ -805,10 +798,10 @@ const filterUnitsList = (units) => {
                         <div 
                             v-for="floor in rightColumnFloors" 
                             :key="'col2-fl-' + floor.id"
-                            class="flex items-center gap-3"
+                            class="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200/80 shadow-xs"
                         >
-                            <!-- Orange Floor Pill Button (Image 2) -->
-                            <div class="px-6 py-2.5 bg-[#f59e0b] text-white font-bold text-base rounded-2xl shadow shrink-0 min-w-[130px] text-center">
+                            <!-- Orange Floor Pill Button -->
+                            <div class="px-4 py-2 bg-slate-900 text-white font-black text-xs rounded-xl shadow-xs shrink-0 min-w-[110px] text-center">
                                 {{ floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat` }}
                             </div>
 
@@ -819,7 +812,7 @@ const filterUnitsList = (units) => {
                                     :key="'unit-btn-r-' + unit.id"
                                     @click="openUnitModal(unit)"
                                     :class="getUnitColorClass(unit)"
-                                    class="px-3.5 py-2.5 rounded-xl font-bold text-xs shadow transition-all duration-150 hover:scale-105 active:scale-95 flex items-center justify-center shrink-0 min-w-[70px]"
+                                    class="px-3 py-2 rounded-xl font-black text-xs shadow-xs transition-all duration-150 hover:scale-105 active:scale-95 flex items-center justify-center shrink-0 min-w-[65px] cursor-pointer"
                                 >
                                     {{ unit.unit_number }}
                                 </button>

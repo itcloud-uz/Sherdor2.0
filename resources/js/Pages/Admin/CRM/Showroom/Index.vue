@@ -403,11 +403,20 @@ const filterUnitsList = (units) => {
                 </div>
             </header>
 
-            <!-- Full-Screen 3D Building Viewport with generous padding (No image clipping, pure light background) -->
-            <div class="flex-1 w-full h-[calc(100vh-54px)] p-3 md:p-5 flex items-center justify-center overflow-hidden relative bg-[#f8fafc]">
-                <div class="relative w-full h-full flex items-center justify-center">
+            <!-- Full-Screen 3D Building Viewport with Seamless Ambient Background -->
+            <div class="flex-1 w-full h-[calc(100vh-54px)] flex items-center justify-center overflow-hidden relative bg-[#f1f5f9]">
+                <!-- Ambient Blurred Background Image that seamlessly continues the sky and building colors -->
+                <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                    <img 
+                        :src="buildingImageUrl" 
+                        class="w-full h-full object-cover filter blur-3xl opacity-75 scale-110"
+                    />
+                    <div class="absolute inset-0 bg-white/20 backdrop-blur-xl"></div>
+                </div>
+
+                <div class="relative z-10 w-full h-full p-3 md:p-5 flex items-center justify-center">
                     <svg 
-                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-xl" 
+                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl rounded-2xl" 
                         :viewBox="`0 0 ${facadeNaturalSize.width} ${facadeNaturalSize.height}`"
                         preserveAspectRatio="xMidYMid meet"
                     >
@@ -518,7 +527,7 @@ const filterUnitsList = (units) => {
         <!-- ========================================================================= -->
         <!-- 2. FULL SCREEN 2D FLOOR PLAN & UNITS (QAVAT CHIZMASI)                    -->
         <!-- ========================================================================= -->
-        <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-[#f8fafc]">
+        <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-[#f1f5f9]">
             <!-- Clean Unified Top Bar (Floor Plan) -->
             <header class="h-[54px] bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs shrink-0 z-30">
                 <button 
@@ -548,11 +557,20 @@ const filterUnitsList = (units) => {
                 </div>
             </header>
 
-            <!-- Blueprint & Interactive Unit Polygons SVG Viewport with generous padding (Pure light background) -->
-            <div class="flex-1 w-full h-[calc(100vh-54px)] p-3 md:p-5 flex items-center justify-center overflow-hidden relative bg-[#f8fafc]">
-                <div class="relative w-full h-full flex items-center justify-center">
+            <!-- Blueprint Viewport with Ambient Blueprint Backdrop -->
+            <div class="flex-1 w-full h-[calc(100vh-54px)] flex items-center justify-center overflow-hidden relative bg-[#f1f5f9]">
+                <!-- Ambient Blurred Blueprint Backdrop -->
+                <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                    <img 
+                        :src="activeFloorBlueprintUrl" 
+                        class="w-full h-full object-cover filter blur-3xl opacity-50 scale-110"
+                    />
+                    <div class="absolute inset-0 bg-white/30 backdrop-blur-xl"></div>
+                </div>
+
+                <div class="relative z-10 w-full h-full p-3 md:p-5 flex items-center justify-center">
                     <svg 
-                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-xl" 
+                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl rounded-2xl" 
                         :viewBox="`0 0 ${floorBlueprintNaturalSize.width} ${floorBlueprintNaturalSize.height}`"
                         preserveAspectRatio="xMidYMid meet"
                     >

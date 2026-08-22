@@ -523,27 +523,30 @@ const filterUnitsList = (units) => {
         <!-- ========================================================================= -->
         <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col relative w-full h-full overflow-hidden bg-slate-950">
             <!-- Floor Plan Top Bar -->
-            <div class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-8 py-3.5 bg-white/20 backdrop-blur-md border-b border-white/20 text-gray-800">
+            <div class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-3 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-white shadow-md">
                 <button 
                     @click="viewMode = 'facade'" 
-                    class="text-sm font-bold text-gray-800 hover:text-black transition-colors flex items-center gap-1.5 drop-shadow-sm"
+                    class="h-8 px-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                    <span class="text-base">←</span>
+                    <span class="text-sm">←</span>
                     <span>Bino fasadiga qaytish</span>
                 </button>
 
                 <div class="flex items-center gap-2">
-                    <span class="font-black text-sm text-gray-900 drop-shadow-sm">
-                        🏢 {{ selectedBuilding?.name }} ({{ selectedBuilding?.block_name || 'A-1 Blok' }}) › 📐 {{ activeFloor?.floor_number < 0 ? `${activeFloor?.floor_number}-yerto'la` : `${activeFloor?.floor_number}-Qavat` }} Chizmasi
+                    <span class="font-extrabold text-xs text-slate-100 flex items-center gap-1.5">
+                        <span class="text-orange-400">🏢</span> {{ selectedBuilding?.name }} ({{ selectedBuilding?.block_name || 'A-1 Blok' }}) 
+                        <span class="text-slate-500">›</span> 
+                        <span class="text-amber-400">📐</span> {{ activeFloor?.floor_number < 0 ? `${activeFloor?.floor_number}-yerto'la` : `${activeFloor?.floor_number}-qavat` }} Chizmasi
                     </span>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <button 
                         @click="viewMode = 'shaxmatka'"
-                        class="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-black rounded-xl shadow-md transition-all"
+                        class="h-8 px-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-black rounded-xl shadow-md shadow-orange-500/20 transition-all flex items-center gap-1 cursor-pointer"
                     >
-                        Blok Shaxmatkasiga o'tish →
+                        <span>📊</span>
+                        <span>Blok Shaxmatkasiga o'tish →</span>
                     </button>
                 </div>
             </div>
@@ -829,70 +832,88 @@ const filterUnitsList = (units) => {
 
     </div>
 
-    <!-- Unit Detailed Modal -->
+    <!-- Unit Detailed Modal (Clean Minimalist White & Orange Design) -->
     <Teleport to="body">
-        <div v-if="showUnitDetailModal && selectedUnit" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div class="bg-slate-900 p-6 text-white flex items-center justify-between">
+        <div v-if="showUnitDetailModal && selectedUnit" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div class="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-150">
+                <!-- Header -->
+                <div class="px-6 py-5 bg-white border-b border-slate-100 flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg text-white shadow-lg" :class="getUnitBadgeBg(selectedUnit)">
+                        <div class="px-3 py-1.5 rounded-xl font-black text-sm border shadow-xs" :class="selectedUnit.status === 'available' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : (selectedUnit.status === 'sold' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200')">
                             {{ selectedUnit.unit_number }}
                         </div>
                         <div>
-                            <h3 class="font-extrabold text-base tracking-tight">Xonadon № {{ selectedUnit.unit_number }}</h3>
-                            <span class="text-xs text-slate-400">{{ selectedBuilding?.name }} - {{ selectedBuilding?.block_name || 'Blok' }}</span>
+                            <h3 class="font-black text-base text-slate-900 tracking-tight">Xonadon № {{ selectedUnit.unit_number }}</h3>
+                            <p class="text-xs text-slate-500 font-medium">{{ selectedBuilding?.name }} • {{ selectedBuilding?.block_name || 'A-1 Blok' }}</p>
                         </div>
                     </div>
-                    <button @click="showUnitDetailModal = false" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all">
+                    <button 
+                        @click="showUnitDetailModal = false" 
+                        class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center font-bold text-sm transition-all cursor-pointer"
+                    >
                         ✕
                     </button>
                 </div>
 
+                <!-- Body -->
                 <div class="p-6 space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
-                            <span class="text-[11px] font-bold text-gray-400 block uppercase">Holati</span>
-                            <span class="text-xs font-black uppercase mt-1 inline-block" :class="selectedUnit.status === 'available' ? 'text-emerald-600' : (selectedUnit.status === 'sold' ? 'text-red-600' : 'text-amber-600')">
-                                {{ selectedUnit.status === 'available' ? 'Sotuvda' : (selectedUnit.status === 'sold' ? 'Sotilgan' : 'Bron qilingan') }}
-                            </span>
+                    <!-- Status Banner -->
+                    <div class="flex items-center justify-between p-3 rounded-2xl border" :class="selectedUnit.status === 'available' ? 'bg-emerald-50/70 border-emerald-200 text-emerald-800' : (selectedUnit.status === 'sold' ? 'bg-red-50/70 border-red-200 text-red-800' : 'bg-amber-50/70 border-amber-200 text-amber-800')">
+                        <div class="flex items-center gap-2 font-bold text-xs">
+                            <span>{{ selectedUnit.status === 'available' ? '🟢' : (selectedUnit.status === 'sold' ? '🔴' : '🟡') }}</span>
+                            <span class="uppercase tracking-wider text-[11px] font-black">Xonadon Holati</span>
                         </div>
-                        <div class="bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
-                            <span class="text-[11px] font-bold text-gray-400 block uppercase">Maydoni</span>
-                            <span class="text-sm font-black text-gray-800 mt-1 inline-block">{{ selectedUnit.area_sqm }} m²</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-white border" :class="selectedUnit.status === 'available' ? 'text-emerald-700 border-emerald-200' : (selectedUnit.status === 'sold' ? 'text-red-700 border-red-200' : 'text-amber-700 border-amber-200')">
+                            {{ selectedUnit.status === 'available' ? 'Sotuvda mavjud' : (selectedUnit.status === 'sold' ? 'Sotilgan' : 'Band qilingan') }}
+                        </span>
+                    </div>
+
+                    <!-- 4 Info Cards -->
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                            <span class="text-[10px] font-extrabold text-slate-400 block uppercase tracking-wider">Umumiy Maydon</span>
+                            <span class="text-sm font-black text-slate-900 mt-0.5 inline-block">{{ selectedUnit.area_sqm }} m²</span>
                         </div>
-                        <div class="bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
-                            <span class="text-[11px] font-bold text-gray-400 block uppercase">Xonalar</span>
-                            <span class="text-sm font-black text-gray-800 mt-1 inline-block">{{ selectedUnit.rooms_count || 1 }} xona</span>
+                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                            <span class="text-[10px] font-extrabold text-slate-400 block uppercase tracking-wider">Xonalar Soni</span>
+                            <span class="text-sm font-black text-slate-900 mt-0.5 inline-block">{{ selectedUnit.rooms_count || 1 }} xona</span>
                         </div>
-                        <div class="bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
-                            <span class="text-[11px] font-bold text-gray-400 block uppercase">Podyezd</span>
-                            <span class="text-sm font-black text-gray-800 mt-1 inline-block">{{ selectedUnit.podyezd || 1 }}-podyezd</span>
+                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                            <span class="text-[10px] font-extrabold text-slate-400 block uppercase tracking-wider">Podyezd (Kirish)</span>
+                            <span class="text-sm font-black text-slate-900 mt-0.5 inline-block">{{ selectedUnit.podyezd || 1 }}-podyezd</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                            <span class="text-[10px] font-extrabold text-slate-400 block uppercase tracking-wider">Joylashgan Qavat</span>
+                            <span class="text-sm font-black text-slate-900 mt-0.5 inline-block">{{ activeFloor?.floor_number < 0 ? `${activeFloor?.floor_number}-yerto'la` : `${activeFloor?.floor_number}-qavat` }}</span>
                         </div>
                     </div>
 
-                    <div class="bg-blue-50/70 border border-blue-100 rounded-2xl p-4 flex items-center justify-between">
+                    <!-- Price Card -->
+                    <div class="bg-gradient-to-br from-orange-50/80 to-amber-50/80 border border-orange-200/80 rounded-2xl p-4 flex items-center justify-between">
                         <div>
-                            <span class="text-xs font-bold text-blue-500 uppercase tracking-wider block">Umumiy Narxi</span>
-                            <span class="text-lg font-black text-blue-700 tracking-tight">{{ formatSoM(selectedUnit.price) }}</span>
+                            <span class="text-[11px] font-extrabold text-orange-700 uppercase tracking-wider block">Umumiy Qiymati</span>
+                            <span class="text-xl font-black text-slate-900 tracking-tight">{{ formatSoM(selectedUnit.price) }}</span>
                         </div>
                         <div v-if="selectedUnit.area_sqm > 0 && selectedUnit.price > 0" class="text-right">
-                            <span class="text-[10px] font-bold text-gray-400 block">1 m² narxi</span>
-                            <span class="text-xs font-extrabold text-gray-700">{{ formatSoM(Math.round(selectedUnit.price / selectedUnit.area_sqm)) }}</span>
+                            <span class="text-[10px] font-bold text-slate-400 block uppercase">1 m² narxi</span>
+                            <span class="text-xs font-black text-orange-600 font-mono">{{ formatSoM(Math.round(selectedUnit.price / selectedUnit.area_sqm)) }}</span>
                         </div>
                     </div>
                 </div>
 
+                <!-- Footer Buttons -->
                 <div class="p-6 pt-0 flex items-center gap-3">
                     <Link 
                         v-if="selectedUnit.status === 'available'" 
                         :href="route('admin.crm', { unit_id: selectedUnit.id })" 
-                        class="flex-1 py-3.5 bg-[#2563eb] hover:bg-blue-700 text-white font-extrabold text-xs rounded-2xl shadow-xl transition-all text-center flex items-center justify-center gap-2"
+                        class="flex-1 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-2xl shadow-lg shadow-orange-500/25 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
                     >
-                        <span>📝 Sotish (Shartnoma tuzish)</span>
+                        <span>📝</span>
+                        <span>Sotish (Shartnoma tuzish)</span>
                     </Link>
                     <button 
                         @click="showUnitDetailModal = false"
-                        class="px-5 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-2xl transition-all"
+                        class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-2xl transition-all cursor-pointer"
                     >
                         Yopish
                     </button>

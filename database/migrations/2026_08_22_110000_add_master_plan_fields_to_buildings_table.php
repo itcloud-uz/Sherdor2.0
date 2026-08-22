@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('buildings', function (Blueprint ) {
+        Schema::table('buildings', function (Blueprint $table) {
             if (!Schema::hasColumn('buildings', 'master_plan_image')) {
-                ->string('master_plan_image')->nullable()->after('photo_path');
+                $table->string('master_plan_image')->nullable()->after('photo_path');
             }
             if (!Schema::hasColumn('buildings', 'master_plan_polygon')) {
-                ->longText('master_plan_polygon')->nullable()->after('master_plan_image');
+                $table->longText('master_plan_polygon')->nullable()->after('master_plan_image');
             }
             if (!Schema::hasColumn('buildings', 'master_plan_data')) {
-                ->longText('master_plan_data')->nullable()->after('master_plan_polygon');
+                $table->longText('master_plan_data')->nullable()->after('master_plan_polygon');
             }
         });
     }
@@ -29,8 +29,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('buildings', function (Blueprint ) {
-            ->dropColumn(['master_plan_image', 'master_plan_polygon', 'master_plan_data']);
+        Schema::table('buildings', function (Blueprint $table) {
+            $table->dropColumn(['master_plan_image', 'master_plan_polygon', 'master_plan_data']);
         });
     }
 };

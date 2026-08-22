@@ -152,6 +152,11 @@ const initCanvas = () => {
         }
     });
 
+    // Rectangle Drag Drawing State
+    const isDraggingRect = ref(false);
+    let rectStartPos = null;
+    let rectPreviewObj = null;
+
     // Drawing handlers
     fabricCanvas.on('mouse:down', (opt) => {
         if (opt.e.button === 2) {
@@ -159,23 +164,72 @@ const initCanvas = () => {
             if (isDrawingPolygon.value) {
                 cancelPolygonDrawing();
             }
+            if (isDraggingRect.value) {
+                if (rectPreviewObj) fabricCanvas.remove(rectPreviewObj);
+                isDraggingRect.value = false;
+                rectStartPos = null;
+                rectPreviewObj = null;
+            }
             return;
         }
 
         const pointer = getPointerCoords(opt);
 
         if (currentTool.value === 'rectangle') {
-            createRectangleAt(pointer.x, pointer.y);
-            currentTool.value = 'select';
+            rectStartPos = pointer;
+            isDraggingRect.value = true;
+            rectPreviewObj = new Rect({
+                left: pointer.x,
+                top: pointer.y,
+                width: 1,
+                height: 1,
+                fill: 'rgba(59, 130, 246, 0.35)',
+                stroke: '#3b82f6',
+                strokeWidth: 2,
+                strokeDashArray: [4, 4],
+                selectable: false,
+                evented: false
+            });
+            fabricCanvas.add(rectPreviewObj);
         } else if (currentTool.value === 'polygon') {
             handlePolygonPointAdd(pointer);
         }
     });
 
     fabricCanvas.on('mouse:move', (opt) => {
-        if (isDrawingPolygon.value && polygonPoints.value.length > 0) {
-            const pointer = getPointerCoords(opt);
+        const pointer = getPointerCoords(opt);
+        if (isDraggingRect.value && rectStartPos && rectPreviewObj) {
+            const left = Math.min(rectStartPos.x, pointer.x);
+            const top = Math.min(rectStartPos.y, pointer.y);
+            const width = Math.max(2, Math.abs(pointer.x - rectStartPos.x));
+            const height = Math.max(2, Math.abs(pointer.y - rectStartPos.y));
+            rectPreviewObj.set({ left, top, width, height });
+            fabricCanvas.renderAll();
+        } else if (isDrawingPolygon.value && polygonPoints.value.length > 0) {
             updatePolygonPreview(pointer);
+        }
+    });
+
+    fabricCanvas.on('mouse:up', (opt) => {
+        if (isDraggingRect.value && rectStartPos) {
+            const pointer = getPointerCoords(opt);
+            if (rectPreviewObj) {
+                fabricCanvas.remove(rectPreviewObj);
+                rectPreviewObj = null;
+            }
+            const width = Math.abs(pointer.x - rectStartPos.x);
+            const height = Math.abs(pointer.y - rectStartPos.y);
+            const left = Math.min(rectStartPos.x, pointer.x);
+            const top = Math.min(rectStartPos.y, pointer.y);
+
+            if (width > 15 && height > 15) {
+                createRectangleWithBounds(left, top, width, height);
+            } else {
+                createRectangleAt(pointer.x, pointer.y);
+            }
+            isDraggingRect.value = false;
+            rectStartPos = null;
+            currentTool.value = 'select';
         }
     });
 
@@ -425,11 +479,9 @@ const selectFloorForDrawing = (floorId) => {
     }
 };
 
-// Create Rectangle Helper
-const createRectangleAt = (x, y) => {
+// Create Rectangle with custom bounds helper
+const createRectangleWithBounds = (left, top, width, height) => {
     const statusConfig = STATUS_COLORS.available;
-    const rectW = Math.round(currentImageDimensions.value.width * 0.16) || 120;
-    const rectH = Math.round(currentImageDimensions.value.height * 0.08) || 60;
 
     if (editorMode.value === 'facade') {
         let targetFloorId = selectedShape.value?.floor_id;
@@ -445,19 +497,19 @@ const createRectangleAt = (x, y) => {
             floor_number: unassigned?.floor_number || 1,
             shape_data: {
                 type: 'rect',
-                left: Math.round(x - rectW / 2),
-                top: Math.round(y - rectH / 2),
-                width: rectW,
-                height: rectH
+                left: Math.round(left),
+                top: Math.round(top),
+                width: Math.round(width),
+                height: Math.round(height)
             },
             fabricObject: null
         };
 
         const rect = new Rect({
-            left: Math.round(x - rectW / 2),
-            top: Math.round(y - rectH / 2),
-            width: rectW,
-            height: rectH,
+            left: Math.round(left),
+            top: Math.round(top),
+            width: Math.round(width),
+            height: Math.round(height),
             fill: 'rgba(59, 130, 246, 0.35)',
             stroke: '#60a5fa',
             strokeWidth: 2,
@@ -496,19 +548,19 @@ const createRectangleAt = (x, y) => {
             podyezd: 1,
             shape_data: {
                 type: 'rect',
-                left: Math.round(x - rectW / 2),
-                top: Math.round(y - rectH / 2),
-                width: rectW,
-                height: rectH
+                left: Math.round(left),
+                top: Math.round(top),
+                width: Math.round(width),
+                height: Math.round(height)
             },
             fabricObject: null
         };
 
         const rect = new Rect({
-            left: Math.round(x - rectW / 2),
-            top: Math.round(y - rectH / 2),
-            width: rectW,
-            height: rectH,
+            left: Math.round(left),
+            top: Math.round(top),
+            width: Math.round(width),
+            height: Math.round(height),
             fill: statusConfig.fill,
             stroke: statusConfig.stroke,
             strokeWidth: 2.5,
@@ -519,14 +571,19 @@ const createRectangleAt = (x, y) => {
 
         rect.shapeMeta = newShapeMeta;
         newShapeMeta.fabricObject = rect;
-
         fabricCanvas.add(rect);
         fabricCanvas.setActiveObject(rect);
-        fabricCanvas.renderAll();
-
         shapes.value.push(newShapeMeta);
+        selectedShape.value = newShapeMeta;
+        fabricCanvas.renderAll();
         onCanvasObjectSelected(rect);
     }
+};
+
+// Create Rectangle Helper
+const createRectangleAt = (x, y) => {
+    const rectW = Math.round(currentImageDimensions.value.width * 0.16) || 120;
+    const rectH = Math.round(currentImageDimensions.value.height * 0.08) || 60;
 };
 
 // Polygon Drawing Handlers

@@ -149,21 +149,49 @@ const getFloorFacadeShape = (floor, index, totalFloors) => {
     if (floor.facade_polygon) {
         try {
             const parsed = typeof floor.facade_polygon === 'object' ? floor.facade_polygon : JSON.parse(floor.facade_polygon);
+            const nw = facadeNaturalSize.value.width || 1200;
+            const nh = facadeNaturalSize.value.height || 800;
+
+            if (parsed.norm) {
+                if (parsed.type === 'rect') {
+                    return {
+                        type: 'rect',
+                        x: Math.round(parsed.norm.x * nw),
+                        y: Math.round(parsed.norm.y * nh),
+                        width: Math.round(parsed.norm.w * nw),
+                        height: Math.round(parsed.norm.h * nh)
+                    };
+                }
+                if (parsed.type === 'polygon' && parsed.norm.points) {
+                    const ptsStr = parsed.norm.points.map(p => `${Math.round(p.x * nw)},${Math.round(p.y * nh)}`).join(' ');
+                    return { type: 'polygon', points: ptsStr };
+                }
+            }
+
             if (parsed.type === 'rect') {
+                const natX = parsed.natural?.x ?? parsed.left ?? parsed.x ?? 0;
+                const natY = parsed.natural?.y ?? parsed.top ?? parsed.y ?? 0;
+                const natW = parsed.natural?.w ?? parsed.width ?? parsed.w ?? nw;
+                const natH = parsed.natural?.h ?? parsed.height ?? parsed.h ?? 40;
+
                 return {
                     type: 'rect',
-                    x: parsed.left || 0,
-                    y: parsed.top || 0,
-                    width: parsed.width || facadeNaturalSize.value.width,
-                    height: parsed.height || 40
+                    x: Math.round(natX),
+                    y: Math.round(natY),
+                    width: Math.round(natW),
+                    height: Math.round(natH)
                 };
             }
-            if (parsed.type === 'polygon' && parsed.points && parsed.points.length >= 3) {
-                const ptsStr = parsed.points.map(p => `${p.x},${p.y}`).join(' ');
-                return {
-                    type: 'polygon',
-                    points: ptsStr
-                };
+
+            if (parsed.type === 'polygon') {
+                const pts = parsed.natural?.points || parsed.points;
+                if (pts && pts.length >= 3) {
+                    const ptsStr = pts.map(p => `${p.x || p[0]},${p.y || p[1]}`).join(' ');
+                    return {
+                        type: 'polygon',
+                        points: ptsStr
+                    };
+                }
             }
         } catch(e) {}
     }
@@ -271,22 +299,24 @@ const filterUnitsList = (units) => {
 
             <!-- Full-Screen 3D Building Viewport -->
             <div class="flex-1 w-full h-full flex items-center justify-center overflow-hidden relative">
-                <!-- Full-Bleed Building Render -->
+                <!-- Full-Bleed Building Render with 1:1 Synchronized SVG Coordinates -->
                 <div class="relative w-full h-full flex items-center justify-center">
-                    <img 
-                        ref="facadeImageRef"
-                        :src="buildingImageUrl"
-                        @error="(e) => e.target.src = '/images/clean-building-facade.jpg'"
-                        @load="onFacadeImageLoaded"
-                        class="w-full h-full object-cover object-center pointer-events-none select-none"
-                    />
-
-                    <!-- Interactive Floor SVG Layer -->
                     <svg 
-                        class="absolute inset-0 w-full h-full pointer-events-auto" 
+                        class="w-full h-full block select-none pointer-events-auto" 
                         :viewBox="`0 0 ${facadeNaturalSize.width} ${facadeNaturalSize.height}`"
-                        preserveAspectRatio="none"
+                        preserveAspectRatio="xMidYMid slice"
                     >
+                        <!-- Background Facade Image inside SVG for 100% Guaranteed Lock -->
+                        <image 
+                            :href="buildingImageUrl" 
+                            x="0" 
+                            y="0" 
+                            :width="facadeNaturalSize.width" 
+                            :height="facadeNaturalSize.height" 
+                            preserveAspectRatio="xMidYMid slice"
+                        />
+
+                        <!-- Interactive Floor Overlays -->
                         <g 
                             v-for="(floor, idx) in sortedFloors" 
                             :key="'facade-fl-' + floor.id"
@@ -302,18 +332,18 @@ const filterUnitsList = (units) => {
                                     :y="getFloorFacadeShape(floor, idx, sortedFloors.length).y"
                                     :width="getFloorFacadeShape(floor, idx, sortedFloors.length).width"
                                     :height="getFloorFacadeShape(floor, idx, sortedFloors.length).height"
-                                    :fill="hoveredFloor?.id === floor.id ? 'rgba(100, 116, 139, 0.45)' : 'rgba(255, 255, 255, 0.01)'"
-                                    :stroke="hoveredFloor?.id === floor.id ? '#cbd5e1' : 'transparent'"
-                                    :stroke-width="hoveredFloor?.id === floor.id ? 2 : 0"
+                                    :fill="hoveredFloor?.id === floor.id ? 'rgba(59, 130, 246, 0.45)' : 'rgba(255, 255, 255, 0.01)'"
+                                    :stroke="hoveredFloor?.id === floor.id ? '#60a5fa' : 'transparent'"
+                                    :stroke-width="hoveredFloor?.id === floor.id ? 3 : 0"
                                     class="transition-all duration-200"
                                 />
 
                                 <polygon 
                                     v-else-if="getFloorFacadeShape(floor, idx, sortedFloors.length).type === 'polygon'"
                                     :points="getFloorFacadeShape(floor, idx, sortedFloors.length).points"
-                                    :fill="hoveredFloor?.id === floor.id ? 'rgba(100, 116, 139, 0.45)' : 'rgba(255, 255, 255, 0.01)'"
-                                    :stroke="hoveredFloor?.id === floor.id ? '#cbd5e1' : 'transparent'"
-                                    :stroke-width="hoveredFloor?.id === floor.id ? 2 : 0"
+                                    :fill="hoveredFloor?.id === floor.id ? 'rgba(59, 130, 246, 0.45)' : 'rgba(255, 255, 255, 0.01)'"
+                                    :stroke="hoveredFloor?.id === floor.id ? '#60a5fa' : 'transparent'"
+                                    :stroke-width="hoveredFloor?.id === floor.id ? 3 : 0"
                                     class="transition-all duration-200"
                                 />
                             </template>

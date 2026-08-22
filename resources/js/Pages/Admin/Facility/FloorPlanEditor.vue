@@ -93,7 +93,6 @@ const updateCanvasSize = () => {
 
     if (facadeImageObj.value) {
         const img = facadeImageObj.value;
-        // Scale to fill 96% of container area
         const scaleX = (cw - 30) / img.width;
         const scaleY = (ch - 30) / img.height;
         const scale = Math.min(scaleX, scaleY);
@@ -104,11 +103,57 @@ const updateCanvasSize = () => {
         const ry = Math.round((ch - rh) / 2);
 
         imgRenderBounds.value = { x: rx, y: ry, w: rw, h: rh };
+
+        // Recalculate all shape canvas positions based on new render bounds
+        recalculateShapeCanvasPositions();
     } else {
         imgRenderBounds.value = { x: 40, y: 40, w: cw - 80, h: ch - 80 };
     }
 
     redrawCanvas();
+};
+
+// Recalculate shape positions on canvas from stored natural/norm coordinates
+const recalculateShapeCanvasPositions = () => {
+    if (!facadeImageObj.value) return;
+    const img = facadeImageObj.value;
+    const b = imgRenderBounds.value;
+    const nw = img.naturalWidth || b.w;
+    const nh = img.naturalHeight || b.h;
+
+    shapes.value = shapes.value.map(shape => {
+        const coords = shape.rawCoords;
+        if (!coords) return shape;
+
+        if (shape.type === 'rect') {
+            let cx, cy, cw, ch;
+            if (coords.norm) {
+                cx = Math.round(b.x + coords.norm.x * b.w);
+                cy = Math.round(b.y + coords.norm.y * b.h);
+                cw = Math.round(coords.norm.w * b.w);
+                ch = Math.round(coords.norm.h * b.h);
+            } else {
+                const natX = coords.natural?.x ?? coords.left ?? coords.x ?? 0;
+                const natY = coords.natural?.y ?? coords.top ?? coords.y ?? 0;
+                const natW = coords.natural?.w ?? coords.width ?? coords.w ?? 200;
+                const natH = coords.natural?.h ?? coords.height ?? coords.h ?? 60;
+
+                cx = Math.round(b.x + (natX / nw) * b.w);
+                cy = Math.round(b.y + (natY / nh) * b.h);
+                cw = Math.round((natW / nw) * b.w);
+                ch = Math.round((natH / nh) * b.h);
+            }
+            return { ...shape, x: cx, y: cy, w: cw, h: ch };
+        } else if (shape.type === 'polygon' && (coords.points || coords.natural?.points)) {
+            const rawPts = coords.natural?.points || coords.points;
+            const cPts = rawPts.map(p => ({
+                x: Math.round(b.x + (p.x / nw) * b.w),
+                y: Math.round(b.y + (p.y / nh) * b.h)
+            }));
+            return { ...shape, points: cPts };
+        }
+        return shape;
+    });
 };
 
 // Initialize building data and floors
@@ -133,26 +178,29 @@ const loadBuildingData = () => {
     availableFloors.value.forEach((floor) => {
         const coords = parseCoordinates(floor.facade_polygon);
         if (coords) {
+            const floorLabel = floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat`;
             if (coords.type === 'rect') {
                 loaded.push({
                     id: floor.id,
                     floorId: floor.id,
                     floor: floor.floor_number,
-                    floorLabel: floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat`,
+                    floorLabel: floorLabel,
                     type: 'rect',
                     x: coords.left || coords.x || 100,
                     y: coords.top || coords.y || 100,
                     w: coords.width || coords.w || 200,
-                    h: coords.height || coords.h || 60
+                    h: coords.height || coords.h || 60,
+                    rawCoords: coords
                 });
-            } else if (coords.type === 'polygon' && coords.points) {
+            } else if (coords.type === 'polygon' && (coords.points || coords.natural?.points)) {
                 loaded.push({
                     id: floor.id,
                     floorId: floor.id,
                     floor: floor.floor_number,
-                    floorLabel: floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat`,
+                    floorLabel: floorLabel,
                     type: 'polygon',
-                    points: coords.points
+                    points: coords.natural?.points || coords.points,
+                    rawCoords: coords
                 });
             }
         }
@@ -518,11 +566,47 @@ const handleSave = async () => {
 
         const floorCoords = shapes.value.map(s => {
             const floorObj = availableFloors.value.find(f => f.floor_number === s.floor);
+            const img = facadeImageObj.value;
+            const b = imgRenderBounds.value;
+            const nw = img ? img.naturalWidth : b.w;
+            const nh = img ? img.naturalHeight : b.h;
+
             let shapeJson = null;
             if (s.type === 'rect') {
-                shapeJson = { type: 'rect', left: Math.round(s.x), top: Math.round(s.y), width: Math.round(s.w), height: Math.round(s.h) };
-            } else if (s.type === 'polygon') {
-                shapeJson = { type: 'polygon', points: s.points };
+                const normX = Math.max(0, (s.x - b.x) / b.w);
+                const normY = Math.max(0, (s.y - b.y) / b.h);
+                const normW = Math.min(1, s.w / b.w);
+                const normH = Math.min(1, s.h / b.h);
+
+                const natX = Math.round(normX * nw);
+                const natY = Math.round(normY * nh);
+                const natW = Math.round(normW * nw);
+                const natH = Math.round(normH * nh);
+
+                shapeJson = {
+                    type: 'rect',
+                    left: natX,
+                    top: natY,
+                    width: natW,
+                    height: natH,
+                    natural: { x: natX, y: natY, w: natW, h: natH },
+                    norm: { x: normX, y: normY, w: normW, h: normH }
+                };
+            } else if (s.type === 'polygon' && s.points) {
+                const natPoints = s.points.map(p => ({
+                    x: Math.round(((p.x - b.x) / b.w) * nw),
+                    y: Math.round(((p.y - b.y) / b.h) * nh)
+                }));
+                const normPoints = s.points.map(p => ({
+                    x: (p.x - b.x) / b.w,
+                    y: (p.y - b.y) / b.h
+                }));
+                shapeJson = {
+                    type: 'polygon',
+                    points: natPoints,
+                    natural: { points: natPoints },
+                    norm: { points: normPoints }
+                };
             }
             return {
                 id: floorObj?.id || s.floorId || s.id,

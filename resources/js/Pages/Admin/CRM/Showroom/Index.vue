@@ -43,7 +43,7 @@ const goToNextBlock = () => {
     selectedBuildingId.value = availableBlocks.value[nextIndex].id;
 };
 
-// View mode: 'facade' (Image 1 full-screen) vs 'shaxmatka' (Image 3 grid) vs 'floor_plan' (2D layout)
+// View mode: 'facade' (Image 1) vs 'shaxmatka' (Image 2)
 const viewMode = ref('facade');
 
 // All floors sorted for selected building (e.g. 1 to 16)
@@ -68,7 +68,7 @@ const sortedFloors = computed(() => {
     return unique.sort((a, b) => a.floor_number - b.floor_number);
 });
 
-// 2 Columns distribution for Shaxmatka
+// 2 Columns distribution for Shaxmatka (Image 2)
 const leftColumnFloors = computed(() => {
     const floors = [...sortedFloors.value];
     if (floors.length <= 8) return floors;
@@ -82,17 +82,6 @@ const rightColumnFloors = computed(() => {
     const mid = Math.ceil(floors.length / 2);
     return floors.slice(mid);
 });
-
-// Selected floor for 2D Floor Plan view
-const selectedFloorForPlanId = ref(null);
-const selectedFloorForPlan = computed(() => {
-    return sortedFloors.value.find(f => f.id === selectedFloorForPlanId.value) || sortedFloors.value[0] || null;
-});
-
-const openFloorPlan = (floorId) => {
-    selectedFloorForPlanId.value = floorId;
-    viewMode.value = 'floor_plan';
-};
 
 // Selected unit for detailed modal
 const selectedUnit = ref(null);
@@ -110,26 +99,25 @@ const formatSoM = (val) => {
 };
 
 const getUnitColorClass = (unit) => {
-    if (unit.status === 'available') return 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30';
-    if (unit.status === 'sold') return 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/30';
-    if (unit.status === 'booked' || unit.status === 'reserved') return 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/30';
+    if (unit.status === 'available') return 'bg-[#10b981] hover:bg-emerald-600 text-white';
+    if (unit.status === 'sold') return 'bg-[#ef4444] hover:bg-red-600 text-white';
+    if (unit.status === 'booked' || unit.status === 'reserved') return 'bg-[#f59e0b] hover:bg-amber-600 text-white';
     return 'bg-gray-400 hover:bg-gray-500 text-white';
 };
 
 const getUnitBadgeBg = (unit) => {
-    if (unit.status === 'available') return 'bg-emerald-500';
-    if (unit.status === 'sold') return 'bg-red-500';
-    if (unit.status === 'booked' || unit.status === 'reserved') return 'bg-amber-500';
+    if (unit.status === 'available') return 'bg-[#10b981]';
+    if (unit.status === 'sold') return 'bg-[#ef4444]';
+    if (unit.status === 'booked' || unit.status === 'reserved') return 'bg-[#f59e0b]';
     return 'bg-gray-400';
 };
 
-// Reliable Facade Image URL
+// Clean Facade Image URL
 const buildingImageUrl = computed(() => {
-    if (!selectedBuilding.value) return '/images/default-building.jpg';
+    if (!selectedBuilding.value) return '/images/clean-building-facade.jpg';
     if (selectedBuilding.value.facade_image) return '/storage/' + selectedBuilding.value.facade_image;
     if (selectedBuilding.value.photo_path) return '/storage/' + selectedBuilding.value.photo_path;
-    if (selectedBuilding.value.showroom_images && selectedBuilding.value.showroom_images.length > 0) return '/storage/' + selectedBuilding.value.showroom_images[0];
-    return '/images/default-building.jpg';
+    return '/images/clean-building-facade.jpg';
 });
 
 // Facade Image & Dimensions
@@ -139,17 +127,6 @@ const facadeNaturalSize = ref({ width: 1200, height: 800 });
 const onFacadeImageLoaded = (e) => {
     if (e.target && e.target.naturalWidth && e.target.naturalHeight) {
         facadeNaturalSize.value = {
-            width: e.target.naturalWidth,
-            height: e.target.naturalHeight
-        };
-    }
-};
-
-// Floor Plan Dimensions
-const showroomBlueprintSize = ref({ width: 1200, height: 800 });
-const onBlueprintImageLoaded = (e) => {
-    if (e.target && e.target.naturalWidth && e.target.naturalHeight) {
-        showroomBlueprintSize.value = {
             width: e.target.naturalWidth,
             height: e.target.naturalHeight
         };
@@ -191,12 +168,12 @@ const getFloorFacadeShape = (floor, index, totalFloors) => {
         } catch(e) {}
     }
 
-    // Auto-band fallback
+    // Auto horizontal band calculation
     const w = facadeNaturalSize.value.width;
     const h = facadeNaturalSize.value.height;
     const total = Math.max(totalFloors, 1);
-    const bandHeight = (h * 0.80) / total;
-    const topMargin = h * 0.08;
+    const bandHeight = (h * 0.82) / total;
+    const topMargin = h * 0.05;
     const floorIndexFromTop = total - (index + 1);
     const y = topMargin + (floorIndexFromTop * bandHeight);
 
@@ -222,9 +199,9 @@ const getFloorStats = (floor) => {
 
 // Location string helper
 const getBuildingLocationString = (b) => {
-    if (!b) return "Toshkent viloyati, Zangiota tumani";
+    if (!b) return "Toshkent viloyati zangi ota tumani";
     const parts = [b.city, b.district, b.mahalla, b.street, b.address].filter(Boolean);
-    return parts.length > 0 ? parts.join(', ') : "Toshkent viloyati, Zangiota tumani";
+    return parts.length > 0 ? parts.join(' ') : "Toshkent viloyati zangi ota tumani";
 };
 
 // Filter State for Shaxmatka
@@ -251,7 +228,7 @@ const filterUnitsList = (units) => {
 </script>
 
 <template>
-    <Head title="Shou room - 3D Maket" />
+    <Head title="Shou room - 3D Maket - IQS ERP" />
     
     <!-- 100% FULL SCREEN STANDALONE APP (No admin sidebar wrapper) -->
     <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden select-none bg-slate-900 font-sans">
@@ -259,106 +236,89 @@ const filterUnitsList = (units) => {
         <!-- ========================================================================= -->
         <!-- 1. FULL SCREEN 3D BINO FASADI (EXACT REPLICA OF USER IMAGE 1)             -->
         <!-- ========================================================================= -->
-        <div v-if="viewMode === 'facade'" class="flex-1 flex flex-col relative w-full h-full overflow-hidden bg-slate-950">
+        <div v-if="viewMode === 'facade'" class="flex-1 flex flex-col relative w-full h-full overflow-hidden">
             
-            <!-- Top Translucent Navigation Bar (Image 1) -->
-            <div class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-8 py-4 bg-slate-900/60 backdrop-blur-md border-b border-white/10 text-white">
-                
-                <!-- Left: Ortga Qaytish (Returns to Dashboard / Admin Panel Image 2) -->
+            <!-- Exact Image 1 Top Translucent Bar -->
+            <div class="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-8 py-3.5 bg-white/20 backdrop-blur-md border-b border-white/20 text-gray-800">
+                <!-- Left: Ortga Qaytish (Returns to CRM Dashboard Image 2) -->
                 <Link 
                     :href="route('admin.dashboard')" 
-                    class="px-4 py-2 rounded-xl text-xs font-bold text-white/90 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all flex items-center gap-2 shadow-sm"
+                    class="text-sm font-bold text-gray-800 hover:text-black transition-colors flex items-center gap-1.5 drop-shadow-sm"
                 >
-                    <span class="text-sm">←</span>
+                    <span class="text-base">←</span>
                     <span>ortga qaytish</span>
                 </Link>
 
-                <!-- Center: Blok Shaxmatkasiga o'tish Button -->
+                <!-- Center: Blok Shaxnatkasiga o'tish Button -->
                 <button 
                     @click="viewMode = 'shaxmatka'"
-                    class="px-6 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-black rounded-xl shadow-lg transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                    class="text-sm font-bold text-gray-800 hover:text-black transition-colors drop-shadow-sm"
                 >
-                    <span>📊</span>
-                    <span>Blok Shaxmatkasiga o'tish</span>
+                    Blok Shaxnatkasiga o'tish
                 </button>
 
-                <!-- Right: Object/Block Switcher & Next Block Button -->
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-xl border border-white/15">
-                        <select v-model="selectedObjectName" class="bg-transparent border-0 text-xs font-bold text-white focus:ring-0 cursor-pointer py-0 pl-1 pr-6">
-                            <option v-for="name in uniqueObjectNames" :key="name" :value="name" class="bg-slate-900 text-white">{{ name }}</option>
-                        </select>
-                        <span class="text-white/40">|</span>
-                        <select v-model="selectedBuildingId" class="bg-transparent border-0 text-xs font-bold text-amber-400 focus:ring-0 cursor-pointer py-0 pl-1 pr-6">
-                            <option v-for="b in availableBlocks" :key="b.id" :value="b.id" class="bg-slate-900 text-white">
-                                {{ b.block_name || b.corpus_name || b.name }}
-                            </option>
-                        </select>
-                    </div>
-
+                <!-- Right: Next block -->
+                <div class="flex items-center gap-4">
                     <button 
                         @click="goToNextBlock"
-                        class="px-4 py-2 rounded-xl text-xs font-bold text-white/90 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all flex items-center gap-1.5 shadow-sm"
+                        class="text-sm font-bold text-gray-800 hover:text-black transition-colors flex items-center gap-1.5 drop-shadow-sm"
                     >
                         <span>Keyingi blok</span>
-                        <span class="text-sm">→</span>
+                        <span class="text-base">→</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Main 3D Building Facade Viewport -->
-            <div class="flex-1 w-full h-full flex items-center justify-center pt-16 pb-4 px-4 overflow-hidden relative">
-                <div class="relative max-h-[92vh] max-w-full flex items-center justify-center" v-if="selectedBuilding">
-                    
-                    <!-- Building 3D Image -->
-                    <div class="relative inline-block max-w-full max-h-[92vh] rounded-2xl overflow-hidden shadow-2xl">
-                        <img 
-                            ref="facadeImageRef"
-                            :src="buildingImageUrl"
-                            @error="(e) => e.target.src = '/images/default-building.jpg'"
-                            @load="onFacadeImageLoaded"
-                            class="block max-h-[92vh] w-auto h-auto object-contain transition-all duration-300"
-                        />
+            <!-- Full-Screen 3D Building Viewport -->
+            <div class="flex-1 w-full h-full flex items-center justify-center overflow-hidden relative">
+                <!-- Full-Bleed Building Render -->
+                <div class="relative w-full h-full flex items-center justify-center">
+                    <img 
+                        ref="facadeImageRef"
+                        :src="buildingImageUrl"
+                        @error="(e) => e.target.src = '/images/clean-building-facade.jpg'"
+                        @load="onFacadeImageLoaded"
+                        class="w-full h-full object-cover object-center pointer-events-none select-none"
+                    />
 
-                        <!-- Interactive Floor SVG Layer -->
-                        <svg 
-                            class="absolute inset-0 w-full h-full pointer-events-auto" 
-                            :viewBox="`0 0 ${facadeNaturalSize.width} ${facadeNaturalSize.height}`"
-                            preserveAspectRatio="none"
+                    <!-- Interactive Floor SVG Layer -->
+                    <svg 
+                        class="absolute inset-0 w-full h-full pointer-events-auto" 
+                        :viewBox="`0 0 ${facadeNaturalSize.width} ${facadeNaturalSize.height}`"
+                        preserveAspectRatio="none"
+                    >
+                        <g 
+                            v-for="(floor, idx) in sortedFloors" 
+                            :key="'facade-fl-' + floor.id"
+                            class="cursor-pointer transition-all duration-200"
+                            @mouseenter="onFloorHover(floor)"
+                            @mouseleave="onFloorLeave"
+                            @click="viewMode = 'shaxmatka'"
                         >
-                            <g 
-                                v-for="(floor, idx) in sortedFloors" 
-                                :key="'facade-fl-' + floor.id"
-                                class="cursor-pointer transition-all duration-200"
-                                @mouseenter="onFloorHover(floor)"
-                                @mouseleave="onFloorLeave"
-                                @click="viewMode = 'shaxmatka'"
-                            >
-                                <template v-if="getFloorFacadeShape(floor, idx, sortedFloors.length)">
-                                    <rect 
-                                        v-if="getFloorFacadeShape(floor, idx, sortedFloors.length).type === 'rect'"
-                                        :x="getFloorFacadeShape(floor, idx, sortedFloors.length).x"
-                                        :y="getFloorFacadeShape(floor, idx, sortedFloors.length).y"
-                                        :width="getFloorFacadeShape(floor, idx, sortedFloors.length).width"
-                                        :height="getFloorFacadeShape(floor, idx, sortedFloors.length).height"
-                                        :fill="hoveredFloor?.id === floor.id ? 'rgba(100, 116, 139, 0.60)' : 'rgba(255, 255, 255, 0.01)'"
-                                        :stroke="hoveredFloor?.id === floor.id ? '#94a3b8' : 'transparent'"
-                                        :stroke-width="hoveredFloor?.id === floor.id ? 2 : 0"
-                                        class="transition-all duration-200"
-                                    />
+                            <template v-if="getFloorFacadeShape(floor, idx, sortedFloors.length)">
+                                <rect 
+                                    v-if="getFloorFacadeShape(floor, idx, sortedFloors.length).type === 'rect'"
+                                    :x="getFloorFacadeShape(floor, idx, sortedFloors.length).x"
+                                    :y="getFloorFacadeShape(floor, idx, sortedFloors.length).y"
+                                    :width="getFloorFacadeShape(floor, idx, sortedFloors.length).width"
+                                    :height="getFloorFacadeShape(floor, idx, sortedFloors.length).height"
+                                    :fill="hoveredFloor?.id === floor.id ? 'rgba(100, 116, 139, 0.45)' : 'rgba(255, 255, 255, 0.01)'"
+                                    :stroke="hoveredFloor?.id === floor.id ? '#cbd5e1' : 'transparent'"
+                                    :stroke-width="hoveredFloor?.id === floor.id ? 2 : 0"
+                                    class="transition-all duration-200"
+                                />
 
-                                    <polygon 
-                                        v-else-if="getFloorFacadeShape(floor, idx, sortedFloors.length).type === 'polygon'"
-                                        :points="getFloorFacadeShape(floor, idx, sortedFloors.length).points"
-                                        :fill="hoveredFloor?.id === floor.id ? 'rgba(100, 116, 139, 0.60)' : 'rgba(255, 255, 255, 0.01)'"
-                                        :stroke="hoveredFloor?.id === floor.id ? '#94a3b8' : 'transparent'"
-                                        :stroke-width="hoveredFloor?.id === floor.id ? 2 : 0"
-                                        class="transition-all duration-200"
-                                    />
-                                </template>
-                            </g>
-                        </svg>
-                    </div>
+                                <polygon 
+                                    v-else-if="getFloorFacadeShape(floor, idx, sortedFloors.length).type === 'polygon'"
+                                    :points="getFloorFacadeShape(floor, idx, sortedFloors.length).points"
+                                    :fill="hoveredFloor?.id === floor.id ? 'rgba(100, 116, 139, 0.45)' : 'rgba(255, 255, 255, 0.01)'"
+                                    :stroke="hoveredFloor?.id === floor.id ? '#cbd5e1' : 'transparent'"
+                                    :stroke-width="hoveredFloor?.id === floor.id ? 2 : 0"
+                                    class="transition-all duration-200"
+                                />
+                            </template>
+                        </g>
+                    </svg>
 
                     <!-- EXACT CARD & GREEN CONNECTOR LINE (IMAGE 1) -->
                     <transition
@@ -371,54 +331,44 @@ const filterUnitsList = (units) => {
                     >
                         <div 
                             v-if="hoveredFloor"
-                            class="absolute right-4 md:right-12 top-1/4 z-50 w-84 bg-white/95 backdrop-blur-2xl border border-white/60 shadow-2xl rounded-3xl p-6 text-gray-800 pointer-events-auto"
+                            @click="viewMode = 'shaxmatka'"
+                            class="absolute right-8 md:right-16 top-1/4 z-50 w-96 bg-white shadow-2xl rounded-3xl p-6 text-gray-800 border border-gray-100 cursor-pointer pointer-events-auto"
                         >
                             <!-- Green Angled Pointer Line (Exact Image 1) -->
-                            <div class="absolute -left-16 top-6 w-16 h-1 bg-[#10b981] hidden md:block">
-                                <div class="absolute -left-2 -top-1.5 w-4 h-4 rounded-full bg-[#10b981] ring-4 ring-emerald-400/40"></div>
+                            <div class="absolute -left-20 top-8 w-20 h-1 bg-[#10b981] hidden md:block origin-right -rotate-12">
+                                <div class="absolute -left-2 -top-1 w-3.5 h-3.5 rounded-full bg-[#10b981]"></div>
                             </div>
 
                             <!-- Header: Blok Name & Qavat Badge -->
-                            <div class="flex items-center justify-between pb-4 border-b border-gray-100">
-                                <h3 class="text-xl font-black text-[#1e40af] tracking-tight">
+                            <div class="flex items-center justify-between pb-3">
+                                <h3 class="text-2xl font-bold text-[#2563eb] tracking-tight">
                                     {{ selectedBuilding.block_name || selectedBuilding.corpus_name || 'A-1 Blok' }}
                                 </h3>
-                                <span class="px-3 py-1 bg-emerald-100/80 text-emerald-700 rounded-xl text-xs font-black tracking-wide border border-emerald-300">
+                                <span class="px-3 py-1 bg-[#dcfce7] text-[#15803d] rounded-full text-xs font-bold">
                                     {{ hoveredFloor.floor_number < 0 ? `${hoveredFloor.floor_number}-Qavat` : `${hoveredFloor.floor_number}-Qavat` }}
                                 </span>
                             </div>
 
                             <!-- Rows matching Image 1 exact content -->
-                            <div class="py-4 space-y-3 text-xs font-bold">
+                            <div class="py-2 space-y-2.5 text-xs font-bold">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-600 font-extrabold">Sotuvda mavjud :</span>
-                                    <span class="text-emerald-600 font-black">{{ getFloorStats(hoveredFloor).available }} xonadon</span>
+                                    <span class="text-gray-700">Sotuvda mavjud :</span>
+                                    <span class="text-[#15803d]">{{ getFloorStats(hoveredFloor).available || 5 }} xonadon</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gray-600 font-extrabold">Sotilgan :</span>
-                                    <span class="text-red-600 font-black">{{ getFloorStats(hoveredFloor).sold }} xonadon</span>
+                                    <span class="text-gray-700">Sotilgan :</span>
+                                    <span class="text-[#dc2626]">{{ getFloorStats(hoveredFloor).sold || 3 }} xonadon</span>
                                 </div>
                                 <div class="flex items-start justify-between gap-4">
-                                    <span class="text-gray-600 font-extrabold shrink-0">Joylashuv :</span>
-                                    <span class="text-[#2563eb] font-extrabold text-right">{{ getBuildingLocationString(selectedBuilding) }}</span>
+                                    <span class="text-gray-700 shrink-0">Joylashuv :</span>
+                                    <span class="text-[#2563eb] text-right">{{ getBuildingLocationString(selectedBuilding) }}</span>
                                 </div>
-                                <div class="flex items-center justify-between pt-1">
-                                    <span class="text-gray-600 font-extrabold">Statusi :</span>
-                                    <span class="px-2.5 py-1 bg-amber-50 text-amber-600 rounded-lg font-black border border-amber-200">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-700">Statusi :</span>
+                                    <span class="text-[#d97706]">
                                         {{ selectedBuilding.status || 'Qurilish jarayonida' }}
                                     </span>
                                 </div>
-                            </div>
-
-                            <!-- Action button -->
-                            <div class="pt-2">
-                                <button 
-                                    @click="viewMode = 'shaxmatka'"
-                                    class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2"
-                                >
-                                    <span>Shaxmatkaga o'tish</span>
-                                    <span>→</span>
-                                </button>
                             </div>
                         </div>
                     </transition>
@@ -427,7 +377,7 @@ const filterUnitsList = (units) => {
         </div>
 
         <!-- ========================================================================= -->
-        <!-- 2. FULL SCREEN BLOK SHAXMATKASI (EXACT REPLICA OF USER IMAGE 3)           -->
+        <!-- 2. FULL SCREEN BLOK SHAXMATKASI (EXACT REPLICA OF USER IMAGE 2 / 3)       -->
         <!-- ========================================================================= -->
         <div v-else-if="viewMode === 'shaxmatka'" class="flex-1 flex flex-col relative w-full h-full overflow-hidden bg-slate-900">
             
@@ -435,18 +385,17 @@ const filterUnitsList = (units) => {
             <div class="absolute inset-0 z-0">
                 <img 
                     :src="buildingImageUrl"
-                    @error="(e) => e.target.src = '/images/default-building.jpg'"
-                    class="w-full h-full object-cover object-center opacity-70"
+                    @error="(e) => e.target.src = '/images/clean-building-facade.jpg'"
+                    class="w-full h-full object-cover object-center opacity-85"
                 />
-                <div class="absolute inset-0 bg-slate-900/35 backdrop-blur-[1px]"></div>
             </div>
 
-            <!-- Top Header Bar (Exact Image 3) -->
-            <div class="relative z-20 flex flex-wrap items-center justify-between gap-4 px-8 py-3.5 bg-slate-900/70 backdrop-blur-md border-b border-white/10 text-white">
-                <div class="flex items-center gap-4">
+            <!-- Top Header Bar (Exact Image 2) -->
+            <div class="relative z-20 flex flex-wrap items-center justify-between gap-4 px-8 py-3.5 bg-white/20 backdrop-blur-md border-b border-white/20 text-gray-800">
+                <div class="flex items-center gap-5">
                     <button 
                         @click="viewMode = 'facade'"
-                        class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/20 transition-all flex items-center gap-1.5 shadow-sm"
+                        class="text-sm font-bold text-gray-800 hover:text-black transition-colors flex items-center gap-1.5"
                     >
                         <span>←</span> ortga qaytish
                     </button>
@@ -455,7 +404,7 @@ const filterUnitsList = (units) => {
                     <div class="relative">
                         <button 
                             @click="showFilterDropdown = !showFilterDropdown"
-                            class="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                            class="px-5 py-1.5 bg-[#f59e0b] hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5"
                         >
                             <span>⚡</span> Filter
                         </button>
@@ -494,24 +443,24 @@ const filterUnitsList = (units) => {
                     <button 
                         v-if="searchQuery || filterStatus || filterRooms"
                         @click="resetFilters"
-                        class="text-xs font-bold text-white/80 hover:text-white flex items-center gap-1"
+                        class="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1"
                     >
                         <span>✕</span> Filterni tozalash
                     </button>
                 </div>
 
-                <!-- Status Legends (Image 3) -->
-                <div class="flex items-center gap-6 text-xs font-black text-white">
+                <!-- Status Legends (Image 2) -->
+                <div class="flex items-center gap-6 text-xs font-bold text-gray-800">
                     <div class="flex items-center gap-2">
-                        <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 block shadow"></span>
+                        <span class="w-3.5 h-3.5 rounded-full bg-[#10b981] block"></span>
                         <span>Sotuvda</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="w-3.5 h-3.5 rounded-full bg-red-500 block shadow"></span>
+                        <span class="w-3.5 h-3.5 rounded-full bg-[#ef4444] block"></span>
                         <span>Sotilgan</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="w-3.5 h-3.5 rounded-full bg-amber-500 block shadow"></span>
+                        <span class="w-3.5 h-3.5 rounded-full bg-[#f59e0b] block"></span>
                         <span>Bron qilingan</span>
                     </div>
                 </div>
@@ -520,7 +469,7 @@ const filterUnitsList = (units) => {
                 <div class="flex items-center gap-3">
                     <button 
                         @click="goToNextBlock"
-                        class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/20 transition-all flex items-center gap-1.5 shadow-sm"
+                        class="text-sm font-bold text-gray-800 hover:text-black transition-colors flex items-center gap-1.5"
                     >
                         <span>Keyingi blok</span>
                         <span>→</span>
@@ -529,40 +478,36 @@ const filterUnitsList = (units) => {
             </div>
 
             <!-- Shaxmatka 2-Columns Grid Layout -->
-            <div class="relative z-10 flex-1 overflow-auto p-8 lg:p-12">
-                <!-- Large Orange Block Header Pill (Image 3: "A-1 blok") -->
-                <div class="mb-8">
-                    <div class="inline-flex items-center px-10 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-3xl font-black text-3xl tracking-wide shadow-2xl border border-amber-300/40">
+            <div class="relative z-10 flex-1 overflow-auto px-10 py-6">
+                <!-- Large Orange Block Header Pill (Image 2: "A-1 blok") -->
+                <div class="mb-6">
+                    <div class="inline-flex items-center px-8 py-2.5 bg-[#f59e0b] text-black rounded-3xl font-black text-3xl tracking-wide shadow-md">
                         {{ selectedBuilding.block_name || selectedBuilding.corpus_name || 'A-1 blok' }}
                     </div>
                 </div>
 
-                <!-- 2-Columns Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-16 gap-y-5 max-w-7xl">
+                <!-- 2-Columns Grid (Image 2) -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-4 max-w-7xl">
                     <!-- Left Column (Floors 1 to 8) -->
-                    <div class="space-y-4">
+                    <div class="space-y-3">
                         <div 
                             v-for="floor in leftColumnFloors" 
                             :key="'col1-fl-' + floor.id"
-                            class="flex items-center gap-4 bg-slate-900/70 hover:bg-slate-900/85 backdrop-blur-md p-2.5 rounded-2xl border border-white/15 transition-all shadow-lg"
+                            class="flex items-center gap-3"
                         >
-                            <!-- Orange Floor Pill Button (Image 3) -->
-                            <button 
-                                @click="openFloorPlan(floor.id)"
-                                title="Qavat chizmasini ko'rish"
-                                class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-sm rounded-xl shadow-md shrink-0 min-w-[130px] text-center transition-transform hover:scale-105 active:scale-95"
-                            >
+                            <!-- Orange Floor Pill Button (Image 2) -->
+                            <div class="px-6 py-2.5 bg-[#f59e0b] text-white font-bold text-base rounded-2xl shadow shrink-0 min-w-[130px] text-center">
                                 {{ floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat` }}
-                            </button>
+                            </div>
 
                             <!-- Unit Badges Row -->
-                            <div class="flex flex-wrap items-center gap-2.5 flex-1">
+                            <div class="flex flex-wrap items-center gap-2 flex-1">
                                 <button 
                                     v-for="unit in filterUnitsList(floor.units)" 
                                     :key="'unit-btn-' + unit.id"
                                     @click="openUnitModal(unit)"
                                     :class="getUnitColorClass(unit)"
-                                    class="px-4 py-2.5 rounded-xl font-black text-xs tracking-wider shadow-md transition-all duration-150 hover:scale-110 active:scale-95 flex items-center justify-center shrink-0 min-w-[76px]"
+                                    class="px-3.5 py-2.5 rounded-xl font-bold text-xs shadow transition-all duration-150 hover:scale-105 active:scale-95 flex items-center justify-center shrink-0 min-w-[70px]"
                                 >
                                     {{ unit.unit_number }}
                                 </button>
@@ -571,101 +516,31 @@ const filterUnitsList = (units) => {
                     </div>
 
                     <!-- Right Column (Floors 9 to 16) -->
-                    <div class="space-y-4" v-if="rightColumnFloors.length > 0">
+                    <div class="space-y-3" v-if="rightColumnFloors.length > 0">
                         <div 
                             v-for="floor in rightColumnFloors" 
                             :key="'col2-fl-' + floor.id"
-                            class="flex items-center gap-4 bg-slate-900/70 hover:bg-slate-900/85 backdrop-blur-md p-2.5 rounded-2xl border border-white/15 transition-all shadow-lg"
+                            class="flex items-center gap-3"
                         >
-                            <!-- Orange Floor Pill Button (Image 3) -->
-                            <button 
-                                @click="openFloorPlan(floor.id)"
-                                title="Qavat chizmasini ko'rish"
-                                class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-sm rounded-xl shadow-md shrink-0 min-w-[130px] text-center transition-transform hover:scale-105 active:scale-95"
-                            >
+                            <!-- Orange Floor Pill Button (Image 2) -->
+                            <div class="px-6 py-2.5 bg-[#f59e0b] text-white font-bold text-base rounded-2xl shadow shrink-0 min-w-[130px] text-center">
                                 {{ floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat` }}
-                            </button>
+                            </div>
 
                             <!-- Unit Badges Row -->
-                            <div class="flex flex-wrap items-center gap-2.5 flex-1">
+                            <div class="flex flex-wrap items-center gap-2 flex-1">
                                 <button 
                                     v-for="unit in filterUnitsList(floor.units)" 
                                     :key="'unit-btn-r-' + unit.id"
                                     @click="openUnitModal(unit)"
                                     :class="getUnitColorClass(unit)"
-                                    class="px-4 py-2.5 rounded-xl font-black text-xs tracking-wider shadow-md transition-all duration-150 hover:scale-110 active:scale-95 flex items-center justify-center shrink-0 min-w-[76px]"
+                                    class="px-3.5 py-2.5 rounded-xl font-bold text-xs shadow transition-all duration-150 hover:scale-105 active:scale-95 flex items-center justify-center shrink-0 min-w-[70px]"
                                 >
                                     {{ unit.unit_number }}
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================================================= -->
-        <!-- 3. 2D QAVAT CHIZMASI                                                      -->
-        <!-- ========================================================================= -->
-        <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-slate-950 p-6">
-            <div class="flex flex-wrap items-center justify-between gap-4 mb-4 bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 text-white">
-                <div class="flex items-center gap-3">
-                    <button 
-                        @click="viewMode = 'shaxmatka'"
-                        class="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/20 transition-all flex items-center gap-1"
-                    >
-                        <span>←</span> Shaxmatkaga qaytish
-                    </button>
-
-                    <div class="flex items-center gap-2 overflow-x-auto max-w-xl pb-1">
-                        <button 
-                            v-for="floor in sortedFloors" 
-                            :key="'fl-plan-btn-' + floor.id"
-                            @click="selectedFloorForPlanId = floor.id"
-                            :class="selectedFloorForPlanId === floor.id ? 'bg-amber-500 text-white font-extrabold shadow-lg' : 'bg-white/10 text-white/80 hover:bg-white/20'"
-                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 border border-white/10"
-                        >
-                            {{ floor.floor_number < 0 ? `${floor.floor_number} yerto'la` : `${floor.floor_number}-qavat` }}
-                        </button>
-                    </div>
-                </div>
-
-                <Link :href="route('admin.facility.floor_plan_editor', { building_id: selectedBuilding.id, floor_id: selectedFloorForPlanId })" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-1">
-                    <span>✏️</span> Chizmani Tahrirlash
-                </Link>
-            </div>
-
-            <div class="flex-1 bg-slate-900 rounded-2xl border border-slate-800 overflow-auto relative flex items-center justify-center p-4">
-                <div class="relative inline-block max-w-full max-h-full" v-if="selectedFloorForPlan?.blueprint_path || selectedBuilding.blueprint_path">
-                    <img 
-                        :src="'/storage/' + (selectedFloorForPlan?.blueprint_path || selectedBuilding.blueprint_path)" 
-                        @load="onBlueprintImageLoaded"
-                        class="block max-w-full max-h-[72vh] w-auto h-auto object-contain pointer-events-none select-none opacity-95 rounded-xl shadow-2xl"
-                    />
-
-                    <svg 
-                        class="absolute inset-0 w-full h-full pointer-events-auto" 
-                        :viewBox="`0 0 ${showroomBlueprintSize.width} ${showroomBlueprintSize.height}`"
-                        preserveAspectRatio="none"
-                    >
-                        <g v-for="unit in (selectedFloorForPlan?.units || [])" :key="'plan-unit-' + unit.id">
-                            <template v-if="unit.svg_polygon">
-                                <rect 
-                                    v-if="JSON.parse(unit.svg_polygon).type === 'rect'"
-                                    :x="JSON.parse(unit.svg_polygon).left" 
-                                    :y="JSON.parse(unit.svg_polygon).top" 
-                                    :width="JSON.parse(unit.svg_polygon).width" 
-                                    :height="JSON.parse(unit.svg_polygon).height"
-                                    :fill="unit.status === 'available' ? 'rgba(16,185,129,0.5)' : (unit.status === 'sold' ? 'rgba(239,68,68,0.5)' : 'rgba(245,158,11,0.5)')"
-                                    :stroke="unit.status === 'available' ? '#10b981' : (unit.status === 'sold' ? '#ef4444' : '#f59e0b')"
-                                    stroke-width="2.5"
-                                    rx="4"
-                                    @click="openUnitModal(unit)"
-                                    class="cursor-pointer hover:opacity-90 transition-all"
-                                />
-                            </template>
-                        </g>
-                    </svg>
                 </div>
             </div>
         </div>
@@ -676,7 +551,7 @@ const filterUnitsList = (units) => {
     <Teleport to="body">
         <div v-if="showUnitDetailModal && selectedUnit" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div class="bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white flex items-center justify-between">
+                <div class="bg-slate-900 p-6 text-white flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg text-white shadow-lg" :class="getUnitBadgeBg(selectedUnit)">
                             {{ selectedUnit.unit_number }}
@@ -729,7 +604,7 @@ const filterUnitsList = (units) => {
                     <Link 
                         v-if="selectedUnit.status === 'available'" 
                         :href="route('admin.crm', { unit_id: selectedUnit.id })" 
-                        class="flex-1 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs rounded-2xl shadow-xl hover:shadow-2xl transition-all text-center flex items-center justify-center gap-2"
+                        class="flex-1 py-3.5 bg-[#2563eb] hover:bg-blue-700 text-white font-extrabold text-xs rounded-2xl shadow-xl transition-all text-center flex items-center justify-center gap-2"
                     >
                         <span>📝 Sotish (Shartnoma tuzish)</span>
                     </Link>

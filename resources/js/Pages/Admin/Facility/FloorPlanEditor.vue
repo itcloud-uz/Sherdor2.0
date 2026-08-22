@@ -736,18 +736,27 @@ const handleMasterPlanUpload = (e) => {
     }).catch(() => {});
 };
 
+// Switch Selected Block in Facade Mode
+const switchBuildingBlock = (bldgId) => {
+    selectedBuildingId.value = Number(bldgId);
+    selectedFloor.value = null;
+    loadBuildingFacadeData();
+};
+
 // Facade Image Upload Handler
 const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file || !selectedBuilding.value) return;
+
+    const bldgName = selectedBuilding.value?.block_name || selectedBuilding.value?.name || 'Blok';
 
     const reader = new FileReader();
     reader.onload = (event) => {
         const imageData = event.target?.result;
         loadImage(imageData);
         isError.value = false;
-        message.value = "✓ Fasad rasmi yuklandi!";
-        setTimeout(() => message.value = '', 3000);
+        message.value = `✓ ${bldgName} fasad rasmi yuklandi!`;
+        setTimeout(() => message.value = '', 3500);
     };
     reader.readAsDataURL(file);
 
@@ -755,7 +764,13 @@ const handleImageUpload = (e) => {
     formData.append('facade', file);
     axios.post(route('admin.facility.buildings.upload_facade', selectedBuilding.value.id), formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
-    }).catch(() => {});
+    }).then(res => {
+        if (res.data?.facade_image) {
+            selectedBuilding.value.facade_image = res.data.facade_image;
+        }
+    }).catch((err) => {
+        console.error('Upload error:', err);
+    });
 };
 
 // Floor Blueprint Upload Handler (Mode: 'floor')
@@ -1800,27 +1815,44 @@ onUnmounted(() => {
 
                 <!-- Building and Floor Selector -->
                 <div class="flex items-center gap-2">
-                    <select 
-                        v-if="editorScope === 'facade' || editorScope === 'master_plan'"
-                        v-model="selectedBuildingId" 
-                        @change="editorScope === 'master_plan' ? loadMasterPlanData() : loadBuildingFacadeData()"
-                        class="h-8 bg-slate-50 hover:bg-slate-100 text-slate-900 font-bold text-xs px-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 cursor-pointer max-w-[200px] truncate"
-                    >
-                        <option v-for="b in buildings" :key="b.id" :value="b.id">
-                            {{ b.name }} ({{ b.block_name || 'A-1 Blok' }})
-                        </option>
-                    </select>
+                    <!-- Scope: Facade (Block Selector) -->
+                    <div v-if="editorScope === 'facade'" class="flex items-center gap-1.5 bg-orange-50 border border-orange-200 px-2.5 py-0.5 rounded-xl shadow-xs">
+                        <span class="text-xs font-black text-orange-950 flex items-center gap-1 whitespace-nowrap">
+                            🏢 Blok:
+                        </span>
+                        <select 
+                            v-model="selectedBuildingId" 
+                            @change="switchBuildingBlock(selectedBuildingId)"
+                            class="h-7 bg-white text-orange-950 font-black text-xs px-2.5 rounded-lg border border-orange-300 focus:ring-2 focus:ring-orange-500 cursor-pointer shadow-xs"
+                        >
+                            <option v-for="b in complexBuildings" :key="b.id" :value="b.id">
+                                {{ b.block_name || b.corpus_name || b.name }} ({{ b.total_floors || 16 }} qavat)
+                            </option>
+                        </select>
+                    </div>
 
-                    <select 
-                        v-else
-                        v-model="selectedFloor"
-                        @change="loadFloorData"
-                        class="h-8 bg-orange-50 hover:bg-orange-100 text-orange-950 font-bold text-xs px-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 cursor-pointer"
-                    >
-                        <option v-for="fl in availableFloors" :key="fl.id" :value="fl.floor_number">
-                            {{ fl.floor_number < 0 ? `${fl.floor_number}-yerto'la` : `${fl.floor_number}-qavat` }}
-                        </option>
-                    </select>
+                    <!-- Scope: Master Plan (Complex Info) -->
+                    <div v-else-if="editorScope === 'master_plan'" class="flex items-center gap-1 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-xl shadow-xs">
+                        <span class="text-xs font-black text-blue-950">
+                            🌐 {{ selectedBuilding?.name || 'Bosh Reja' }}
+                        </span>
+                    </div>
+
+                    <!-- Scope: Floor (Block & Floor Selector) -->
+                    <div v-else class="flex items-center gap-1.5 bg-orange-50 border border-orange-200 px-2.5 py-0.5 rounded-xl shadow-xs">
+                        <span class="text-xs font-black text-orange-950 whitespace-nowrap">
+                            🏢 {{ selectedBuilding?.block_name || 'Blok' }} ›
+                        </span>
+                        <select 
+                            v-model="selectedFloor"
+                            @change="loadFloorData"
+                            class="h-7 bg-white text-orange-950 font-black text-xs px-2.5 rounded-lg border border-orange-300 focus:ring-2 focus:ring-orange-500 cursor-pointer shadow-xs"
+                        >
+                            <option v-for="fl in availableFloors" :key="fl.id" :value="fl.floor_number">
+                                {{ fl.floor_number < 0 ? `${fl.floor_number}-yerto'la` : `${fl.floor_number}-qavat` }}
+                            </option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -1916,9 +1948,9 @@ onUnmounted(() => {
                     />
                 </label>
 
-                <!-- Facade Upload -->
-                <label v-else-if="editorScope === 'facade'" class="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
-                    <span>🖼️</span> Fasad Rasmi
+                <!-- Facade Upload (Highlighted with current block name) -->
+                <label v-else-if="editorScope === 'facade'" class="h-8 px-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border border-orange-600 rounded-xl font-black text-xs cursor-pointer flex items-center gap-1.5 transition-all shadow-xs shrink-0">
+                    <span>🖼️</span> {{ selectedBuilding?.block_name || 'Blok' }} Fasadini Yuklash
                     <input
                         ref="fileInputRef"
                         type="file"
@@ -2012,9 +2044,30 @@ onUnmounted(() => {
                     </div>
                 </template>
 
-                <!-- ================= MODE 1: FACADE FLOORS LIST ================= -->
+                <!-- ================= MODE 1: FACADE FLOORS LIST WITH BLOCK SWITCHER ================= -->
                 <template v-else-if="editorScope === 'facade'">
-                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <!-- Block Switcher Pills -->
+                    <div class="space-y-1.5 pb-2.5 border-b border-slate-200/80">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] uppercase font-black tracking-wider text-slate-500">🏢 Blokni Tanlang</span>
+                            <span class="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">{{ complexBuildings.length }} ta blok</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <button
+                                v-for="b in complexBuildings"
+                                :key="'block-btn-' + b.id"
+                                @click="switchBuildingBlock(b.id)"
+                                class="px-2 py-1.5 text-xs font-bold rounded-xl border text-center transition-all cursor-pointer truncate"
+                                :class="Number(selectedBuildingId) === b.id 
+                                    ? 'bg-orange-500 text-white border-orange-600 shadow-xs font-black ring-2 ring-orange-300' 
+                                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'"
+                            >
+                                {{ b.block_name || b.corpus_name || 'Blok ' + b.id }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-100 mt-1">
                         <h3 class="text-slate-900 font-black text-xs uppercase tracking-wider">Qavatlar Ro'yxati</h3>
                         <span class="text-[11px] font-mono font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">{{ drawnFloors.size }}/{{ availableFloors.length }}</span>
                     </div>
@@ -2152,7 +2205,26 @@ onUnmounted(() => {
 
                 <!-- ================= FACADE SCOPE INSPECTOR ================= -->
                 <template v-else-if="editorScope === 'facade'">
-                    <h3 class="text-slate-900 font-black text-xs uppercase tracking-wider pb-2 border-b border-slate-100">
+                    <!-- Dedicated Block Info & Upload Card -->
+                    <div class="bg-orange-50/60 p-3 rounded-2xl border border-orange-200 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black text-slate-900">🏢 {{ selectedBuilding?.block_name || selectedBuilding?.name }}</span>
+                            <span class="text-[10px] font-black px-2 py-0.5 rounded-full" :class="selectedBuilding?.facade_image ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'">
+                                {{ selectedBuilding?.facade_image ? 'Surat yuklangan ✓' : 'Standart surat' }}
+                            </span>
+                        </div>
+                        <label class="w-full py-2 px-3 bg-white hover:bg-orange-100/50 border-2 border-dashed border-orange-300 hover:border-orange-500 text-orange-800 font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs">
+                            <span>🖼️</span> Ushbu Blok Fasadini O'zgartirish / Yuklash
+                            <input
+                                type="file"
+                                accept="image/*"
+                                @change="handleImageUpload"
+                                class="hidden"
+                            />
+                        </label>
+                    </div>
+
+                    <h3 class="text-slate-900 font-black text-xs uppercase tracking-wider pb-2 border-b border-slate-100 mt-1">
                         Qavat Koordinatasi
                     </h3>
 

@@ -359,12 +359,12 @@ const filterUnitsList = (units) => {
     <Head title="Shou room - 3D Maket - IQS ERP" />
     
     <!-- 100% FULL SCREEN STANDALONE APP (Clean White & Orange Studio) -->
-    <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden select-none bg-slate-950 font-sans">
+    <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden select-none bg-[#f8fafc] font-sans">
 
         <!-- ========================================================================= -->
         <!-- 1. FULL SCREEN 3D BINO FASADI (FASAD KO'RINISHI)                         -->
         <!-- ========================================================================= -->
-        <div v-if="viewMode === 'facade'" class="flex-1 flex flex-col w-full h-full overflow-hidden">
+        <div v-if="viewMode === 'facade'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-[#f8fafc]">
             
             <!-- Clean Unified Top Bar (White & Orange Minimalism) -->
             <header class="h-[54px] bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs shrink-0 z-30">
@@ -403,11 +403,11 @@ const filterUnitsList = (units) => {
                 </div>
             </header>
 
-            <!-- Full-Screen 3D Building Viewport with generous padding (No image clipping) -->
-            <div class="flex-1 w-full h-[calc(100vh-54px)] p-3 md:p-5 flex items-center justify-center overflow-hidden relative bg-slate-950">
+            <!-- Full-Screen 3D Building Viewport with generous padding (No image clipping, pure light background) -->
+            <div class="flex-1 w-full h-[calc(100vh-54px)] p-3 md:p-5 flex items-center justify-center overflow-hidden relative bg-[#f8fafc]">
                 <div class="relative w-full h-full flex items-center justify-center">
                     <svg 
-                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl" 
+                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-xl" 
                         :viewBox="`0 0 ${facadeNaturalSize.width} ${facadeNaturalSize.height}`"
                         preserveAspectRatio="xMidYMid meet"
                     >
@@ -518,7 +518,7 @@ const filterUnitsList = (units) => {
         <!-- ========================================================================= -->
         <!-- 2. FULL SCREEN 2D FLOOR PLAN & UNITS (QAVAT CHIZMASI)                    -->
         <!-- ========================================================================= -->
-        <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-slate-950">
+        <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-[#f8fafc]">
             <!-- Clean Unified Top Bar (Floor Plan) -->
             <header class="h-[54px] bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs shrink-0 z-30">
                 <button 
@@ -548,11 +548,11 @@ const filterUnitsList = (units) => {
                 </div>
             </header>
 
-            <!-- Blueprint & Interactive Unit Polygons SVG Viewport with generous padding (No image clipping) -->
-            <div class="flex-1 w-full h-[calc(100vh-54px)] p-3 md:p-5 flex items-center justify-center overflow-hidden relative bg-slate-950">
+            <!-- Blueprint & Interactive Unit Polygons SVG Viewport with generous padding (Pure light background) -->
+            <div class="flex-1 w-full h-[calc(100vh-54px)] p-3 md:p-5 flex items-center justify-center overflow-hidden relative bg-[#f8fafc]">
                 <div class="relative w-full h-full flex items-center justify-center">
                     <svg 
-                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl" 
+                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-xl" 
                         :viewBox="`0 0 ${floorBlueprintNaturalSize.width} ${floorBlueprintNaturalSize.height}`"
                         preserveAspectRatio="xMidYMid meet"
                     >

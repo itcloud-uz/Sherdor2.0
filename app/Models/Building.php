@@ -36,11 +36,15 @@ class Building extends Model
         'showroom_images',
         'facade_image',
         'facade_data',
+        'master_plan_image',
+        'master_plan_polygon',
+        'master_plan_data',
     ];
 
     protected $casts = [
         'showroom_images' => 'array',
         'facade_data' => 'array',
+        'master_plan_data' => 'array',
     ];
 
     public function floors()

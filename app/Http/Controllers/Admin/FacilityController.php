@@ -2116,4 +2116,78 @@ class FacilityController extends Controller
 
         return redirect()->back()->with('message', 'Bino fasadi va qavatlar koordinatalari muvaffaqiyatli saqlandi!');
     }
+
+    public function uploadBuildingMasterPlan(Request $request, $buildingId)
+    {
+        $building = Building::findOrFail($buildingId);
+
+        $request->validate([
+            'master_plan' => 'required|file|mimes:jpg,jpeg,png,webp,svg|max:102400',
+        ]);
+
+        $path = $request->file('master_plan')->store('master_plans', 'public');
+        
+        // If there are other buildings with the same complex name, update master_plan_image for all of them
+        Building::where('name', $building->name)->update(['master_plan_image' => $path]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Majmua umumiy fasadi (Bosh reja) muvaffaqiyatli yuklandi!',
+                'master_plan_image' => $path,
+                'master_plan_url' => '/storage/' . $path
+            ]);
+        }
+
+        return redirect()->back()->with('message', 'Majmua umumiy fasadi (Bosh reja) muvaffaqiyatli yuklandi!');
+    }
+
+    public function saveMasterPlanBlocks(Request $request, $buildingId)
+    {
+        $building = Building::findOrFail($buildingId);
+
+        $validated = $request->validate([
+            'master_plan_data' => 'nullable',
+            'blocks' => 'nullable|array',
+        ]);
+
+        DB::transaction(function () use ($building, $validated, $request) {
+            $mpData = $request->input('master_plan_data');
+            if ($mpData) {
+                $decoded = is_array($mpData) ? $mpData : json_decode($mpData, true);
+                Building::where('name', $building->name)->update(['master_plan_data' => $decoded]);
+            }
+
+            $blocksList = $request->input('blocks', []);
+            $updatedBuildingIds = [];
+            if (!empty($blocksList)) {
+                foreach ($blocksList as $bData) {
+                    $targetId = $bData['id'] ?? ($bData['building_id'] ?? null);
+                    $polygonData = $bData['master_plan_polygon'] ?? ($bData['polygon'] ?? null);
+                    if ($targetId) {
+                        $updatedBuildingIds[] = $targetId;
+                        $poly = !empty($polygonData) ? (is_array($polygonData) ? json_encode($polygonData) : $polygonData) : null;
+                        Building::where('id', $targetId)->update([
+                            'master_plan_polygon' => $poly
+                        ]);
+                    }
+                }
+            }
+
+            // Also clear master_plan_polygon for any buildings in this complex not in the list
+            Building::where('name', $building->name)
+                ->whereNotIn('id', $updatedBuildingIds)
+                ->update(['master_plan_polygon' => null]);
+        });
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Umumiy fasaddagi bloklar koordinatalari muvaffaqiyatli saqlandi!',
+                'buildings' => Building::with(['floors.units', 'podezes.floors.units'])->get()
+            ]);
+        }
+
+        return redirect()->back()->with('message', 'Umumiy fasaddagi bloklar koordinatalari muvaffaqiyatli saqlandi!');
+    }
 }

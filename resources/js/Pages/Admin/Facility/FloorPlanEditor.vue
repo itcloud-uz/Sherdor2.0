@@ -18,13 +18,25 @@ const props = defineProps({
     }
 });
 
-// Scope: 'facade' (Bino Fasadida Qavatlarni chizish) or 'floor' (Qavat Chizmasida Xonadonlarni chizish)
+// Scope: 'master_plan' (Umumiy Bosh Reja) or 'facade' (Bino Fasadida Qavatlarni chizish) or 'floor' (Qavat Chizmasida Xonadonlarni chizish)
 const editorScope = ref('facade');
 
 // Selected Building
 const selectedBuildingId = ref(props.initialBuildingId || (props.buildings.length > 0 ? props.buildings[0].id : null));
 const selectedBuilding = computed(() => {
     return props.buildings.find(b => b.id === Number(selectedBuildingId.value)) || null;
+});
+
+// Complex Buildings belonging to the same object/complex name
+const complexBuildings = computed(() => {
+    if (!selectedBuilding.value || !props.buildings) return [];
+    return props.buildings.filter(b => b.name === selectedBuilding.value.name);
+});
+
+// Selected Block for Master Plan Scope
+const selectedBlockId = ref(null);
+const selectedBlockObj = computed(() => {
+    return complexBuildings.value.find(b => b.id === Number(selectedBlockId.value)) || null;
 });
 
 // All floors of selected building
@@ -63,13 +75,14 @@ const selectedUnitObj = computed(() => {
 });
 
 // Canvas & Editor Elements
+const masterPlanFileInputRef = ref(null);
 const fileInputRef = ref(null);
 const blueprintFileInputRef = ref(null);
 const canvasContainerRef = ref(null);
 const canvasElement = ref(null);
 const ctx = ref(null);
 
-// Active Canvas Image (Facade image vs Floor Blueprint image)
+// Active Canvas Image (Master Plan vs Facade image vs Floor Blueprint image)
 const canvasImageObj = ref(null);
 const canvasImageUrl = ref(null);
 
@@ -238,7 +251,18 @@ const recalculateShapeCanvasPositions = () => {
     });
 };
 
-// Switch between Facade Editor and Floor Blueprint Editor
+// Switch between Master Plan, Facade Editor, and Floor Blueprint Editor
+const openMasterPlanEditor = () => {
+    editorScope.value = 'master_plan';
+    loadMasterPlanData();
+};
+
+const openFacadeEditor = (bldgId = null) => {
+    if (bldgId) selectedBuildingId.value = bldgId;
+    editorScope.value = 'facade';
+    loadBuildingFacadeData();
+};
+
 const openFloorBlueprintEditor = (floorNumber) => {
     selectedFloor.value = floorNumber;
     editorScope.value = 'floor';
@@ -248,6 +272,61 @@ const openFloorBlueprintEditor = (floorNumber) => {
 const returnToFacadeEditor = () => {
     editorScope.value = 'facade';
     loadBuildingFacadeData();
+};
+
+// Load Master Plan Data (Mode: 'master_plan')
+const loadMasterPlanData = () => {
+    if (!selectedBuilding.value) return;
+
+    shapes.value = [];
+    selectedShapeId.value = null;
+
+    if (complexBuildings.value.length > 0 && !selectedBlockId.value) {
+        selectedBlockId.value = complexBuildings.value[0].id;
+    }
+
+    const masterPlanFound = complexBuildings.value.find(b => b.master_plan_image);
+    const bgUrl = masterPlanFound && masterPlanFound.master_plan_image
+        ? `/storage/${masterPlanFound.master_plan_image}`
+        : (selectedBuilding.value.facade_image ? `/storage/${selectedBuilding.value.facade_image}` : '/images/clean-building-facade.jpg');
+
+    loadImage(bgUrl);
+
+    // Load existing block shapes from DB
+    const loaded = [];
+    complexBuildings.value.forEach((block) => {
+        const coords = parseCoordinates(block.master_plan_polygon);
+        if (coords) {
+            const blockLabel = block.block_name || block.corpus_name || 'Blok ' + block.id;
+            if (coords.type === 'rect') {
+                loaded.push({
+                    id: block.id,
+                    buildingId: block.id,
+                    blockId: block.id,
+                    label: blockLabel,
+                    type: 'rect',
+                    x: coords.left || coords.x || 100,
+                    y: coords.top || coords.y || 100,
+                    w: coords.width || coords.w || 200,
+                    h: coords.height || coords.h || 300,
+                    rawCoords: coords
+                });
+            } else if (coords.type === 'polygon' && (coords.points || coords.natural?.points)) {
+                loaded.push({
+                    id: block.id,
+                    buildingId: block.id,
+                    blockId: block.id,
+                    label: blockLabel,
+                    type: 'polygon',
+                    points: coords.natural?.points || coords.points,
+                    rawCoords: coords
+                });
+            }
+        }
+    });
+
+    shapes.value = loaded;
+    nextTick(() => updateCanvasSize());
 };
 
 // Load Facade Data (Mode: 'facade')
@@ -629,6 +708,34 @@ const getCentroid = (points) => {
     return { x: sx / points.length, y: sy / points.length };
 };
 
+// Master Plan Image Upload Handler
+const handleMasterPlanUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedBuilding.value) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const imageData = event.target?.result;
+        loadImage(imageData);
+        isError.value = false;
+        message.value = "✓ Umumiy bosh reja rasmi yuklandi!";
+        setTimeout(() => message.value = '', 3000);
+    };
+    reader.readAsDataURL(file);
+
+    const formData = new FormData();
+    formData.append('master_plan', file);
+    axios.post(route('admin.facility.buildings.upload_master_plan', selectedBuilding.value.id), formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(res => {
+        if (res.data?.master_plan_image) {
+            complexBuildings.value.forEach(b => {
+                b.master_plan_image = res.data.master_plan_image;
+            });
+        }
+    }).catch(() => {});
+};
+
 // Facade Image Upload Handler
 const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
@@ -934,7 +1041,34 @@ const handleCanvasMouseUp = (e) => {
         const top = Math.min(startPos.value[1], y);
 
         if (width > 10 && height > 10) {
-            if (editorScope.value === 'facade') {
+            if (editorScope.value === 'master_plan') {
+                const blockObj = selectedBlockObj.value;
+                const blockId = blockObj ? blockObj.id : Date.now();
+                const blockLabel = blockObj ? (blockObj.block_name || blockObj.corpus_name || 'Blok ' + blockObj.id) : 'Blok';
+
+                const filtered = shapes.value.filter(s => s.blockId !== blockId && s.id !== blockId);
+
+                const newShape = {
+                    id: blockId,
+                    buildingId: blockId,
+                    blockId: blockId,
+                    label: blockLabel,
+                    type: 'rect',
+                    x: Math.round(left),
+                    y: Math.round(top),
+                    w: Math.round(width),
+                    h: Math.round(height)
+                };
+                updateShapeRawCoords(newShape);
+
+                shapes.value = [...filtered, newShape];
+                selectedShapeId.value = newShape.id;
+                redrawCanvas();
+
+                isError.value = false;
+                message.value = `✓ ${blockLabel} chizildi!`;
+                setTimeout(() => message.value = '', 2500);
+            } else if (editorScope.value === 'facade') {
                 const floorObj = availableFloors.value.find(f => f.floor_number === selectedFloor.value);
                 const floorId = floorObj ? floorObj.id : Date.now();
                 const floorLabel = floorObj ? (floorObj.floor_number < 0 ? `${floorObj.floor_number}-yerto'la` : `${floorObj.floor_number}-qavat`) : `${selectedFloor.value}-qavat`;
@@ -1000,7 +1134,32 @@ const handleCanvasMouseUp = (e) => {
 // Finish Polygon with Double Click
 const handleCanvasDoubleClick = () => {
     if (drawingMode.value === 'polygon' && polygonPoints.value.length >= 3) {
-        if (editorScope.value === 'facade') {
+        if (editorScope.value === 'master_plan') {
+            const blockObj = selectedBlockObj.value;
+            const blockId = blockObj ? blockObj.id : Date.now();
+            const blockLabel = blockObj ? (blockObj.block_name || blockObj.corpus_name || 'Blok ' + blockObj.id) : 'Blok';
+
+            const filtered = shapes.value.filter(s => s.blockId !== blockId && s.id !== blockId);
+
+            const newShape = {
+                id: blockId,
+                buildingId: blockId,
+                blockId: blockId,
+                label: blockLabel,
+                type: 'polygon',
+                points: [...polygonPoints.value]
+            };
+            updateShapeRawCoords(newShape);
+
+            shapes.value = [...filtered, newShape];
+            selectedShapeId.value = newShape.id;
+            polygonPoints.value = [];
+            redrawCanvas();
+
+            isError.value = false;
+            message.value = `✓ ${blockLabel} ko'pburchak chizildi!`;
+            setTimeout(() => message.value = '', 2500);
+        } else if (editorScope.value === 'facade') {
             const floorObj = availableFloors.value.find(f => f.floor_number === selectedFloor.value);
             const floorId = floorObj ? floorObj.id : Date.now();
             const floorLabel = floorObj ? (floorObj.floor_number < 0 ? `${floorObj.floor_number}-yerto'la` : `${floorObj.floor_number}-qavat`) : `${selectedFloor.value}-qavat`;
@@ -1264,7 +1423,72 @@ const handleSave = async () => {
         const nw = img ? img.naturalWidth : b.w;
         const nh = img ? img.naturalHeight : b.h;
 
-        if (editorScope.value === 'facade') {
+        if (editorScope.value === 'master_plan') {
+            const blockCoords = shapes.value.map(s => {
+                const blockObj = complexBuildings.value.find(bldg => bldg.id === s.blockId || bldg.id === s.id);
+                let shapeJson = null;
+                if (s.type === 'rect') {
+                    const normX = Math.min(1, Math.max(0, (s.x - b.x) / b.w));
+                    const normY = Math.min(1, Math.max(0, (s.y - b.y) / b.h));
+                    const normW = Math.min(1 - normX, Math.max(0.001, s.w / b.w));
+                    const normH = Math.min(1 - normY, Math.max(0.001, s.h / b.h));
+
+                    const natX = Math.round(normX * nw);
+                    const natY = Math.round(normY * nh);
+                    const natW = Math.round(normW * nw);
+                    const natH = Math.round(normH * nh);
+
+                    shapeJson = {
+                        type: 'rect',
+                        left: natX,
+                        top: natY,
+                        width: natW,
+                        height: natH,
+                        natural: { x: natX, y: natY, w: natW, h: natH },
+                        norm: { x: normX, y: normY, w: normW, h: normH }
+                    };
+                } else if (s.type === 'polygon' && s.points) {
+                    const normPoints = s.points.map(p => ({
+                        x: Math.min(1, Math.max(0, ((p.x !== undefined ? p.x : p[0]) - b.x) / b.w)),
+                        y: Math.min(1, Math.max(0, ((p.y !== undefined ? p.y : p[1]) - b.y) / b.h))
+                    }));
+                    const natPoints = normPoints.map(p => ({
+                        x: Math.round(p.x * nw),
+                        y: Math.round(p.y * nh)
+                    }));
+                    shapeJson = {
+                        type: 'polygon',
+                        points: natPoints,
+                        natural: { points: natPoints },
+                        norm: { points: normPoints }
+                    };
+                }
+                return {
+                    id: blockObj?.id || s.blockId || s.id,
+                    building_id: blockObj?.id || s.blockId || s.id,
+                    master_plan_polygon: shapeJson,
+                    polygon: shapeJson
+                };
+            });
+
+            const targetUrl = route('admin.facility.buildings.save_master_plan_blocks', selectedBuilding.value.id);
+            await axios.post(targetUrl, {
+                blocks: blockCoords,
+                master_plan_data: { shapes: shapes.value }
+            });
+
+            // Update in-memory block objects
+            blockCoords.forEach(bc => {
+                const bldg = complexBuildings.value.find(bldg => bldg.id === bc.id);
+                if (bldg) {
+                    bldg.master_plan_polygon = bc.master_plan_polygon;
+                }
+            });
+            shapes.value.forEach(s => updateShapeRawCoords(s));
+
+            isError.value = false;
+            message.value = '✅ Bosh reja bloklari koordinatalari muvaffaqiyatli saqlandi!';
+        } else if (editorScope.value === 'facade') {
             const floorCoords = shapes.value.map(s => {
                 const floorObj = availableFloors.value.find(f => f.floor_number === s.floor);
                 let shapeJson = null;
@@ -1421,6 +1645,7 @@ const handleSave = async () => {
     }
 };
 
+const drawnBlocks = computed(() => new Set(shapes.value.map(s => s.blockId || s.id)));
 const drawnFloors = computed(() => new Set(shapes.value.map(s => s.floor)));
 const drawnUnits = computed(() => new Set(shapes.value.map(s => s.unit_number || s.unitId)));
 const selectedShapeObj = computed(() => shapes.value.find(s => s.id === selectedShapeId.value) || null);
@@ -1510,28 +1735,37 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Head :title="editorScope === 'facade' ? '3D Maket / Fasad Muharriri' : `${selectedFloorObj?.floor_number}-Qavat Chizmasi Muharriri`" />
+    <Head :title="editorScope === 'master_plan' ? '3D Bosh Reja Muharriri' : (editorScope === 'facade' ? '3D Blok Fasadi Muharriri' : `${selectedFloorObj?.floor_number}-Qavat Chizmasi Muharriri`)" />
 
     <!-- Clean, Unified, Minimalist White & Orange Studio -->
     <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden bg-[#f1f5f9] font-sans text-slate-800 select-none">
         
-        <!-- Clean Unified Navbar (Height 54px, perfectly aligned, zero overflow) -->
+        <!-- Clean Unified Navbar (Height 54px) -->
         <header class="h-[54px] bg-white border-b border-slate-200 px-4 flex items-center justify-between gap-3 shadow-xs shrink-0 z-10">
             <!-- Left: Back Button & Mode / Building Select -->
             <div class="flex items-center gap-2.5 shrink-0">
                 <button
                     v-if="editorScope === 'floor'"
                     @click="returnToFacadeEditor"
-                    class="h-8 px-3 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                    class="h-8 px-3 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                     title="Bino fasadiga qaytish"
                 >
                     <span>←</span> Fasadga Qaytish
                 </button>
 
+                <button
+                    v-else-if="editorScope === 'facade' && complexBuildings.length > 1"
+                    @click="openMasterPlanEditor"
+                    class="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                    title="Umumiy Bosh Rejaga o'tish"
+                >
+                    <span>←</span> Bosh Reja
+                </button>
+
                 <Link
                     v-else
                     :href="route('admin.dashboard')"
-                    class="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5"
+                    class="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
                     title="Boshqaruv paneliga qaytish"
                 >
                     <span>←</span> Ortga
@@ -1539,16 +1773,37 @@ onUnmounted(() => {
 
                 <div class="h-4 w-px bg-slate-200"></div>
 
+                <!-- Scope Selector Pills -->
+                <div class="h-8 bg-slate-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200">
+                    <button
+                        @click="openMasterPlanEditor"
+                        :class="editorScope === 'master_plan' ? 'bg-orange-500 text-white shadow-xs font-black' : 'text-slate-700 hover:bg-white'"
+                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                        <span>🌐</span> Bosh Reja
+                    </button>
+                    <button
+                        @click="openFacadeEditor(selectedBuildingId)"
+                        :class="editorScope === 'facade' ? 'bg-orange-500 text-white shadow-xs font-black' : 'text-slate-700 hover:bg-white'"
+                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                        <span>🏢</span> Blok Fasadi
+                    </button>
+                    <button
+                        @click="openFloorBlueprintEditor(selectedFloor || 1)"
+                        :class="editorScope === 'floor' ? 'bg-orange-500 text-white shadow-xs font-black' : 'text-slate-700 hover:bg-white'"
+                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                        <span>📐</span> Qavat Chizmasi
+                    </button>
+                </div>
+
                 <!-- Building and Floor Selector -->
                 <div class="flex items-center gap-2">
-                    <span class="font-black text-xs text-slate-900 flex items-center gap-1 whitespace-nowrap">
-                        <span class="text-orange-500">{{ editorScope === 'facade' ? '🏢' : '📐' }}</span> 
-                        {{ editorScope === 'facade' ? 'Fasad Muharriri' : `${selectedFloorObj?.floor_number}-Qavat` }}
-                    </span>
-
                     <select 
-                        v-if="editorScope === 'facade'"
+                        v-if="editorScope === 'facade' || editorScope === 'master_plan'"
                         v-model="selectedBuildingId" 
+                        @change="editorScope === 'master_plan' ? loadMasterPlanData() : loadBuildingFacadeData()"
                         class="h-8 bg-slate-50 hover:bg-slate-100 text-slate-900 font-bold text-xs px-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 cursor-pointer max-w-[200px] truncate"
                     >
                         <option v-for="b in buildings" :key="b.id" :value="b.id">
@@ -1576,7 +1831,7 @@ onUnmounted(() => {
                     <button
                         @click="drawingMode = 'select'"
                         :class="drawingMode === 'select' ? 'bg-orange-500 text-white shadow-xs font-black' : 'text-slate-700 hover:bg-white'"
-                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                         title="Tanlash va Ko'chirish"
                     >
                         <span>👆</span> Tanlash
@@ -1585,7 +1840,7 @@ onUnmounted(() => {
                     <button
                         @click="drawingMode = 'rect'"
                         :class="drawingMode === 'rect' ? 'bg-orange-500 text-white shadow-xs font-black' : 'text-slate-700 hover:bg-white'"
-                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                         title="To'rtburchak chizish"
                     >
                         <span>⬛</span> To'rtburchak
@@ -1594,7 +1849,7 @@ onUnmounted(() => {
                     <button
                         @click="drawingMode = 'polygon'"
                         :class="drawingMode === 'polygon' ? 'bg-orange-500 text-white shadow-xs font-black' : 'text-slate-700 hover:bg-white'"
-                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                         title="Ko'pburchak chizish"
                     >
                         <span>⬡</span> Ko'pburchak
@@ -1605,7 +1860,7 @@ onUnmounted(() => {
                 <div class="h-8 bg-slate-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200">
                     <button
                         @click="zoom = Math.max(zoom - 10, 50); redrawCanvas();"
-                        class="h-7 px-2 text-slate-700 hover:bg-white rounded-lg text-xs font-bold"
+                        class="h-7 px-2 text-slate-700 hover:bg-white rounded-lg text-xs font-bold cursor-pointer"
                         title="Kichiklashtirish"
                     >
                         🔍-
@@ -1613,7 +1868,7 @@ onUnmounted(() => {
 
                     <button
                         @click="zoom = 100; redrawCanvas();"
-                        class="h-7 px-2 text-slate-800 font-mono font-bold text-xs hover:bg-white rounded-lg"
+                        class="h-7 px-2 text-slate-800 font-mono font-bold text-xs hover:bg-white rounded-lg cursor-pointer"
                         title="100% asl o'lcham"
                     >
                         {{ zoom }}%
@@ -1621,7 +1876,7 @@ onUnmounted(() => {
 
                     <button
                         @click="zoom = Math.min(zoom + 10, 200); redrawCanvas();"
-                        class="h-7 px-2 text-slate-700 hover:bg-white rounded-lg text-xs font-bold"
+                        class="h-7 px-2 text-slate-700 hover:bg-white rounded-lg text-xs font-bold cursor-pointer"
                         title="Kattalashtirish"
                     >
                         🔍+
@@ -1632,14 +1887,14 @@ onUnmounted(() => {
                 <div v-if="editorScope === 'facade'" class="flex items-center gap-1.5">
                     <button
                         @click="openAutoSplitModal"
-                        class="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1"
+                        class="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer"
                         title="Binoning barcha qavatlarini bir martada tekis taqsimlash"
                     >
                         <span>⚡</span> Avto-Taqsimlash
                     </button>
                     <button
                         @click="alignAllFloorWidths"
-                        class="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-200 shadow-xs transition-all flex items-center gap-1"
+                        class="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-200 shadow-xs transition-all flex items-center gap-1 cursor-pointer"
                         title="Barcha qavatlarning chap va o'ng chegaralarini bitta to'g'ri chiziqqa tekislash"
                     >
                         <span>📏</span> Tekislash
@@ -1649,9 +1904,21 @@ onUnmounted(() => {
 
             <!-- Right: Upload, Delete, Save & Showroom -->
             <div class="flex items-center gap-2 shrink-0">
-                <!-- Facade Upload (Scope: Facade) -->
-                <label v-if="editorScope === 'facade'" class="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
-                    <span>🖼️</span> Fasad
+                <!-- Master Plan Upload -->
+                <label v-if="editorScope === 'master_plan'" class="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
+                    <span>🌐</span> Bosh Reja Rasmi
+                    <input
+                        ref="masterPlanFileInputRef"
+                        type="file"
+                        accept="image/*"
+                        @change="handleMasterPlanUpload"
+                        class="hidden"
+                    />
+                </label>
+
+                <!-- Facade Upload -->
+                <label v-else-if="editorScope === 'facade'" class="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
+                    <span>🖼️</span> Fasad Rasmi
                     <input
                         ref="fileInputRef"
                         type="file"
@@ -1661,7 +1928,7 @@ onUnmounted(() => {
                     />
                 </label>
 
-                <!-- Floor Blueprint Upload (Scope: Floor) -->
+                <!-- Floor Blueprint Upload -->
                 <label v-else class="h-8 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
                     <span>📐</span> Qavat Chizmasi
                     <input
@@ -1687,7 +1954,7 @@ onUnmounted(() => {
                 <button
                     v-if="selectedShapeId"
                     @click="handleDeleteShape"
-                    class="h-8 px-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
+                    class="h-8 px-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1 cursor-pointer"
                     title="Tanlangan shaklni o'chirish"
                 >
                     <span>🗑️</span>
@@ -1714,11 +1981,39 @@ onUnmounted(() => {
         <!-- Main Workspace Area -->
         <main class="flex flex-1 overflow-hidden p-3 gap-3">
             
-            <!-- Left Sidebar: Floors List (Facade mode) OR Units List (Floor mode) -->
+            <!-- Left Sidebar: Blocks (Master Plan) OR Floors List (Facade) OR Units List (Floor) -->
             <aside class="w-64 bg-white border border-slate-200/90 rounded-2xl p-3.5 overflow-y-auto flex flex-col gap-2.5 shadow-sm shrink-0">
                 
+                <!-- ================= MODE 0: MASTER PLAN BLOCKS LIST ================= -->
+                <template v-if="editorScope === 'master_plan'">
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                        <h3 class="text-slate-900 font-black text-xs uppercase tracking-wider">Majmua Bloklari</h3>
+                        <span class="text-[11px] font-mono font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">{{ drawnBlocks.size }}/{{ complexBuildings.length }}</span>
+                    </div>
+
+                    <div class="space-y-1 flex-1 overflow-y-auto pr-1">
+                        <button
+                            v-for="bldg in complexBuildings"
+                            :key="'mp-btn-' + bldg.id"
+                            @click="selectedBlockId = bldg.id"
+                            class="w-full p-2.5 rounded-xl font-bold text-xs transition-all text-left flex items-center justify-between border cursor-pointer"
+                            :class="selectedBlockId === bldg.id 
+                                ? 'bg-orange-500 text-white border-orange-600 shadow-sm ring-2 ring-orange-300' 
+                                : (drawnBlocks.has(bldg.id) ? 'bg-orange-50/70 border-orange-200 text-orange-900 hover:bg-orange-100/70' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100')"
+                        >
+                            <span>{{ bldg.block_name || bldg.corpus_name || 'Blok ' + bldg.id }}</span>
+                            <span 
+                                class="text-[10px] px-2 py-0.5 rounded-full font-black"
+                                :class="selectedBlockId === bldg.id ? 'bg-white/20 text-white' : (drawnBlocks.has(bldg.id) ? 'bg-orange-200/80 text-orange-900' : 'bg-slate-200 text-slate-500')"
+                            >
+                                {{ drawnBlocks.has(bldg.id) ? 'Chizildi ✓' : 'Chizilmagan' }}
+                            </span>
+                        </button>
+                    </div>
+                </template>
+
                 <!-- ================= MODE 1: FACADE FLOORS LIST ================= -->
-                <template v-if="editorScope === 'facade'">
+                <template v-else-if="editorScope === 'facade'">
                     <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                         <h3 class="text-slate-900 font-black text-xs uppercase tracking-wider">Qavatlar Ro'yxati</h3>
                         <span class="text-[11px] font-mono font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">{{ drawnFloors.size }}/{{ availableFloors.length }}</span>
@@ -1729,7 +2024,7 @@ onUnmounted(() => {
                             v-for="floor in availableFloors"
                             :key="'fl-btn-' + floor.id"
                             @click="handleSelectFloor(floor.floor_number)"
-                            class="w-full p-2.5 rounded-xl font-bold text-xs transition-all text-left flex items-center justify-between border"
+                            class="w-full p-2.5 rounded-xl font-bold text-xs transition-all text-left flex items-center justify-between border cursor-pointer"
                             :class="selectedFloor === floor.floor_number 
                                 ? 'bg-orange-500 text-white border-orange-600 shadow-sm ring-2 ring-orange-300' 
                                 : (drawnFloors.has(floor.floor_number) ? 'bg-orange-50/70 border-orange-200 text-orange-900 hover:bg-orange-100/70' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100')"
@@ -1754,7 +2049,7 @@ onUnmounted(() => {
                         </div>
                         <button
                             @click="addNewUnit"
-                            class="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm"
+                            class="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm cursor-pointer"
                         >
                             <span>➕</span> Qo'shish
                         </button>
@@ -1765,7 +2060,7 @@ onUnmounted(() => {
                             v-for="unit in floorUnits"
                             :key="'unit-btn-' + unit.id"
                             @click="handleSelectUnit(unit.id)"
-                            class="w-full p-2.5 rounded-xl font-bold text-xs transition-all text-left flex items-center justify-between border"
+                            class="w-full p-2.5 rounded-xl font-bold text-xs transition-all text-left flex items-center justify-between border cursor-pointer"
                             :class="selectedUnitId === unit.id 
                                 ? 'bg-orange-500 text-white border-orange-600 shadow-sm ring-2 ring-orange-300' 
                                 : (drawnUnits.has(unit.unit_number) || drawnUnits.has(unit.id) ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950 hover:bg-emerald-100/70' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100')"
@@ -1791,7 +2086,7 @@ onUnmounted(() => {
             <!-- Center Canvas Viewport (Maximally Enlarged!) -->
             <section 
                 ref="canvasContainerRef"
-                class="flex-1 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner relative overflow-hidden flex items-center justify-center"
+                class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-inner relative overflow-hidden flex items-center justify-center"
             >
                 <div
                     :style="{
@@ -1813,7 +2108,7 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Hint overlay -->
-                <div v-if="drawingMode === 'polygon'" class="absolute bottom-4 left-6 bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-700 text-white text-xs font-semibold shadow-lg">
+                <div v-if="drawingMode === 'polygon'" class="absolute bottom-4 left-6 bg-white/95 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-200 text-slate-800 text-xs font-semibold shadow-lg">
                     💡 Nuqtalarni belgilang. Yakunlash uchun oxirgi nuqtani <b>ikki marta bosing (Double-Click)</b>.
                 </div>
             </section>
@@ -1821,8 +2116,42 @@ onUnmounted(() => {
             <!-- Right Sidebar: Coordinates & Shapes Inspector -->
             <aside class="w-80 bg-white border border-slate-200/90 rounded-2xl p-4 overflow-y-auto flex flex-col gap-3 shadow-sm shrink-0">
                 
+                <!-- ================= MASTER PLAN SCOPE INSPECTOR ================= -->
+                <template v-if="editorScope === 'master_plan'">
+                    <h3 class="text-slate-900 font-black text-xs uppercase tracking-wider pb-2 border-b border-slate-100">
+                        Blok Koordinatasi
+                    </h3>
+
+                    <!-- Selected Block Info & Edit Facade Button -->
+                    <div v-if="selectedBlockObj" class="bg-orange-50 p-3 rounded-2xl border border-orange-200/80 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-600 text-xs font-bold">Tanlangan blok:</span>
+                            <span class="px-2.5 py-0.5 bg-orange-500 text-white rounded-full text-xs font-black">
+                                {{ selectedBlockObj.block_name || selectedBlockObj.corpus_name || 'Blok ' + selectedBlockObj.id }}
+                            </span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 font-medium space-y-1">
+                            <div>🏢 Qavatlar: {{ selectedBlockObj.total_floors || 16 }} ta</div>
+                            <div>🚪 Xonadonlar: {{ selectedBlockObj.total_apartments || 64 }} ta</div>
+                        </div>
+
+                        <!-- Open Block Facade Editor Button -->
+                        <button
+                            @click="openFacadeEditor(selectedBlockObj.id)"
+                            class="w-full py-2 px-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                            <span>🏢</span>
+                            <span>Ushbu Blok Fasadini Tahrirlash →</span>
+                        </button>
+                    </div>
+
+                    <div v-else class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-amber-800 text-xs font-bold">
+                        ⚠️ Avval chap tarafdagi ro'yxatdan blokni tanlang.
+                    </div>
+                </template>
+
                 <!-- ================= FACADE SCOPE INSPECTOR ================= -->
-                <template v-if="editorScope === 'facade'">
+                <template v-else-if="editorScope === 'facade'">
                     <h3 class="text-slate-900 font-black text-xs uppercase tracking-wider pb-2 border-b border-slate-100">
                         Qavat Koordinatasi
                     </h3>
@@ -1952,7 +2281,7 @@ onUnmounted(() => {
                 <div class="flex-1 flex flex-col gap-2 mt-1">
                     <div class="flex items-center justify-between">
                         <h4 class="text-slate-800 font-bold text-xs uppercase">
-                            {{ editorScope === 'facade' ? "Chizilgan Qavatlar:" : "Chizilgan Xonadonlar:" }}
+                            {{ editorScope === 'master_plan' ? "Chizilgan Bloklar:" : (editorScope === 'facade' ? "Chizilgan Qavatlar:" : "Chizilgan Xonadonlar:") }}
                         </h4>
                         <span class="text-xs font-mono text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded">{{ shapes.length }} ta</span>
                     </div>

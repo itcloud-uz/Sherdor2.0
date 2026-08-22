@@ -213,6 +213,106 @@ const getUnitBadgeBg = (unit) => {
     return 'bg-gray-400';
 };
 
+// Master Plan Image & Dimensions
+const masterPlanImageUrl = computed(() => {
+    const found = availableBlocks.value.find(b => b.master_plan_image);
+    if (found && found.master_plan_image) {
+        return '/storage/' + found.master_plan_image;
+    }
+    if (selectedBuilding.value?.master_plan_image) {
+        return '/storage/' + selectedBuilding.value.master_plan_image;
+    }
+    return null;
+});
+
+const hasMasterPlan = computed(() => !!masterPlanImageUrl.value);
+const masterPlanNaturalSize = ref({ width: 1920, height: 1080 });
+
+const loadMasterPlanDimensions = (url) => {
+    if (!url) return;
+    const img = new Image();
+    img.onload = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+            masterPlanNaturalSize.value = {
+                width: img.naturalWidth,
+                height: img.naturalHeight
+            };
+        }
+    };
+    img.src = url;
+};
+
+watch(masterPlanImageUrl, (newUrl) => {
+    if (newUrl) loadMasterPlanDimensions(newUrl);
+}, { immediate: true });
+
+// Hovered Block on Master Plan
+const hoveredBlock = ref(null);
+
+const onBlockHover = (block) => {
+    hoveredBlock.value = block;
+};
+
+const onBlockLeave = () => {
+    hoveredBlock.value = null;
+};
+
+const selectBlockAndOpenFacade = (block) => {
+    selectedBuildingId.value = block.id;
+    viewMode.value = 'facade';
+};
+
+const getBlockMasterPlanShape = (block) => {
+    if (!block || !block.master_plan_polygon) return null;
+    try {
+        const parsed = typeof block.master_plan_polygon === 'object' 
+            ? block.master_plan_polygon 
+            : JSON.parse(block.master_plan_polygon);
+        
+        const nw = masterPlanNaturalSize.value.width;
+        const nh = masterPlanNaturalSize.value.height;
+
+        if (parsed.norm) {
+            if (parsed.type === 'rect') {
+                return {
+                    type: 'rect',
+                    x: Math.round(parsed.norm.x * nw),
+                    y: Math.round(parsed.norm.y * nh),
+                    width: Math.round(parsed.norm.w * nw),
+                    height: Math.round(parsed.norm.h * nh)
+                };
+            }
+            if (parsed.type === 'polygon' && parsed.norm.points) {
+                const ptsStr = parsed.norm.points.map(p => `${Math.round(p.x * nw)},${Math.round(p.y * nh)}`).join(' ');
+                return { type: 'polygon', points: ptsStr };
+            }
+        }
+
+        if (parsed.type === 'rect') {
+            const natX = parsed.natural?.x ?? parsed.left ?? parsed.x ?? 0;
+            const natY = parsed.natural?.y ?? parsed.top ?? parsed.y ?? 0;
+            const natW = parsed.natural?.w ?? parsed.width ?? parsed.w ?? 200;
+            const natH = parsed.natural?.h ?? parsed.height ?? parsed.h ?? 300;
+            return {
+                type: 'rect',
+                x: Math.round(natX),
+                y: Math.round(natY),
+                width: Math.round(natW),
+                height: Math.round(natH)
+            };
+        }
+
+        if (parsed.type === 'polygon') {
+            const pts = parsed.natural?.points || parsed.points;
+            if (pts && pts.length >= 3) {
+                const ptsStr = pts.map(p => `${p.x || p[0]},${p.y || p[1]}`).join(' ');
+                return { type: 'polygon', points: ptsStr };
+            }
+        }
+    } catch(e) {}
+    return null;
+};
+
 // Clean Facade Image URL
 const buildingImageUrl = computed(() => {
     if (!selectedBuilding.value) return '/images/clean-building-facade.jpg';
@@ -245,6 +345,10 @@ watch(buildingImageUrl, (newUrl) => {
 
 onMounted(() => {
     loadBuildingImageDimensions(buildingImageUrl.value);
+    if (masterPlanImageUrl.value) {
+        loadMasterPlanDimensions(masterPlanImageUrl.value);
+        viewMode.value = 'master_plan';
+    }
 });
 
 // Interactive Floor Hovering on Facade
@@ -362,14 +466,174 @@ const filterUnitsList = (units) => {
     <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden select-none bg-[#f8fafc] font-sans">
 
         <!-- ========================================================================= -->
+        <!-- 0. FULL SCREEN 3D COMPLEX MASTER PLAN (OBYEKT UMUMIY FASADI / BOSH REJA)  -->
+        <!-- ========================================================================= -->
+        <div v-if="viewMode === 'master_plan'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-[#f8fafc]">
+            <!-- Clean Top Bar (Master Plan) -->
+            <header class="h-[54px] bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs shrink-0 z-30">
+                <Link 
+                    :href="route('admin.dashboard')" 
+                    class="h-8 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                    <span class="text-sm">←</span>
+                    <span>Boshqaruv paneliga qaytish</span>
+                </Link>
+
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-black text-slate-900 tracking-tight flex items-center gap-1.5">
+                        <span class="text-orange-500">🌐</span> {{ selectedObjectName || 'Baraka Residence' }} (Majmua Bosh Rejasi)
+                    </span>
+                    <button 
+                        @click="viewMode = 'shaxmatka'"
+                        class="h-8 px-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <span>📊</span>
+                        <span>Shaxmatka</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button 
+                        @click="viewMode = 'facade'"
+                        class="h-8 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <span>🏢 Blok fasadini ochish</span>
+                        <span class="text-sm">→</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Master Plan Viewport with Ambient Backdrop -->
+            <div class="flex-1 w-full h-[calc(100vh-54px)] flex items-center justify-center overflow-hidden relative bg-[#f1f5f9]">
+                <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                    <img 
+                        :src="masterPlanImageUrl || buildingImageUrl" 
+                        class="w-full h-full object-cover filter blur-3xl opacity-75 scale-110"
+                    />
+                    <div class="absolute inset-0 bg-white/20 backdrop-blur-xl"></div>
+                </div>
+
+                <div class="relative z-10 w-full h-full p-3 md:p-5 flex items-center justify-center">
+                    <svg 
+                        class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl rounded-2xl" 
+                        :viewBox="`0 0 ${masterPlanNaturalSize.width} ${masterPlanNaturalSize.height}`"
+                        preserveAspectRatio="xMidYMid meet"
+                    >
+                        <image 
+                            :href="masterPlanImageUrl || buildingImageUrl" 
+                            x="0" 
+                            y="0" 
+                            :width="masterPlanNaturalSize.width" 
+                            :height="masterPlanNaturalSize.height" 
+                            preserveAspectRatio="xMidYMid meet"
+                        />
+
+                        <!-- Interactive Block Overlays on Master Plan -->
+                        <g 
+                            v-for="block in availableBlocks" 
+                            :key="'mp-block-' + block.id"
+                            class="cursor-pointer transition-all duration-200"
+                            @mouseenter="onBlockHover(block)"
+                            @mouseleave="onBlockLeave"
+                            @click="selectBlockAndOpenFacade(block)"
+                        >
+                            <template v-if="getBlockMasterPlanShape(block)">
+                                <rect 
+                                    v-if="getBlockMasterPlanShape(block).type === 'rect'"
+                                    :x="getBlockMasterPlanShape(block).x"
+                                    :y="getBlockMasterPlanShape(block).y"
+                                    :width="getBlockMasterPlanShape(block).width"
+                                    :height="getBlockMasterPlanShape(block).height"
+                                    :fill="hoveredBlock?.id === block.id ? 'rgba(249, 115, 22, 0.40)' : 'rgba(255, 255, 255, 0.05)'"
+                                    :stroke="hoveredBlock?.id === block.id ? '#f97316' : '#ffffff'"
+                                    :stroke-width="hoveredBlock?.id === block.id ? 4 : 1.5"
+                                    class="transition-all duration-200"
+                                />
+
+                                <polygon 
+                                    v-else-if="getBlockMasterPlanShape(block).type === 'polygon'"
+                                    :points="getBlockMasterPlanShape(block).points"
+                                    :fill="hoveredBlock?.id === block.id ? 'rgba(249, 115, 22, 0.40)' : 'rgba(255, 255, 255, 0.05)'"
+                                    :stroke="hoveredBlock?.id === block.id ? '#f97316' : '#ffffff'"
+                                    :stroke-width="hoveredBlock?.id === block.id ? 4 : 1.5"
+                                    class="transition-all duration-200"
+                                />
+                            </template>
+                        </g>
+                    </svg>
+
+                    <!-- Modern Floating Block Card on Hover -->
+                    <transition
+                        enter-active-class="transition duration-200 ease-out"
+                        enter-from-class="opacity-0 translate-x-6 scale-95"
+                        enter-to-class="opacity-100 translate-x-0 scale-100"
+                        leave-active-class="transition duration-150 ease-in"
+                        leave-from-class="opacity-100 translate-x-0 scale-100"
+                        leave-to-class="opacity-0 translate-x-6 scale-95"
+                    >
+                        <div 
+                            v-if="hoveredBlock"
+                            @click="selectBlockAndOpenFacade(hoveredBlock)"
+                            class="absolute right-6 md:right-12 top-1/4 z-50 w-84 bg-white shadow-2xl rounded-3xl p-5 text-slate-800 border border-slate-200/90 cursor-pointer pointer-events-auto animate-in fade-in zoom-in duration-150"
+                        >
+                            <!-- Header: Blok Name & Qavat Badge -->
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <div>
+                                    <h3 class="text-base font-black text-slate-900 tracking-tight">
+                                        {{ hoveredBlock.block_name || hoveredBlock.corpus_name || 'Blok A-1' }}
+                                    </h3>
+                                    <p class="text-[11px] text-slate-500 font-medium">{{ hoveredBlock?.name }}</p>
+                                </div>
+                                <span class="px-3 py-1 bg-orange-50 text-orange-600 border border-orange-200 rounded-xl text-xs font-black">
+                                    {{ hoveredBlock.total_floors || 16 }} Qavatli
+                                </span>
+                            </div>
+
+                            <!-- Block Stats -->
+                            <div class="py-3 space-y-2 text-xs font-bold">
+                                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                    <span class="text-slate-600">Jami xonadonlar:</span>
+                                    <span class="text-slate-900 font-black">{{ hoveredBlock.total_apartments || 64 }} ta</span>
+                                </div>
+                                <div class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                    <span class="text-slate-600">Statusi:</span>
+                                    <span class="text-amber-600 font-extrabold">{{ hoveredBlock.status || 'Qurilish jarayonida' }}</span>
+                                </div>
+                                <div class="flex items-start justify-between gap-4 p-2">
+                                    <span class="text-slate-500 shrink-0">Manzil:</span>
+                                    <span class="text-slate-800 font-extrabold text-right text-[11px]">{{ getBuildingLocationString(hoveredBlock) }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Action button -->
+                            <div class="mt-2 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-center text-xs font-black shadow-md shadow-orange-500/20 flex items-center justify-center gap-2">
+                                <span>🏢</span>
+                                <span>Blok fasadini ochish →</span>
+                            </div>
+                        </div>
+                    </transition>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
         <!-- 1. FULL SCREEN 3D BINO FASADI (FASAD KO'RINISHI)                         -->
         <!-- ========================================================================= -->
-        <div v-if="viewMode === 'facade'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-[#f8fafc]">
+        <div v-else-if="viewMode === 'facade'" class="flex-1 flex flex-col w-full h-full overflow-hidden bg-[#f8fafc]">
             
             <!-- Clean Unified Top Bar (White & Orange Minimalism) -->
             <header class="h-[54px] bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs shrink-0 z-30">
-                <!-- Left: Ortga Qaytish (Returns to CRM Dashboard) -->
+                <!-- Left: Boshqaruv yoki Bosh Rejaga Qaytish -->
+                <button 
+                    v-if="hasMasterPlan"
+                    @click="viewMode = 'master_plan'"
+                    class="h-8 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                    <span class="text-sm">←</span>
+                    <span>Umumiy Bosh Rejaga qaytish</span>
+                </button>
                 <Link 
+                    v-else
                     :href="route('admin.dashboard')" 
                     class="h-8 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
                 >

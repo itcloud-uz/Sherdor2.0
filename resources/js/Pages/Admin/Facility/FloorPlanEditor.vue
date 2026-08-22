@@ -1347,14 +1347,14 @@ onUnmounted(() => {
     <!-- Clean, Unified, Minimalist White & Orange Studio -->
     <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden bg-[#f1f5f9] font-sans text-slate-800 select-none">
         
-        <!-- Clean Unified Navbar (Height 56px, perfectly aligned elements) -->
-        <header class="h-14 bg-white border-b border-slate-200 px-5 flex items-center justify-between shadow-sm shrink-0 z-10">
-            <!-- Left: Back Button & Mode Switcher -->
-            <div class="flex items-center gap-3">
+        <!-- Clean Unified Navbar (Height 54px, perfectly aligned, zero overflow) -->
+        <header class="h-[54px] bg-white border-b border-slate-200 px-4 flex items-center justify-between gap-3 shadow-xs shrink-0 z-10">
+            <!-- Left: Back Button & Mode / Building Select -->
+            <div class="flex items-center gap-2.5 shrink-0">
                 <button
                     v-if="editorScope === 'floor'"
                     @click="returnToFacadeEditor"
-                    class="h-9 px-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                    class="h-8 px-3 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
                     title="Bino fasadiga qaytish"
                 >
                     <span>←</span> Fasadga Qaytish
@@ -1363,28 +1363,28 @@ onUnmounted(() => {
                 <Link
                     v-else
                     :href="route('admin.dashboard')"
-                    class="h-9 px-3.5 bg-slate-100 hover:bg-orange-50 hover:text-orange-600 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5"
+                    class="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5"
                     title="Boshqaruv paneliga qaytish"
                 >
-                    <span>←</span> Ortga qaytish
+                    <span>←</span> Ortga
                 </Link>
 
-                <div class="h-5 w-px bg-slate-200"></div>
+                <div class="h-4 w-px bg-slate-200"></div>
 
                 <!-- Building and Floor Selector -->
                 <div class="flex items-center gap-2">
-                    <span class="font-black text-xs text-slate-900 flex items-center gap-1">
+                    <span class="font-black text-xs text-slate-900 flex items-center gap-1 whitespace-nowrap">
                         <span class="text-orange-500">{{ editorScope === 'facade' ? '🏢' : '📐' }}</span> 
-                        {{ editorScope === 'facade' ? 'Fasad Muharriri' : `${selectedFloorObj?.floor_number}-Qavat Chizmasi` }}
+                        {{ editorScope === 'facade' ? 'Fasad Muharriri' : `${selectedFloorObj?.floor_number}-Qavat` }}
                     </span>
 
                     <select 
                         v-if="editorScope === 'facade'"
                         v-model="selectedBuildingId" 
-                        class="h-9 bg-slate-50 hover:bg-slate-100 text-slate-900 font-bold text-xs px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
+                        class="h-8 bg-slate-50 hover:bg-slate-100 text-slate-900 font-bold text-xs px-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 cursor-pointer max-w-[200px] truncate"
                     >
                         <option v-for="b in buildings" :key="b.id" :value="b.id">
-                            {{ b.name }} ({{ b.block_name || 'Asosiy' }})
+                            {{ b.name }} ({{ b.block_name || 'A-1 Blok' }})
                         </option>
                     </select>
 
@@ -1392,7 +1392,7 @@ onUnmounted(() => {
                         v-else
                         v-model="selectedFloor"
                         @change="loadFloorData"
-                        class="h-9 bg-orange-50 hover:bg-orange-100 text-orange-950 font-bold text-xs px-3 rounded-xl border border-orange-300 focus:ring-2 focus:ring-orange-500 cursor-pointer"
+                        class="h-8 bg-orange-50 hover:bg-orange-100 text-orange-950 font-bold text-xs px-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 cursor-pointer"
                     >
                         <option v-for="fl in availableFloors" :key="fl.id" :value="fl.floor_number">
                             {{ fl.floor_number < 0 ? `${fl.floor_number}-yerto'la` : `${fl.floor_number}-qavat` }}
@@ -1401,50 +1401,40 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <!-- Center: Drawing Tools & Zoom -->
+            <!-- Center: Drawing Tools, Zoom, & Auto-Split -->
             <div class="flex items-center gap-2">
                 <!-- Tool Segmented Control -->
-                <div class="h-9 bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200">
+                <div class="h-8 bg-slate-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200">
                     <button
                         @click="drawingMode = 'select'"
-                        :class="drawingMode === 'select' ? 'bg-orange-500 text-white shadow-sm font-black' : 'text-slate-700 hover:bg-white'"
-                        class="h-7 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
-                        title="Tanlash"
+                        :class="drawingMode === 'select' ? 'bg-orange-500 text-white shadow-xs font-black' : 'text-slate-700 hover:bg-white'"
+                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        title="Tanlash va Ko'chirish"
                     >
                         <span>👆</span> Tanlash
                     </button>
 
                     <button
                         @click="drawingMode = 'rect'"
-                        :class="drawingMode === 'rect' ? 'bg-orange-500 text-white shadow-sm font-black' : 'text-slate-700 hover:bg-white'"
-                        class="h-7 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
-                        title="To'rtburchak"
+                        :class="drawingMode === 'rect' ? 'bg-orange-500 text-white shadow-xs font-black' : 'text-slate-700 hover:bg-white'"
+                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        title="To'rtburchak chizish"
                     >
                         <span>⬛</span> To'rtburchak
                     </button>
 
                     <button
                         @click="drawingMode = 'polygon'"
-                        :class="drawingMode === 'polygon' ? 'bg-orange-500 text-white shadow-sm font-black' : 'text-slate-700 hover:bg-white'"
-                        class="h-7 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
-                        title="Ko'pburchak"
+                        :class="drawingMode === 'polygon' ? 'bg-orange-500 text-white shadow-xs font-black' : 'text-slate-700 hover:bg-white'"
+                        class="h-7 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                        title="Ko'pburchak chizish"
                     >
                         <span>⬡</span> Ko'pburchak
                     </button>
                 </div>
 
                 <!-- Zoom Controls -->
-                <div class="h-9 bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200">
-                    <button
-                        @click="zoom = Math.min(zoom + 10, 200); redrawCanvas();"
-                        class="h-7 px-2 text-slate-700 hover:bg-white rounded-lg text-xs font-bold"
-                        title="Kattalashtirish"
-                    >
-                        🔍+
-                    </button>
-
-                    <span class="text-slate-800 font-mono font-bold text-xs px-1 text-center">{{ zoom }}%</span>
-
+                <div class="h-8 bg-slate-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200">
                     <button
                         @click="zoom = Math.max(zoom - 10, 50); redrawCanvas();"
                         class="h-7 px-2 text-slate-700 hover:bg-white rounded-lg text-xs font-bold"
@@ -1455,37 +1445,45 @@ onUnmounted(() => {
 
                     <button
                         @click="zoom = 100; redrawCanvas();"
-                        class="h-7 px-2 text-slate-600 hover:bg-white rounded-lg text-xs font-bold"
+                        class="h-7 px-2 text-slate-800 font-mono font-bold text-xs hover:bg-white rounded-lg"
                         title="100% asl o'lcham"
                     >
-                        100%
+                        {{ zoom }}%
+                    </button>
+
+                    <button
+                        @click="zoom = Math.min(zoom + 10, 200); redrawCanvas();"
+                        class="h-7 px-2 text-slate-700 hover:bg-white rounded-lg text-xs font-bold"
+                        title="Kattalashtirish"
+                    >
+                        🔍+
                     </button>
                 </div>
 
                 <!-- Auto-Split & Alignment Tools (Facade Mode) -->
-                <div v-if="editorScope === 'facade'" class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <div v-if="editorScope === 'facade'" class="flex items-center gap-1.5">
                     <button
                         @click="openAutoSplitModal"
-                        class="h-7 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs rounded-lg shadow-sm transition-all flex items-center gap-1"
+                        class="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1"
                         title="Binoning barcha qavatlarini bir martada tekis taqsimlash"
                     >
                         <span>⚡</span> Avto-Taqsimlash
                     </button>
                     <button
                         @click="alignAllFloorWidths"
-                        class="h-7 px-2.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-lg border border-slate-200 shadow-xs transition-all flex items-center gap-1"
+                        class="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-200 shadow-xs transition-all flex items-center gap-1"
                         title="Barcha qavatlarning chap va o'ng chegaralarini bitta to'g'ri chiziqqa tekislash"
                     >
-                        <span>📏</span> Chegaralarni Tekislash
+                        <span>📏</span> Tekislash
                     </button>
                 </div>
             </div>
 
-            <!-- Right: Upload, Delete & Save -->
-            <div class="flex items-center gap-2">
+            <!-- Right: Upload, Delete, Save & Showroom -->
+            <div class="flex items-center gap-2 shrink-0">
                 <!-- Facade Upload (Scope: Facade) -->
-                <label v-if="editorScope === 'facade'" class="h-9 px-3.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
-                    <span>🖼️</span> Fasad Yuklash
+                <label v-if="editorScope === 'facade'" class="h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
+                    <span>🖼️</span> Fasad
                     <input
                         ref="fileInputRef"
                         type="file"
@@ -1496,8 +1494,8 @@ onUnmounted(() => {
                 </label>
 
                 <!-- Floor Blueprint Upload (Scope: Floor) -->
-                <label v-else class="h-9 px-3.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
-                    <span>📐</span> Qavat Chizmasini Yuklash
+                <label v-else class="h-8 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-all">
+                    <span>📐</span> Qavat Chizmasi
                     <input
                         ref="blueprintFileInputRef"
                         type="file"
@@ -1510,23 +1508,24 @@ onUnmounted(() => {
                 <button
                     v-if="selectedShapeId"
                     @click="handleDeleteShape"
-                    class="h-9 px-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
+                    class="h-8 px-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
+                    title="Tanlangan shaklni o'chirish"
                 >
-                    <span>🗑️</span> O'chirish
+                    <span>🗑️</span>
                 </button>
 
                 <button
                     @click="handleSave"
                     :disabled="isSaving"
-                    class="h-9 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl font-black text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all cursor-pointer"
+                    class="h-8 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl font-black text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all cursor-pointer shrink-0"
                 >
                     <span>{{ isSaving ? '⏳' : '💾' }}</span>
-                    <span>{{ editorScope === 'facade' ? 'Barchasini Saqlash' : 'Xonadonlarni Saqlash' }}</span>
+                    <span>Saqlash</span>
                 </button>
 
                 <Link
                     :href="route('admin.crm.showroom')"
-                    class="h-9 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                    class="h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs shrink-0"
                 >
                     <span>👁️</span> Shou-room
                 </Link>
@@ -1650,24 +1649,21 @@ onUnmounted(() => {
                     </h3>
 
                     <!-- Selected Floor Info & Edit Blueprint Button -->
-                    <div v-if="selectedFloor" class="bg-orange-50/80 p-3.5 rounded-xl border border-orange-200 space-y-3">
-                        <div>
-                            <p class="text-orange-950 text-xs font-bold">
-                                <strong class="text-orange-600">Tanlangan qavat:</strong> 
+                    <div v-if="selectedFloor" class="bg-orange-50 p-3 rounded-2xl border border-orange-200/80 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-600 text-xs font-bold">Tanlangan qavat:</span>
+                            <span class="px-2.5 py-0.5 bg-orange-500 text-white rounded-full text-xs font-black">
                                 {{ selectedFloor < 0 ? `${selectedFloor}-yerto'la` : `${selectedFloor}-qavat` }}
-                            </p>
-                            <p class="text-slate-500 text-[11px] mt-0.5">
-                                {{ drawingMode === 'rect' ? "Fasad rasmida to'rtburchak tortib chizing." : (drawingMode === 'polygon' ? "Nuqtalarni bosib ko'pburchak chizing." : "Shaklni tanlash va o'zgartirish.") }}
-                            </p>
+                            </span>
                         </div>
 
-                        <!-- THE REQUESTED KEY BUTTON: Open Floor Blueprint Editor -->
+                        <!-- Open Floor Blueprint Editor Button -->
                         <button
                             @click="openFloorBlueprintEditor(selectedFloor)"
-                            class="w-full py-2.5 px-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md shadow-orange-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            class="w-full py-2 px-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                             <span>📐</span>
-                            <span>Qavat Chizmasini Tahrirlash (Xonadonlarni Chizish) →</span>
+                            <span>Qavat Chizmasini Tahrirlash →</span>
                         </button>
                     </div>
 
@@ -1743,29 +1739,31 @@ onUnmounted(() => {
                 <!-- Live Message Alert -->
                 <div 
                     v-if="message" 
-                    class="p-2.5 rounded-xl border text-xs font-bold shadow-sm animate-in fade-in duration-150"
+                    class="p-2.5 rounded-xl border text-xs font-bold shadow-xs animate-in fade-in duration-150"
                     :class="isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'"
                 >
                     {{ message }}
                 </div>
 
                 <!-- Selected Shape Coordinates -->
-                <div v-if="selectedShapeObj" class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                <div v-if="selectedShapeObj" class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-black text-orange-600">Tanlangan Shakl:</span>
-                        <span class="text-xs font-bold text-slate-800">{{ selectedShapeObj.label || selectedShapeObj.floorLabel }}</span>
+                        <span class="text-xs font-extrabold text-slate-800">Shakl koordinatalari:</span>
+                        <span class="text-[10px] font-mono font-bold text-orange-600 uppercase bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
+                            {{ selectedShapeObj.type }}
+                        </span>
                     </div>
 
-                    <div v-if="selectedShapeObj.type === 'rect'" class="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-700 bg-white p-2 rounded-lg border border-slate-200">
-                        <div><b>X:</b> {{ selectedShapeObj.x }}</div>
-                        <div><b>Y:</b> {{ selectedShapeObj.y }}</div>
-                        <div><b>W:</b> {{ selectedShapeObj.w }}px</div>
-                        <div><b>H:</b> {{ selectedShapeObj.h }}px</div>
+                    <div v-if="selectedShapeObj.type === 'rect'" class="grid grid-cols-2 gap-1.5 text-[11px] font-mono text-slate-700 bg-white p-2 rounded-xl border border-slate-200">
+                        <div><span class="text-slate-400">X:</span> {{ selectedShapeObj.x }}</div>
+                        <div><span class="text-slate-400">Y:</span> {{ selectedShapeObj.y }}</div>
+                        <div><span class="text-slate-400">W:</span> {{ selectedShapeObj.w }}px</div>
+                        <div><span class="text-slate-400">H:</span> {{ selectedShapeObj.h }}px</div>
                     </div>
 
                     <button 
                         @click="handleDeleteShape"
-                        class="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1"
+                        class="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
                     >
                         <span>🗑️</span> Ushbu Shaklni O'chirish
                     </button>

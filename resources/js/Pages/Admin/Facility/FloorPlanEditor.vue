@@ -47,13 +47,7 @@ const availableFloors = computed(() => {
 });
 
 // Canvas & Editor State
-const canvasRef = useRefCanvas();
 const fileInputRef = ref(null);
-
-function useRefCanvas() {
-    return ref(null);
-}
-
 const canvasElement = ref(null);
 const ctx = ref(null);
 const facadeImageObj = ref(null);
@@ -66,6 +60,7 @@ const isDrawing = ref(false);
 const startPos = ref(null);
 const zoom = ref(100);
 const message = ref('');
+const isError = ref(false);
 const selectedShapeId = ref(null);
 const isSaving = ref(false);
 
@@ -192,14 +187,14 @@ const redrawCanvas = () => {
     if (facadeImageObj.value) {
         const b = imgRenderBounds.value;
         context.drawImage(facadeImageObj.value, b.x, b.y, b.w, b.h);
-        context.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        context.strokeStyle = 'rgba(255, 255, 255, 0.15)';
         context.lineWidth = 1;
         context.strokeRect(b.x, b.y, b.w, b.h);
     } else {
         context.fillStyle = '#1e293b';
         context.fillRect(50, 50, canvas.width - 100, canvas.height - 100);
         context.fillStyle = '#94a3b8';
-        context.font = 'bold 16px Arial';
+        context.font = 'bold 15px sans-serif';
         context.textAlign = 'center';
         context.fillText('Fasad rasmini yuklash uchun yuqoridagi tugmani bosing', canvas.width / 2, canvas.height / 2);
     }
@@ -209,8 +204,8 @@ const redrawCanvas = () => {
 
     // Draw polygon preview if in-progress
     if (drawingMode.value === 'polygon' && polygonPoints.value.length > 0) {
-        context.strokeStyle = '#38bdf8';
-        context.fillStyle = 'rgba(56, 189, 248, 0.2)';
+        context.strokeStyle = '#f97316';
+        context.fillStyle = 'rgba(249, 115, 22, 0.2)';
         context.lineWidth = 2;
         context.setLineDash([4, 4]);
 
@@ -223,7 +218,7 @@ const redrawCanvas = () => {
         context.setLineDash([]);
 
         polygonPoints.value.forEach(p => {
-            context.fillStyle = '#38bdf8';
+            context.fillStyle = '#f97316';
             context.beginPath();
             context.arc(p.x, p.y, 4, 0, Math.PI * 2);
             context.fill();
@@ -231,20 +226,20 @@ const redrawCanvas = () => {
     }
 };
 
-// Draw all shapes with handles & labels
+// Draw all shapes with handles & labels (Orange / Amber Brand colors)
 const drawShapes = (context, currentShapes) => {
     currentShapes.forEach((shape) => {
         const isSelected = shape.id === selectedShapeId.value;
 
         if (shape.type === 'rect') {
-            context.strokeStyle = isSelected ? '#FFD700' : '#22C55E';
-            context.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.28)' : 'rgba(34, 197, 94, 0.22)';
+            context.strokeStyle = isSelected ? '#fbbf24' : '#f97316';
+            context.fillStyle = isSelected ? 'rgba(251, 191, 36, 0.35)' : 'rgba(249, 115, 22, 0.22)';
             context.lineWidth = isSelected ? 3 : 2;
 
             context.fillRect(shape.x, shape.y, shape.w, shape.h);
             context.strokeRect(shape.x, shape.y, shape.w, shape.h);
 
-            // Label
+            // Label pill
             context.fillStyle = '#FFFFFF';
             context.font = 'bold 13px sans-serif';
             context.textAlign = 'left';
@@ -255,8 +250,8 @@ const drawShapes = (context, currentShapes) => {
                 drawResizeHandles(context, shape);
             }
         } else if (shape.type === 'polygon') {
-            context.strokeStyle = isSelected ? '#FFD700' : '#10B981';
-            context.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.28)' : 'rgba(16, 185, 129, 0.22)';
+            context.strokeStyle = isSelected ? '#fbbf24' : '#ea580c';
+            context.fillStyle = isSelected ? 'rgba(251, 191, 36, 0.35)' : 'rgba(234, 88, 12, 0.22)';
             context.lineWidth = isSelected ? 3 : 2;
 
             if (shape.points && shape.points.length > 0) {
@@ -293,7 +288,7 @@ const drawResizeHandles = (context, shape) => {
         [shape.x + shape.w, shape.y + shape.h / 2]
     ];
 
-    context.fillStyle = '#FFD700';
+    context.fillStyle = '#fbbf24';
     context.strokeStyle = '#000000';
     context.lineWidth = 1;
     handles.forEach((handle) => {
@@ -320,6 +315,7 @@ const handleImageUpload = (e) => {
     reader.onload = (event) => {
         const imageData = event.target?.result;
         loadImage(imageData);
+        isError.value = false;
         message.value = "✓ Fasad rasmi yuklandi!";
         setTimeout(() => message.value = '', 3000);
     };
@@ -338,6 +334,7 @@ const handleCanvasMouseDown = (e) => {
     if (!canvasElement.value) return;
 
     if (!selectedFloor.value) {
+        isError.value = true;
         message.value = '⚠️ Avval chap tarafdan qavatni tanlang!';
         setTimeout(() => message.value = '', 3000);
         return;
@@ -376,8 +373,8 @@ const handleCanvasMouseMove = (e) => {
 
         const context = ctx.value;
         if (!context) return;
-        context.strokeStyle = '#22C55E';
-        context.fillStyle = 'rgba(34, 197, 94, 0.25)';
+        context.strokeStyle = '#f97316';
+        context.fillStyle = 'rgba(249, 115, 22, 0.25)';
         context.lineWidth = 2;
         context.setLineDash([4, 4]);
 
@@ -434,6 +431,7 @@ const handleCanvasMouseUp = (e) => {
             selectedShapeId.value = newShape.id;
             redrawCanvas();
 
+            isError.value = false;
             message.value = `✓ ${floorLabel} chizildi!`;
             setTimeout(() => message.value = '', 2500);
         }
@@ -466,6 +464,7 @@ const handleCanvasDoubleClick = () => {
         polygonPoints.value = [];
         redrawCanvas();
 
+        isError.value = false;
         message.value = `✓ ${floorLabel} ko'pburchak chizildi!`;
         setTimeout(() => message.value = '', 2500);
     }
@@ -486,6 +485,7 @@ const handleDeleteShape = () => {
     shapes.value = filtered;
     selectedShapeId.value = null;
     redrawCanvas();
+    isError.value = false;
     message.value = "🗑️ Shakl o'chirildi!";
     setTimeout(() => message.value = '', 2000);
 };
@@ -494,6 +494,7 @@ const handleDeleteShape = () => {
 const handleSave = async () => {
     if (!selectedBuilding.value) return;
     if (shapes.value.length === 0) {
+        isError.value = true;
         message.value = '⚠️ Hech qanday shakl chizilmagan!';
         setTimeout(() => message.value = '', 3000);
         return;
@@ -501,6 +502,7 @@ const handleSave = async () => {
 
     try {
         isSaving.value = true;
+        isError.value = false;
         message.value = '💾 Saqlash jarayonida...';
 
         const floorCoords = shapes.value.map(s => {
@@ -526,13 +528,16 @@ const handleSave = async () => {
         });
 
         if (res.data?.success) {
+            isError.value = false;
             message.value = '✅ Barcha qavat koordinatalari muvaffaqiyatli saqlandi!';
         } else {
+            isError.value = false;
             message.value = '✅ Saqlandi ✓';
         }
         setTimeout(() => message.value = '', 3500);
     } catch(err) {
         console.error('Save error:', err);
+        isError.value = true;
         message.value = '❌ Saqlashda xatolik: ' + (err.response?.data?.message || err.message || 'Xatolik');
         setTimeout(() => message.value = '', 4000);
     } finally {
@@ -556,90 +561,104 @@ onMounted(() => {
 <template>
     <Head title="3D Maket / Fasad Muharriri" />
 
-    <!-- 100% Full-Screen Dark Standalone Editor Matching User Code Exactly -->
-    <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden bg-gray-900 font-sans text-gray-100 select-none">
+    <!-- Clean, Minimalist, White & Orange Theme Full-Screen Layout -->
+    <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden bg-[#f8fafc] font-sans text-slate-800 select-none">
         
-        <!-- Header Toolbar -->
-        <div class="bg-gray-800 border-b border-gray-700 px-6 py-3.5 flex items-center justify-between shadow-lg">
-            <!-- Left: Building Dropdown -->
+        <!-- Header Toolbar (White Minimalist with Orange Accents) -->
+        <div class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-sm">
+            <!-- Left: Back button & Building Dropdown -->
             <div class="flex items-center gap-4">
-                <span class="text-white font-extrabold text-base flex items-center gap-2">
-                    <span>📐</span> 3D Maket / Fasad Muharriri
-                </span>
-
-                <select 
-                    v-model="selectedBuildingId" 
-                    class="bg-gray-700 hover:bg-gray-600 text-white font-bold text-xs px-4 py-2 rounded-xl border border-gray-600 focus:ring-blue-500 cursor-pointer"
+                <Link
+                    :href="route('admin.dashboard')"
+                    class="px-3.5 py-2 bg-slate-100 hover:bg-orange-50 hover:text-orange-600 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 shadow-sm"
+                    title="Boshqaruv paneliga qaytish"
                 >
-                    <option v-for="b in buildings" :key="b.id" :value="b.id">
-                        {{ b.name }} ({{ b.block_name || 'Asosiy' }})
-                    </option>
-                </select>
+                    <span>←</span> Ortga qaytish
+                </Link>
+
+                <div class="flex items-center gap-2">
+                    <span class="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+                        <span class="text-orange-500">📐</span> 3D Maket / Fasad Muharriri
+                    </span>
+
+                    <select 
+                        v-model="selectedBuildingId" 
+                        class="bg-slate-50 hover:bg-slate-100 text-slate-900 font-bold text-xs px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer transition-all ml-2"
+                    >
+                        <option v-for="b in buildings" :key="b.id" :value="b.id">
+                            {{ b.name }} ({{ b.block_name || 'Asosiy' }})
+                        </option>
+                    </select>
+                </div>
             </div>
 
             <!-- Right: Drawing & Action Tools -->
             <div class="flex items-center gap-2">
                 <!-- Tool buttons -->
-                <button
-                    @click="drawingMode = 'select'"
-                    :class="drawingMode === 'select' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
-                    title="Tanlash (Select)"
-                >
-                    <span>👆</span> Tanlash (Select)
-                </button>
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 gap-1">
+                    <button
+                        @click="drawingMode = 'select'"
+                        :class="drawingMode === 'select' ? 'bg-orange-500 text-white shadow-sm font-black' : 'text-slate-700 hover:bg-white'"
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                        title="Tanlash (Select)"
+                    >
+                        <span>👆</span> Tanlash
+                    </button>
 
-                <button
-                    @click="drawingMode = 'rect'"
-                    :class="drawingMode === 'rect' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
-                    title="To'rtburchak (Rectangle)"
-                >
-                    <span>⬛</span> To'rtburchak (Rect)
-                </button>
+                    <button
+                        @click="drawingMode = 'rect'"
+                        :class="drawingMode === 'rect' ? 'bg-orange-500 text-white shadow-sm font-black' : 'text-slate-700 hover:bg-white'"
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                        title="To'rtburchak (Rectangle)"
+                    >
+                        <span>⬛</span> To'rtburchak
+                    </button>
 
-                <button
-                    @click="drawingMode = 'polygon'"
-                    :class="drawingMode === 'polygon' ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
-                    class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
-                    title="Ko'pburchak (Polygon)"
-                >
-                    <span>⬡</span> Ko'pburchak (Polygon)
-                </button>
+                    <button
+                        @click="drawingMode = 'polygon'"
+                        :class="drawingMode === 'polygon' ? 'bg-orange-500 text-white shadow-sm font-black' : 'text-slate-700 hover:bg-white'"
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                        title="Ko'pburchak (Polygon)"
+                    >
+                        <span>⬡</span> Ko'pburchak
+                    </button>
+                </div>
 
-                <div class="border-l border-gray-700 h-6 mx-2"></div>
+                <div class="border-l border-slate-200 h-6 mx-1"></div>
 
                 <!-- Zoom controls -->
-                <button
-                    @click="zoom = Math.min(zoom + 10, 200); redrawCanvas();"
-                    class="px-3 py-2 bg-gray-700 text-gray-200 hover:bg-gray-600 rounded-xl text-xs font-bold transition-all"
-                    title="Zoom in"
-                >
-                    🔍+
-                </button>
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 gap-1">
+                    <button
+                        @click="zoom = Math.min(zoom + 10, 200); redrawCanvas();"
+                        class="px-2 py-1 text-slate-700 hover:bg-white rounded-lg text-xs font-bold transition-all"
+                        title="Zoom in"
+                    >
+                        🔍+
+                    </button>
 
-                <span class="text-white font-mono font-bold text-xs w-12 text-center">{{ zoom }}%</span>
+                    <span class="text-slate-800 font-mono font-bold text-xs px-1 text-center">{{ zoom }}%</span>
 
-                <button
-                    @click="zoom = Math.max(zoom - 10, 50); redrawCanvas();"
-                    class="px-3 py-2 bg-gray-700 text-gray-200 hover:bg-gray-600 rounded-xl text-xs font-bold transition-all"
-                    title="Zoom out"
-                >
-                    🔍-
-                </button>
+                    <button
+                        @click="zoom = Math.max(zoom - 10, 50); redrawCanvas();"
+                        class="px-2 py-1 text-slate-700 hover:bg-white rounded-lg text-xs font-bold transition-all"
+                        title="Zoom out"
+                    >
+                        🔍-
+                    </button>
 
-                <button
-                    @click="zoom = 100; redrawCanvas();"
-                    class="px-2.5 py-2 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded-xl text-xs font-bold"
-                    title="Reset Zoom"
-                >
-                    100%
-                </button>
+                    <button
+                        @click="zoom = 100; redrawCanvas();"
+                        class="px-2 py-1 text-slate-600 hover:bg-white rounded-lg text-xs font-bold"
+                        title="Reset Zoom"
+                    >
+                        100%
+                    </button>
+                </div>
 
-                <div class="border-l border-gray-700 h-6 mx-2"></div>
+                <div class="border-l border-slate-200 h-6 mx-1"></div>
 
                 <!-- Upload button -->
-                <label class="px-3.5 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow transition-all">
+                <label class="px-3.5 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-sm transition-all">
                     <span>🖼️</span> Fasad Surati Yuklash
                     <input
                         ref="fileInputRef"
@@ -654,16 +673,16 @@ onMounted(() => {
                 <button
                     v-if="selectedShapeId"
                     @click="handleDeleteShape"
-                    class="px-3.5 py-2 bg-red-600 text-white hover:bg-red-700 rounded-xl font-bold text-xs transition-all flex items-center gap-1 shadow"
+                    class="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1 shadow-sm"
                 >
                     <span>🗑️</span> O'chirish
                 </button>
 
-                <!-- Save button -->
+                <!-- Save button (Orange Accent) -->
                 <button
                     @click="handleSave"
                     :disabled="isSaving"
-                    class="px-5 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl font-black text-xs flex items-center gap-1.5 shadow-lg transition-all"
+                    class="px-5 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl font-black text-xs flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all cursor-pointer"
                 >
                     <span>{{ isSaving ? '⏳' : '💾' }}</span>
                     <span>Barchasini Saqlash</span>
@@ -672,21 +691,21 @@ onMounted(() => {
                 <!-- View in Showroom -->
                 <Link
                     :href="route('admin.crm.showroom')"
-                    class="px-3.5 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ml-2"
+                    class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ml-1 shadow-sm"
                 >
                     <span>👁️</span> Shou-room
                 </Link>
             </div>
         </div>
 
-        <!-- Main Content Grid -->
-        <div class="flex flex-1 overflow-hidden">
+        <!-- Main Content Area -->
+        <div class="flex flex-1 overflow-hidden p-4 gap-4 bg-[#f8fafc]">
             
-            <!-- Sidebar: Floors List (LEFT) -->
-            <div class="w-64 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto flex flex-col gap-3">
-                <div class="flex items-center justify-between pb-2 border-b border-gray-700">
-                    <h3 class="text-white font-extrabold text-sm uppercase tracking-wide">Qavatlar Ro'yxati</h3>
-                    <span class="text-xs text-gray-400 font-mono">{{ drawnFloors.size }}/{{ availableFloors.length }}</span>
+            <!-- Sidebar: Floors List (LEFT - White Card) -->
+            <div class="w-64 bg-white border border-slate-200/90 rounded-2xl p-4 overflow-y-auto flex flex-col gap-3 shadow-sm">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <h3 class="text-slate-900 font-extrabold text-xs uppercase tracking-wider">Qavatlar Ro'yxati</h3>
+                    <span class="text-xs font-mono font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md">{{ drawnFloors.size }}/{{ availableFloors.length }}</span>
                 </div>
 
                 <div class="space-y-1.5 flex-1 overflow-y-auto pr-1">
@@ -694,15 +713,15 @@ onMounted(() => {
                         v-for="floor in availableFloors"
                         :key="'fl-btn-' + floor.id"
                         @click="handleSelectFloor(floor.floor_number)"
-                        class="w-full p-2.5 rounded-xl font-bold text-xs transition-all text-left flex items-center justify-between"
+                        class="w-full p-2.5 rounded-xl font-bold text-xs transition-all text-left flex items-center justify-between border"
                         :class="selectedFloor === floor.floor_number 
-                            ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400' 
-                            : (drawnFloors.has(floor.floor_number) ? 'bg-gray-700/80 text-emerald-300 hover:bg-gray-700' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700')"
+                            ? 'bg-orange-500 text-white border-orange-600 shadow-sm ring-2 ring-orange-300' 
+                            : (drawnFloors.has(floor.floor_number) ? 'bg-orange-50/70 border-orange-200 text-orange-900 hover:bg-orange-100/70' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100')"
                     >
                         <span>{{ floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat` }}</span>
                         <span 
                             class="text-[10px] px-2 py-0.5 rounded-full font-black"
-                            :class="drawnFloors.has(floor.floor_number) ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-gray-600 text-gray-400'"
+                            :class="selectedFloor === floor.floor_number ? 'bg-white/20 text-white' : (drawnFloors.has(floor.floor_number) ? 'bg-orange-200/80 text-orange-900' : 'bg-slate-200 text-slate-500')"
                         >
                             {{ drawnFloors.has(floor.floor_number) ? 'Chizildi ✓' : 'Chizilmagan' }}
                         </span>
@@ -710,8 +729,8 @@ onMounted(() => {
                 </div>
             </div>
 
-            <!-- Canvas Viewport (CENTER) -->
-            <div class="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden bg-gray-950 relative">
+            <!-- Canvas Viewport (CENTER - Dark Backdrop for high contrast render) -->
+            <div class="flex-1 flex flex-col items-center justify-center p-3 overflow-hidden bg-slate-900 rounded-3xl border border-slate-800 shadow-inner relative">
                 <div
                     :style="{
                         transform: `scale(${zoom / 100})`,
@@ -728,50 +747,54 @@ onMounted(() => {
                         @mouseup="handleCanvasMouseUp"
                         @mouseleave="handleCanvasMouseUp"
                         @dblclick="handleCanvasDoubleClick"
-                        class="bg-gray-900 rounded-2xl shadow-2xl border-2 border-gray-700 cursor-crosshair"
+                        class="bg-slate-950 rounded-2xl shadow-2xl border border-slate-700/80 cursor-crosshair"
                     ></canvas>
                 </div>
 
                 <!-- Hint overlay -->
-                <div v-if="drawingMode === 'polygon'" class="absolute bottom-4 left-6 bg-black/80 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-white text-xs font-semibold">
+                <div v-if="drawingMode === 'polygon'" class="absolute bottom-4 left-6 bg-slate-900/90 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-700 text-white text-xs font-semibold shadow-lg">
                     💡 Nuqtalarni belgilang. Yakunlash uchun oxirgi nuqtani <b>ikki marta bosing (Double-Click)</b>.
                 </div>
             </div>
 
-            <!-- Right Sidebar: Details & Coordinates (RIGHT) -->
-            <div class="w-80 bg-gray-800 border-l border-gray-700 p-5 overflow-y-auto flex flex-col gap-4">
-                <h3 class="text-white font-extrabold text-sm uppercase tracking-wide pb-2 border-b border-gray-700">
+            <!-- Right Sidebar: Details & Coordinates (RIGHT - White Card) -->
+            <div class="w-80 bg-white border border-slate-200/90 rounded-2xl p-5 overflow-y-auto flex flex-col gap-4 shadow-sm">
+                <h3 class="text-slate-900 font-extrabold text-xs uppercase tracking-wider pb-2 border-b border-slate-100">
                     Qavat Koordinatasi
                 </h3>
 
                 <!-- Selected Floor Info Card -->
-                <div v-if="selectedFloor" class="bg-gray-700/80 p-3.5 rounded-2xl border border-gray-600">
-                    <p class="text-gray-200 text-xs font-bold">
-                        <strong class="text-blue-400">Tanlangan qavat:</strong> 
+                <div v-if="selectedFloor" class="bg-orange-50/70 p-3.5 rounded-2xl border border-orange-200/80">
+                    <p class="text-orange-950 text-xs font-bold">
+                        <strong class="text-orange-600">Tanlangan qavat:</strong> 
                         {{ selectedFloor < 0 ? `${selectedFloor}-yerto'la` : `${selectedFloor}-qavat` }}
                     </p>
-                    <p class="text-gray-400 text-[11px] mt-1.5">
+                    <p class="text-slate-500 text-[11px] mt-1.5">
                         {{ drawingMode === 'rect' ? "Fasad rasmida sichqoncha bilan to'rtburchak tortib chizing." : (drawingMode === 'polygon' ? "Nuqtalarni bosib ko'pburchak chizing." : "Shaklni tanlash va o'zgartirish rejimi.") }}
                     </p>
                 </div>
 
-                <div v-else class="bg-amber-900/40 p-3.5 rounded-2xl border border-amber-600/50 text-amber-300 text-xs font-bold">
+                <div v-else class="bg-amber-50 p-3.5 rounded-2xl border border-amber-200 text-amber-800 text-xs font-bold">
                     ⚠️ Avval chap tarafdagi qavatlar ro'yxatidan qavatni tanlang.
                 </div>
 
                 <!-- Live Message Alert -->
-                <div v-if="message" class="bg-blue-600/90 text-white p-3 rounded-xl border border-blue-400 text-xs font-bold shadow-md animate-in fade-in duration-150">
+                <div 
+                    v-if="message" 
+                    class="p-3 rounded-xl border text-xs font-bold shadow-sm animate-in fade-in duration-150"
+                    :class="isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'"
+                >
                     {{ message }}
                 </div>
 
                 <!-- Selected Shape Inspector -->
-                <div v-if="selectedShapeObj" class="bg-gray-700/90 p-4 rounded-2xl border border-gray-600 space-y-3">
+                <div v-if="selectedShapeObj" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-black text-amber-400">Tanlangan Shakl:</span>
-                        <span class="text-xs font-bold text-white">{{ selectedShapeObj.floorLabel }}</span>
+                        <span class="text-xs font-black text-orange-600">Tanlangan Shakl:</span>
+                        <span class="text-xs font-bold text-slate-800">{{ selectedShapeObj.floorLabel }}</span>
                     </div>
 
-                    <div v-if="selectedShapeObj.type === 'rect'" class="grid grid-cols-2 gap-2 text-[11px] font-mono text-gray-300 bg-gray-800 p-2.5 rounded-xl border border-gray-700">
+                    <div v-if="selectedShapeObj.type === 'rect'" class="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-700 bg-white p-2.5 rounded-xl border border-slate-200">
                         <div><b>X:</b> {{ selectedShapeObj.x }}</div>
                         <div><b>Y:</b> {{ selectedShapeObj.y }}</div>
                         <div><b>W:</b> {{ selectedShapeObj.w }}px</div>
@@ -780,17 +803,17 @@ onMounted(() => {
 
                     <button 
                         @click="handleDeleteShape"
-                        class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5"
+                        class="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm"
                     >
                         <span>🗑️</span> Ushbu shaklni o'chirish
                     </button>
                 </div>
 
                 <!-- Shapes List -->
-                <div class="flex-1 flex flex-col gap-2 mt-2">
+                <div class="flex-1 flex flex-col gap-2 mt-1">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-white font-bold text-xs uppercase">Chizilgan Shakllar:</h4>
-                        <span class="text-xs font-mono text-emerald-400 font-bold">{{ shapes.length }} ta</span>
+                        <h4 class="text-slate-800 font-bold text-xs uppercase">Chizilgan Shakllar:</h4>
+                        <span class="text-xs font-mono text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded">{{ shapes.length }} ta</span>
                     </div>
 
                     <div class="space-y-1.5 max-h-72 overflow-y-auto pr-1">
@@ -800,14 +823,14 @@ onMounted(() => {
                             @click="selectedShapeId = shape.id; selectedFloor = shape.floor; redrawCanvas();"
                             class="p-2.5 rounded-xl cursor-pointer transition-all border text-xs font-bold flex flex-col gap-1"
                             :class="selectedShapeId === shape.id 
-                                ? 'bg-emerald-900/60 border-emerald-400 text-white ring-1 ring-emerald-400' 
-                                : 'bg-gray-700/60 border-gray-600 text-gray-300 hover:bg-gray-700'"
+                                ? 'bg-orange-50 border-orange-300 text-orange-950 ring-1 ring-orange-400' 
+                                : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'"
                         >
                             <div class="flex items-center justify-between">
                                 <span>{{ idx + 1 }}. {{ shape.floorLabel }}</span>
-                                <span class="text-[10px] text-gray-400 uppercase font-mono">{{ shape.type }}</span>
+                                <span class="text-[10px] text-slate-400 uppercase font-mono">{{ shape.type }}</span>
                             </div>
-                            <div v-if="shape.type === 'rect'" class="text-[10px] font-mono text-gray-400">
+                            <div v-if="shape.type === 'rect'" class="text-[10px] font-mono text-slate-500">
                                 x={{ shape.x }} y={{ shape.y }} w={{ shape.w }} h={{ shape.h }}
                             </div>
                         </div>
@@ -817,17 +840,17 @@ onMounted(() => {
             </div>
         </div>
 
-        <!-- Bottom Status Bar -->
-        <div class="bg-gray-800 border-t border-gray-700 px-6 py-2.5 text-gray-400 text-xs flex items-center justify-between font-bold">
+        <!-- Bottom Status Bar (Clean Minimalist White) -->
+        <div class="bg-white border-t border-slate-200 px-6 py-2.5 text-slate-600 text-xs flex items-center justify-between font-semibold">
             <div>
-                <span v-if="selectedFloor" class="text-white">
-                    <strong class="text-blue-400">{{ selectedFloor < 0 ? `${selectedFloor}-yerto'la` : `${selectedFloor}-qavat` }}</strong> — 
+                <span v-if="selectedFloor" class="text-slate-800">
+                    <strong class="text-orange-600">{{ selectedFloor < 0 ? `${selectedFloor}-yerto'la` : `${selectedFloor}-qavat` }}</strong> — 
                     {{ drawingMode === 'rect' ? "To'rtburchak chizish rejimi" : (drawingMode === 'select' ? "Tanlash rejimi" : "Ko'pburchak chizish rejimi") }}
                 </span>
-                <span v-else class="text-amber-400">⚠️ Qavatni tanlang</span>
+                <span v-else class="text-amber-600">⚠️ Qavatni tanlang</span>
             </div>
             <div>
-                <strong class="text-emerald-400">{{ shapes.length }}</strong> shakl chizildi • <strong class="text-blue-400">{{ drawnFloors.size }}</strong> ta qavat qamrab olindi
+                <strong class="text-orange-600">{{ shapes.length }}</strong> shakl chizildi • <strong class="text-slate-800">{{ drawnFloors.size }}</strong> ta qavat qamrab olindi
             </div>
         </div>
 

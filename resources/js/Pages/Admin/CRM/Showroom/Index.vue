@@ -151,6 +151,44 @@ const onFacadeImageLoaded = (e) => {
     }
 };
 
+// Building Image URL with reliable fallbacks
+const buildingImageUrl = computed(() => {
+    if (!selectedBuilding.value) return '/images/default-building.jpg';
+    if (selectedBuilding.value.facade_image) return '/storage/' + selectedBuilding.value.facade_image;
+    if (selectedBuilding.value.photo_path) return '/storage/' + selectedBuilding.value.photo_path;
+    if (selectedBuilding.value.showroom_images && selectedBuilding.value.showroom_images.length > 0) return '/storage/' + selectedBuilding.value.showroom_images[0];
+    return '/images/default-building.jpg';
+});
+
+const isUploadingFacade = ref(false);
+const facadeFileInputRef = ref(null);
+
+const triggerFacadeUpload = () => {
+    facadeFileInputRef.value?.click();
+};
+
+const onFacadeFileSelected = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !selectedBuilding.value) return;
+
+    const formData = new FormData();
+    formData.append('facade', file);
+
+    isUploadingFacade.value = true;
+    try {
+        const res = await axios.post(route('admin.facility.buildings.upload_facade', selectedBuilding.value.id), formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (res.data?.facade_image) {
+            selectedBuilding.value.facade_image = res.data.facade_image;
+        }
+    } catch (err) {
+        alert('Fasad yuklashda xatolik yuz berdi!');
+    } finally {
+        isUploadingFacade.value = false;
+    }
+};
+
 // Blueprint Dimensions for Floor Plan
 const showroomBlueprintSize = ref({ width: 1200, height: 800 });
 const onBlueprintImageLoaded = (e) => {
@@ -285,6 +323,15 @@ const filterUnitsList = (units) => {
                     </div>
 
                     <div class="flex items-center gap-3">
+                        <input ref="facadeFileInputRef" type="file" accept="image/*" class="hidden" @change="onFacadeFileSelected" />
+                        <button 
+                            @click="triggerFacadeUpload"
+                            :disabled="isUploadingFacade"
+                            class="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 transition-all flex items-center gap-1"
+                        >
+                            <span>📷</span> {{ isUploadingFacade ? 'Yuklanmoqda...' : 'Fasad rasmini yuklash' }}
+                        </button>
+
                         <button 
                             @click="viewMode = 'shaxmatka'"
                             class="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-xs rounded-xl shadow transition-all flex items-center gap-1.5"
@@ -309,7 +356,8 @@ const filterUnitsList = (units) => {
                             <!-- Building 3D Image -->
                             <img 
                                 ref="facadeImageRef"
-                                :src="selectedBuilding.facade_image ? '/storage/' + selectedBuilding.facade_image : (selectedBuilding.photo_path ? '/storage/' + selectedBuilding.photo_path : (selectedBuilding.showroom_images?.[0] ? '/storage/' + selectedBuilding.showroom_images[0] : '/images/default-building.png'))"
+                                :src="buildingImageUrl"
+                                @error="(e) => e.target.src = '/images/default-building.jpg'"
                                 @load="onFacadeImageLoaded"
                                 class="block max-h-[82vh] w-auto h-auto object-contain transition-all duration-300"
                             />
@@ -436,7 +484,8 @@ const filterUnitsList = (units) => {
                 <!-- Background: Crisp Building Photo (Image 3) -->
                 <div class="absolute inset-0 z-0">
                     <img 
-                        :src="selectedBuilding.facade_image ? '/storage/' + selectedBuilding.facade_image : (selectedBuilding.photo_path ? '/storage/' + selectedBuilding.photo_path : (selectedBuilding.showroom_images?.[0] ? '/storage/' + selectedBuilding.showroom_images[0] : '/images/default-building.png'))"
+                        :src="buildingImageUrl"
+                        @error="(e) => e.target.src = '/images/default-building.jpg'"
                         class="w-full h-full object-cover object-center opacity-70"
                     />
                     <div class="absolute inset-0 bg-slate-900/30 backdrop-blur-[1px]"></div>

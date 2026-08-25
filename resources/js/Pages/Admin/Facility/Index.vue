@@ -2023,6 +2023,50 @@ function prevSellStep() {
 }
 
 function submitContract() {
+    // 1. Validate Step 1
+    if (!contractForm.value.created_at) {
+        alert("Iltimos, shartnoma sanasini kiriting!");
+        sellStep.value = 1;
+        return;
+    }
+    if (!contractForm.value.contract_number) {
+        alert("Iltimos, shartnoma raqamini kiriting!");
+        sellStep.value = 1;
+        return;
+    }
+    if (contractForm.value.buyer_type === 'client' && !contractForm.value.client_id) {
+        alert("Iltimos, mijozni tanlang yoki '+ Yangi mijoz' tugmasi orqali yangi mijoz qo'shing!");
+        sellStep.value = 1;
+        return;
+    }
+    if (contractForm.value.buyer_type === 'partner' && !contractForm.value.partner_id) {
+        alert("Iltimos, ta'sischini tanlang!");
+        sellStep.value = 1;
+        return;
+    }
+    if (contractForm.value.buyer_type === 'employee' && !contractForm.value.employee_id) {
+        alert("Iltimos, xodimni tanlang!");
+        sellStep.value = 1;
+        return;
+    }
+    if (!contractForm.value.total_amount || !contractForm.value.price_per_sqm) {
+        alert("Iltimos, narx ma'lumotlarini to'ldiring!");
+        sellStep.value = 1;
+        return;
+    }
+
+    // 2. Validate Step 2
+    if (contractForm.value.payment_type === 'installment' && installmentCalculationType.value === 'manual' && !contractForm.value.custom_monthly_amount) {
+        alert("Iltimos, oylik to'lov miqdorini kiriting!");
+        sellStep.value = 2;
+        return;
+    }
+
+    // 3. Step 3 - defaults
+    if (contractForm.value.payment_type === 'full' && (!contractForm.value.actual_paid_amount || Number(contractForm.value.actual_paid_amount) <= 0)) {
+        contractForm.value.actual_paid_amount = contractForm.value.total_amount;
+    }
+
     isProcessingContract.value = true;
     
     // Clear the opposite ID depending on buyer_type
@@ -2042,6 +2086,13 @@ function submitContract() {
         contractForm.value.custom_monthly_amount = '';
     }
 
+    if (!contractForm.value.unit_id && currentSellingUnit.value) {
+        contractForm.value.unit_id = currentSellingUnit.value.id;
+    }
+    if (!contractForm.value.contract_type && currentSellingUnit.value) {
+        contractForm.value.contract_type = currentSellingUnit.value.type === 'commercial' ? 'commercial' : (currentSellingUnit.value.type === 'parking' ? 'parking' : 'residential');
+    }
+
     const payload = {
         ...contractForm.value,
         initialDownPaymentPaid: initialDownPaymentPaid.value,
@@ -2049,7 +2100,7 @@ function submitContract() {
     };
 
     router.post(route('admin.contracts.store'), payload, {
-        preserveState: true,
+        preserveState: false,
         preserveScroll: true,
         onSuccess: () => {
             showSellUnitModal.value = false;
@@ -2059,7 +2110,10 @@ function submitContract() {
         },
         onError: (errors) => {
             isProcessingContract.value = false;
-            alert("Xatolik yuz berdi: " + Object.values(errors).join("\n"));
+            alert("Xatolik yuz berdi: " + Object.values(errors).flat().join("\n"));
+        },
+        onFinish: () => {
+            isProcessingContract.value = false;
         }
     });
 }
@@ -5062,7 +5116,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             </div>
 
                             <!-- PANEL 3: Sell (Sotish) -->
-                            <form v-else-if="activeRightPanel === 'sell'" @submit.prevent="submitContract" class="flex-1 flex flex-col justify-between overflow-hidden">
+                            <form v-else-if="activeRightPanel === 'sell'" novalidate @submit.prevent="submitContract" class="flex-1 flex flex-col justify-between overflow-hidden">
                                 <!-- Stepper Progress Header -->
                                 <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-4 shrink-0">
                                         <div class="flex items-center gap-2">
@@ -5108,13 +5162,13 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                              <div>
                                                  <label class="block text-xs font-semibold text-gray-500 mb-1">Shartnoma sanasi</label>
                                                  <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
-                                                     <input type="date" v-model="contractForm.created_at" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                     <input type="date" v-model="contractForm.created_at" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
                                                  </div>
                                              </div>
                                              <div>
                                                  <label class="block text-xs font-semibold text-gray-500 mb-1">Shartnoma raqami</label>
                                                  <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
-                                                     <input type="text" v-model="contractForm.contract_number" placeholder="Masalan: SH-001" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                     <input type="text" v-model="contractForm.contract_number" placeholder="Masalan: SH-001" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
                                                  </div>
                                              </div>
                                          </div>
@@ -5123,7 +5177,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                          <div>
                                              <label class="block text-xs font-semibold text-gray-500 mb-1">Shartnoma turi</label>
                                              <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
-                                                 <select v-model="contractForm.contract_template_id" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans cursor-pointer appearance-none pr-8 w-full" required>
+                                                 <select v-model="contractForm.contract_template_id" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans cursor-pointer appearance-none pr-8 w-full">
                                                      <option value="">Shartnoma turini tanlang</option>
                                                      <option v-for="template in contractTemplates" :key="template.id" :value="template.id">
                                                          {{ template.name }}
@@ -5160,7 +5214,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                         v-model="contractForm.client_id" 
                                                         :options="clientsOptions" 
                                                         placeholder="Mijozni tanlang" 
-                                                        :required="contractForm.buyer_type === 'client'"
                                                         class="flex-1"
                                                     />
                                                     <button 
@@ -5176,7 +5229,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                     v-model="contractForm.partner_id" 
                                                     :options="partnersOptions" 
                                                     placeholder="Ta'sischini tanlang" 
-                                                    :required="contractForm.buyer_type === 'partner'"
                                                     class="w-full"
                                                 />
                                                 <SearchableSelect 
@@ -5184,7 +5236,6 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                     v-model="contractForm.employee_id" 
                                                     :options="usersOptions" 
                                                     placeholder="Xodimni tanlang" 
-                                                    :required="contractForm.buyer_type === 'employee'"
                                                     class="w-full"
                                                 />
                                             </div>
@@ -5195,14 +5246,14 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             <div>
                                                 <label class="block text-xs font-semibold text-gray-500 mb-1">1 kv.m narxi</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
-                                                    <input type="number" v-model.number="basePricePerSqm" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" required />
+                                                    <input type="number" v-model.number="basePricePerSqm" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
 <div v-if="basePricePerSqm" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(basePricePerSqm) }} UZS</div>
                                                 </div>
                                             </div>
                                             <div>
                                                 <label class="block text-xs font-semibold text-gray-500 mb-1">Uy narxi (Jami)</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
-                                                    <input type="number" v-model.number="contractForm.total_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" required />
+                                                    <input type="number" v-model.number="contractForm.total_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" />
 <div v-if="contractForm.total_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.total_amount) }} UZS</div>
                                                 </div>
                                             </div>
@@ -5250,106 +5301,108 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                     <span class="text-xs font-bold text-gray-800 font-sans">Muddatli to'lov Asosida</span>
                                                 </label>
                                                 
-                                                <div v-if="installmentSubtype === 'term'" class="pl-5 space-y-2">
-                                                    <label class="flex items-center gap-2 cursor-pointer">
-                                                        <input type="radio" v-model="installmentCalculationType" value="schedule" class="text-[#f2a900] focus:ring-[#f2a900] bg-white border-gray-300">
-                                                        <span class="text-[11px] font-semibold text-gray-700 font-sans">Grafik Asosida</span>
-                                                    </label>
-                                                    <label class="flex items-center gap-2 cursor-pointer">
-                                                        <input type="radio" v-model="installmentCalculationType" value="manual" class="text-[#f2a900] focus:ring-[#f2a900] bg-white border-gray-300">
-                                                        <span class="text-[11px] font-semibold text-gray-700 font-sans">Qo'lda kiritish</span>
-                                                    </label>
-                                                    
-                                                    <div v-if="installmentCalculationType === 'manual'" class="pt-1 max-w-[220px]">
-                                                        <label class="block text-[9px] font-bold text-gray-500 mb-0.5">Oylik To'lov miqdori</label>
-                                                        <div class="flex items-center bg-[#f8fafc] border border-gray-200 rounded-lg px-3 py-2">
-                                                            <input type="number" v-model.number="contractForm.custom_monthly_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" />
-<div v-if="contractForm.custom_monthly_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.custom_monthly_amount) }} UZS</div>
+                                                <div v-if="installmentSubtype === 'term'" class="grid grid-cols-2 gap-4 pl-6">
+                                                    <div>
+                                                        <label class="block text-xs font-semibold text-gray-500 mb-1">To'lov muddati (oy)</label>
+                                                        <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
+                                                            <input type="number" v-model.number="contractForm.term_months" min="1" max="120" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-xs font-semibold text-gray-500 mb-1">Boshlang'ich to'lov</label>
+                                                        <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
+                                                            <input type="number" v-model.number="contractForm.down_payment" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                             
-                                            <!-- Subtype 2: Ipoteka Kiriditi Asosida -->
+                                            <!-- Subtype 2: Oylik to'lov Asosida -->
                                             <div class="space-y-3">
                                                 <label class="flex items-center gap-2 cursor-pointer">
-                                                    <input type="radio" v-model="installmentSubtype" value="mortgage" class="text-[#f2a900] focus:ring-[#f2a900] bg-white border-gray-300">
-                                                    <span class="text-xs font-bold text-gray-800 font-sans">Ipoteka Kiriditi Asosida</span>
+                                                    <input type="radio" v-model="installmentSubtype" value="monthly" class="text-[#f2a900] focus:ring-[#f2a900] bg-white border-gray-300">
+                                                    <span class="text-xs font-bold text-gray-800 font-sans">Oylik to'lov Asosida</span>
                                                 </label>
                                                 
-                                                <div v-if="installmentSubtype === 'mortgage'" class="pl-5 space-y-2">
+                                                <div v-if="installmentSubtype === 'monthly'" class="space-y-3 pl-6">
+                                                    <div>
+                                                        <label class="block text-xs font-semibold text-gray-500 mb-1">Oylik to'lov miqdori</label>
+                                                        <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
+                                                            <input type="number" v-model.number="targetMonthlyPayment" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label class="block text-xs font-semibold text-gray-500 mb-1">To'lov muddati (oy)</label>
+                                                            <div class="relative flex items-center bg-[#f1f5f9] border border-gray-200 rounded-xl px-4 py-2.5 opacity-85">
+                                                                <input type="number" :value="contractForm.term_months" readonly tabindex="-1" class="bg-transparent border-0 text-gray-500 text-xs outline-none focus:ring-0 w-full p-0 font-sans cursor-not-allowed" />
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-xs font-semibold text-gray-500 mb-1">Boshlang'ich to'lov</label>
+                                                            <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
+                                                                <input type="number" v-model.number="contractForm.down_payment" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Down payment split option -->
+                                            <div class="pt-2 border-t border-gray-100">
+                                                <label class="flex items-center gap-2 cursor-pointer">
+                                                    <input type="checkbox" v-model="contractForm.is_down_payment_split" class="rounded text-[#f2a900] focus:ring-[#f2a900] border-gray-300">
+                                                    <span class="text-xs text-gray-700 font-semibold font-sans">Boshlang'ich to'lovni bo'lib to'lash</span>
+                                                </label>
+                                                
+                                                <div v-if="contractForm.is_down_payment_split" class="grid grid-cols-2 gap-4 mt-3 pl-6">
+                                                    <div>
+                                                        <label class="block text-xs font-semibold text-gray-500 mb-1">Bo'lib to'lash muddati (oy)</label>
+                                                        <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
+                                                            <input type="number" v-model.number="contractForm.down_payment_split_months" min="1" max="12" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-xs font-semibold text-gray-500 mb-1">Oylik boshlang'ich to'lov</label>
+                                                        <div class="relative flex items-center bg-[#f1f5f9] border border-gray-200 rounded-xl px-4 py-2.5 opacity-85">
+                                                            <input type="text" :value="formatSoM(calcMonthlySplitDownPayment)" readonly tabindex="-1" class="bg-transparent border-0 text-gray-500 text-xs outline-none focus:ring-0 w-full p-0 font-sans cursor-not-allowed" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Installment calculation type toggle -->
+                                            <div class="pt-2 border-t border-gray-100 space-y-3">
+                                                <label class="block text-xs font-semibold text-gray-500">Oylik to'lovni hisoblash usuli</label>
+                                                <div class="flex gap-4">
                                                     <label class="flex items-center gap-2 cursor-pointer">
                                                         <input type="radio" v-model="installmentCalculationType" value="schedule" class="text-[#f2a900] focus:ring-[#f2a900] bg-white border-gray-300">
-                                                        <span class="text-[11px] font-semibold text-gray-700 font-sans">Grafik Asosida</span>
+                                                        <span class="text-xs text-gray-700 font-sans">Grafik bo'yicha</span>
                                                     </label>
                                                     <label class="flex items-center gap-2 cursor-pointer">
                                                         <input type="radio" v-model="installmentCalculationType" value="manual" class="text-[#f2a900] focus:ring-[#f2a900] bg-white border-gray-300">
-                                                        <span class="text-[11px] font-semibold text-gray-700 font-sans">Qo'lda kiritish</span>
+                                                        <span class="text-xs text-gray-700 font-sans">Qo'lda kiritish</span>
                                                     </label>
-                                                    
-                                                    <div v-if="installmentCalculationType === 'manual'" class="pt-1 max-w-[220px]">
-                                                        <label class="block text-[9px] font-bold text-gray-500 mb-0.5">Oylik To'lov miqdori</label>
-                                                        <div class="flex items-center bg-[#f8fafc] border border-gray-200 rounded-lg px-3 py-2">
-                                                            <input type="number" v-model.number="contractForm.custom_monthly_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" />
-<div v-if="contractForm.custom_monthly_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.custom_monthly_amount) }} UZS</div>
-                                                        </div>
+                                                </div>
+                                                
+                                                <div v-if="installmentCalculationType === 'manual'" class="pl-6">
+                                                    <label class="block text-xs font-semibold text-gray-500 mb-1">Qo'lda kiritilgan oylik to'lov</label>
+                                                    <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
+                                                        <input type="number" v-model.number="contractForm.custom_monthly_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- STEP 3: To'lov ma'lumotlari -->
+                                    <!-- STEP 3: Ma'lumotlar -->
                                     <div v-show="sellStep === 3" class="space-y-4 font-sans">
-                                        <!-- Installment Settings -->
-                                        <div v-if="contractForm.payment_type === 'installment'" class="space-y-4">
-                                            <!-- Installment Term (Months) -->
-                                            <div>
-                                                <label class="block text-xs font-semibold text-gray-500 mb-1">Bo'lib to'lash muddati (oy)</label>
-                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
-                                                    <input type="number" v-model.number="contractForm.term_months" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" required />
-                                                </div>
-                                            </div>
-
-                                            <!-- Down Payment & Progress Bar -->
-                                            <div>
-                                                <label class="block text-xs font-semibold text-gray-500 mb-1">Boshlang'ich to'lov</label>
-                                                <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
-                                                    <input type="number" v-model.number="contractForm.down_payment" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" required />
-<div v-if="contractForm.down_payment" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.down_payment) }} UZS</div>
-                                                </div>
-                                                
-                                                <!-- Down Payment Progress -->
-                                                <div class="flex items-center gap-3 mt-2">
-                                                    <div class="flex-1 bg-gray-150 rounded-full h-2">
-                                                        <div class="bg-[#e67e22] h-2 rounded-full transition-all duration-300" :style="{ width: downPaymentPercent + '%' }"></div>
-                                                    </div>
-                                                    <span class="text-xs font-bold text-[#e67e22] font-sans shrink-0">{{ downPaymentPercent }}%</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Split Down Payment Option -->
-                                            <div class="p-3 bg-amber-50/50 border border-amber-100 rounded-xl space-y-3">
-                                                <label class="flex items-center gap-2 cursor-pointer">
-                                                    <input type="checkbox" v-model="contractForm.is_down_payment_split" class="text-amber-500 focus:ring-amber-500 bg-white border-gray-300 rounded">
-                                                    <span class="text-[11px] font-bold text-gray-700 font-sans">Boshlang'ich to'lovni bo'lib to'lash</span>
-                                                </label>
-                                                
-                                                <div v-if="contractForm.is_down_payment_split" class="pt-1">
-                                                    <label class="block text-[10px] font-semibold text-gray-500 mb-1">Muddat (oy)</label>
-                                                    <div class="relative flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2">
-                                                        <input type="number" v-model.number="contractForm.down_payment_split_months" min="1" max="12" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans" />
-<div v-if="contractForm.down_payment_split_months" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.down_payment_split_months) }} UZS</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div v-if="contractForm.payment_type === 'full'" class="space-y-4">
+                                        <!-- Actual Paid Amount (Full payment mode) -->
+                                        <div v-if="contractForm.payment_type === 'full'" class="space-y-3">
                                             <div>
                                                 <label class="block text-xs font-semibold text-gray-500 mb-1">To'liq to'lanadigan summa</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-2.5">
-                                                    <input type="number" v-model.number="contractForm.actual_paid_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" :placeholder="contractForm.total_amount" required />
+                                                    <input type="number" v-model.number="contractForm.actual_paid_amount" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans font-bold" :placeholder="contractForm.total_amount" />
 <div v-if="contractForm.actual_paid_amount" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(contractForm.actual_paid_amount) }} UZS</div>
                                                 </div>
                                                 <p class="text-[10px] text-gray-400 mt-1">Odatda uyning to'liq narxi ({{ formatSoM(contractForm.total_amount) }}) ga teng bo'ladi.</p>
@@ -5405,7 +5458,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                     <div>
                                                         <label class="block text-xs font-semibold text-gray-500 mb-1">Kassaga yo'naltirish</label>
                                                         <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2">
-                                                            <select v-model="contractForm.account_id" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans bg-white" :required="Number(contractForm.actual_paid_amount) > 0 || Number(initialDownPaymentPaid) > 0 || Number(initialInstallmentPaid) > 0">
+                                                            <select v-model="contractForm.account_id" class="bg-transparent border-0 text-gray-800 text-xs outline-none focus:ring-0 w-full p-0 font-sans bg-white">
                                                                 <option value="" disabled>Kassani tanlang</option>
                                                                 <option v-for="reg in registers" :key="reg.id" :value="reg.id">
                                                                     {{ reg.name }} ({{ reg.currency }})
@@ -5474,17 +5527,17 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 <!-- Action Buttons -->
                                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-150 mt-6 shrink-0">
                                     <button type="button" @click="sellStep > 1 ? prevSellStep() : (activeRightPanel = 'details')"
-                                            class="px-6 py-2.5 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[120px]">
+                                            class="px-6 py-2.5 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[120px] cursor-pointer">
                                         Bekor qilish
                                     </button>
                                     
                                     <button v-if="sellStep < 3" type="button" @click="nextSellStep"
-                                            class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[120px] shadow-sm">
+                                            class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[120px] shadow-sm cursor-pointer">
                                         Davom etish
                                     </button>
                                     
-                                    <button v-else type="submit" :disabled="isProcessingContract"
-                                            class="px-6 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white text-xs font-bold rounded-full shadow-sm transition-all min-w-[120px] disabled:opacity-50">
+                                    <button v-else type="button" @click="submitContract" :disabled="isProcessingContract"
+                                            class="px-6 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white text-xs font-bold rounded-full shadow-sm transition-all min-w-[120px] disabled:opacity-50 cursor-pointer">
                                         {{ isProcessingContract ? 'Yaratilmoqda...' : 'SAVDO HUNISINI YARATISH' }}
                                     </button>
                                 </div>

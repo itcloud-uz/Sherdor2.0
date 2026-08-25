@@ -121,12 +121,10 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <!-- Hidden input for required validation -->
+        <!-- Hidden input for form binding -->
         <input 
-            type="text" 
+            type="hidden" 
             :value="modelValue" 
-            class="absolute opacity-0 w-0 h-0 pointer-events-none" 
-            :required="required"
         >
 
         <!-- Dropdown Options -->

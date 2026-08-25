@@ -700,7 +700,7 @@ class ContractController extends Controller
 
     public function getCancelledContracts()
     {
-        $contracts = Contract::with(['client', 'unit.floor.building'])
+        $contracts = \App\Models\Contract::with(['client', 'unit.floor.building'])
             ->whereIn('status', ['cancelled', 'canceled'])
             ->get();
 

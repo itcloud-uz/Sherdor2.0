@@ -21,8 +21,12 @@ class ReportExportController extends Controller
 
             $grouped = $expenses->groupBy('category_id')->map(function ($txns) {
                 $cat = $txns->first()->category;
+                $catName = 'Noma\'lum';
+                if ($cat) {
+                    $catName = is_object($cat) ? ($cat->name ?? 'Noma\'lum') : (string)$cat;
+                }
                 return [
-                    'category_name' => $cat ? $cat->name : 'Noma\'lum',
+                    'category_name' => $catName,
                     'total' => $txns->sum('amount'),
                     'transactions' => $txns
                 ];

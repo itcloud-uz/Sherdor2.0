@@ -1798,6 +1798,51 @@ class FacilityController extends Controller
         return redirect()->back()->with('message', 'Smeta pozitsiyasi o\'chirildi!');
     }
 
+    public function exportSmeta(Request $request)
+    {
+        $buildingId = $request->get('building_id');
+        $query = \App\Models\SmetaItem::with('building');
+        if ($buildingId) {
+            $query->where('building_id', $buildingId);
+        }
+        $items = $query->orderBy('category_name')->get();
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Smeta');
+
+        // Headers
+        $headers = ['№', 'Bino', 'Blok', 'Kategoriya', 'Nomi', 'O\'lchov birligi', 'Rejalashtirilgan miqdor', 'Rejalashtirilgan narx', 'Rejalashtirilgan jami', 'Haqiqiy xarajat', 'Izoh'];
+        $sheet->fromArray($headers, null, 'A1');
+
+        $row = 2;
+        foreach ($items as $idx => $item) {
+            $sheet->fromArray([
+                $idx + 1,
+                $item->building ? $item->building->name : '—',
+                $item->block_name ?: 'Umumiy',
+                $item->category_name,
+                $item->item_name,
+                $item->unit_type,
+                $item->planned_quantity,
+                $item->planned_price,
+                $item->planned_total,
+                $item->actual_spent,
+                $item->notes
+            ], null, 'A' . $row);
+            $row++;
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $fileName = 'smeta_eksport_' . date('Y_m_d_His') . '.xlsx';
+        
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
     public function storeParkingBlock(Request $request)
     {
         $validated = $request->validate([

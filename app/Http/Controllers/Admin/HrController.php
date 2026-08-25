@@ -35,7 +35,7 @@ class HrController extends Controller
             $users = \App\Models\User::with([
                 'roles',
                 'transactions' => function($q) {
-                    $q->select('id', 'user_id', 'amount', 'type', 'date', 'description', 'linked_work_id');
+                    $q->select('id', 'user_id', 'amount', 'type', 'date', 'description');
                 },
                 'salaryPeriods'
             ])->withCount(['leads' => function($q) {
@@ -103,7 +103,7 @@ class HrController extends Controller
             }, 
             'transactions' => function($q) {
                 $q->leftJoin('transactions as ft', 'ft.id', '=', 'brigade_transactions.finance_transaction_id')
-                  ->select('brigade_transactions.id', 'brigade_id', 'brigade_transactions.type', 'amount', 'date', 'brigade_transactions.created_at', 'description', 'linked_work_id', 'ft.payment_method');
+                  ->select('brigade_transactions.id', 'brigade_transactions.brigade_id', 'brigade_transactions.type', 'brigade_transactions.amount', 'brigade_transactions.date', 'brigade_transactions.created_at', 'brigade_transactions.description', 'brigade_transactions.linked_work_id', 'ft.payment_method');
             },
             'works' => function($q) {
                 $q->select('id', 'brigade_id', 'calculated_sum');
@@ -128,7 +128,7 @@ class HrController extends Controller
             },
             'transactions' => function($q) {
                 $q->leftJoin('transactions as ft', 'ft.id', '=', 'machine_owner_transactions.finance_transaction_id')
-                  ->select('machine_owner_transactions.id', 'machine_owner_id', 'machine_owner_transactions.type', 'amount', 'date', 'machine_owner_transactions.created_at', 'description', 'ft.payment_method')->orderBy('date', 'asc');
+                  ->select('machine_owner_transactions.id', 'machine_owner_transactions.machine_owner_id', 'machine_owner_transactions.type', 'machine_owner_transactions.amount', 'machine_owner_transactions.date', 'machine_owner_transactions.created_at', 'machine_owner_transactions.description', 'ft.payment_method')->orderBy('machine_owner_transactions.date', 'asc');
             }
         ])->get();
         return Inertia::render('Admin/HR/Texnikalar', [

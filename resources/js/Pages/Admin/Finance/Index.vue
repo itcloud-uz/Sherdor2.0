@@ -3039,7 +3039,17 @@ function submitTransaction() {
             selectedParentRegisterId.value = '';
             selectedSubRegisterId.value = '';
         },
-        onError: () => isProcessing.value = false
+        onError: (errors) => {
+            isProcessing.value = false;
+            if (errors && Object.keys(errors).length > 0) {
+                alert("Xatolik yuz berdi:\n" + Object.values(errors).flat().join("\n"));
+            } else {
+                alert("Tranzaksiyani saqlashda xatolik yuz berdi. Iltimos, barcha majburiy maydonlar to'ldirilganligini tekshiring.");
+            }
+        },
+        onFinish: () => {
+            isProcessing.value = false;
+        }
     });
 }
 

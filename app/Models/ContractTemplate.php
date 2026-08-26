@@ -600,14 +600,32 @@ class ContractTemplate extends Model
     public static function runPython(string $args): string
     {
         $pythonScript = base_path('app/Python/docx_processor.py');
-        $pythonPath = config('app.python_path', 'python3');
+        
+        $candidates = [
+            config('app.python_path'),
+            base_path('venv/bin/python3'),
+            base_path('venv/bin/python'),
+            base_path('telegram_bot/venv/bin/python3'),
+            base_path('telegram_bot/venv/bin/python'),
+            base_path('venv/Scripts/python.exe'),
+            'python3',
+            'python'
+        ];
 
-        // Resolve relative virtual environment paths to absolute paths
-        if (strpos($pythonPath, 'venv/') === 0 || strpos($pythonPath, 'venv\\') === 0) {
-            $pythonPath = base_path($pythonPath);
+        $pythonPath = 'python3';
+        foreach ($candidates as $cand) {
+            if (!empty($cand)) {
+                if (strpos($cand, 'venv/') === 0 || strpos($cand, 'venv\\') === 0) {
+                    $cand = base_path($cand);
+                }
+                if (file_exists($cand) && is_executable($cand)) {
+                    $pythonPath = $cand;
+                    break;
+                }
+            }
         }
 
-        $command = $pythonPath . ' "' . $pythonScript . '" ' . $args . ' 2>&1';
+        $command = escapeshellcmd($pythonPath) . ' ' . escapeshellarg($pythonScript) . ' ' . $args . ' 2>&1';
         $output = shell_exec($command);
         
         if ($output) {

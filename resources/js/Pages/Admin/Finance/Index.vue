@@ -9,6 +9,7 @@ import OwnerLedgerModal from '@/Components/Ledger/OwnerLedgerModal.vue';
 import GuardLedgerModal from '@/Components/Ledger/GuardLedgerModal.vue';
 import Modal from '@/Components/Modal.vue';
 import ExpensesBreakdownModal from '@/Components/ExpensesBreakdownModal.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 
 const page = usePage();
 watch(() => page.props.flash, (flash) => {
@@ -1501,6 +1502,14 @@ const jurnalTypeFilter = ref('');
 const jurnalCounterpartyId = ref('');
 const jurnalBuildingId = ref('');
 const jurnalSearchQuery = ref('');
+
+const counterpartyFilterOptions = computed(() => {
+    const list = [{ id: '', name: 'Barchasi' }];
+    if (props.counterparties && Array.isArray(props.counterparties)) {
+        list.push(...props.counterparties);
+    }
+    return list;
+});
 
 const filteredJurnalTransactions = computed(() => {
     let result = sortedTransactions.value.filter(t => t.status === 'approved');
@@ -4028,10 +4037,13 @@ function deleteCategory(id) {
                     </div>
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Kontragent</label>
-                        <select v-model="jurnalCounterpartyId" class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full text-xs">
-                            <option value="">Barchasi</option>
-                            <option v-for="c in counterparties" :key="c.id" :value="c.id">{{ c.name }}</option>
-                        </select>
+                        <SearchableSelect 
+                            v-model="jurnalCounterpartyId" 
+                            :options="counterpartyFilterOptions" 
+                            labelKey="name" 
+                            valueKey="id" 
+                            placeholder="Barchasi" 
+                        />
                     </div>
                     <div>
                         <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Bino / Obyekt</label>

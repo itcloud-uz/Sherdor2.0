@@ -126,30 +126,52 @@ const selectedDebtClient = ref(null);
 const debtLedgerStartDate = ref('');
 const debtLedgerEndDate = ref('');
 
+const formatLedgerDate = (dateStr) => {
+    if (!dateStr) return '-';
+    if (typeof dateStr === 'string') {
+        if (dateStr.includes('T')) dateStr = dateStr.split('T')[0];
+        if (dateStr.includes(' ')) dateStr = dateStr.split(' ')[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}/${y}`;
+        }
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+};
+
 const getDebtContractDate = (client) => {
     if (!client) return '-';
-    const ct = client.contract || client.customable?.contracts?.[0] || (client.customable?.contracts && client.customable.contracts[0]);
-    if (ct && ct.created_at) {
-        return new Date(ct.created_at).toLocaleDateString('uz-UZ');
+    const ct = client.contract || client.contracts?.[0] || client.customable?.contracts?.[0] || (client.customable?.contracts && client.customable.contracts[0]);
+    if (ct) {
+        const raw = ct.contract_date || ct.created_at;
+        if (raw) return formatLedgerDate(raw);
+    }
+    if (client.created_at) {
+        return formatLedgerDate(client.created_at);
     }
     return '-';
 };
 
 const getDebtContractNumber = (client) => {
     if (!client) return '-';
-    return client.contract_number || client.contract?.contract_number || client.customable?.contracts?.[0]?.contract_number || '-';
+    return client.contract_number || client.contract?.contract_number || client.contracts?.[0]?.contract_number || client.customable?.contracts?.[0]?.contract_number || '-';
 };
 
 const getDebtUnitNumber = (client) => {
     if (!client) return '-';
-    const unit = client.unit || client.contract?.unit || client.customable?.contracts?.[0]?.unit;
-    return unit ? unit.unit_number : '-';
+    const unit = client.unit || client.contract?.unit || client.contracts?.[0]?.unit || client.customable?.contracts?.[0]?.unit;
+    return unit ? (unit.unit_number || unit.number || '-') : '-';
 };
 
 const getDebtFloorNumber = (client) => {
     if (!client) return '-';
-    const unit = client.unit || client.contract?.unit || client.customable?.contracts?.[0]?.unit;
-    return unit && unit.floor ? unit.floor.floor_number : (client.contract?.floor || '-');
+    const unit = client.unit || client.contract?.unit || client.contracts?.[0]?.unit || client.customable?.contracts?.[0]?.unit;
+    return unit && unit.floor ? (unit.floor.floor_number ?? unit.floor.number ?? '-') : (client.contract?.floor || client.contracts?.[0]?.floor || '-');
 };
 
 const openDebtLedger = (client) => {
@@ -160,12 +182,17 @@ const openDebtLedger = (client) => {
 
     const clientId = client.client_id || client.customable_id || client.customable?.id || (typeof client.id === 'number' ? client.id : null);
     const counterpartyId = client.counterparty_id || (typeof client.id === 'number' ? client.id : null);
-    const contractId = client.contract_id || client.contract?.id || client.customable?.contracts?.[0]?.id;
+    const contractId = client.contract_id || client.contract?.id || client.contracts?.[0]?.id || client.customable?.contracts?.[0]?.id;
 
     // 1. Gather all related contracts
     let clientContracts = [];
     if (client.contract) clientContracts.push(client.contract);
-    if (client.customable && client.customable.contracts) {
+    if (client.contracts && Array.isArray(client.contracts)) {
+        client.contracts.forEach(ct => {
+            if (!clientContracts.some(x => x.id === ct.id)) clientContracts.push(ct);
+        });
+    }
+    if (client.customable && client.customable.contracts && Array.isArray(client.customable.contracts)) {
         client.customable.contracts.forEach(ct => {
             if (!clientContracts.some(x => x.id === ct.id)) clientContracts.push(ct);
         });
@@ -181,15 +208,25 @@ const openDebtLedger = (client) => {
     let allIncomes = [];
     let allExpenses = [];
 
-    // 2. Gather raw transactions
+    // 2. Gather raw transactions from client, contracts, props
     const rawTxns = [];
-    if (client.transactions) rawTxns.push(...client.transactions);
-    if (client.customable && client.customable.transactions) rawTxns.push(...client.customable.transactions);
+    if (client.transactions && Array.isArray(client.transactions)) rawTxns.push(...client.transactions);
+    if (client.customable && client.customable.transactions && Array.isArray(client.customable.transactions)) rawTxns.push(...client.customable.transactions);
+
+    clientContracts.forEach(ct => {
+        if (ct.transactions && Array.isArray(ct.transactions)) {
+            ct.transactions.forEach(t => {
+                if (!rawTxns.some(existing => existing.id === t.id)) {
+                    rawTxns.push(t);
+                }
+            });
+        }
+    });
 
     (props.transactions || []).forEach(t => {
         const matchesClient = clientId && (t.client_id == clientId || t.client?.id == clientId || t.contract?.client_id == clientId);
         const matchesCounterparty = counterpartyId && (t.counterparty_id == counterpartyId);
-        const matchesContract = contractId && (t.contract_id == contractId);
+        const matchesContract = (contractId && t.contract_id == contractId) || clientContracts.some(ct => ct.id == t.contract_id);
 
         if (matchesClient || matchesCounterparty || matchesContract) {
             if (!rawTxns.some(existing => existing.id === t.id)) {
@@ -201,67 +238,72 @@ const openDebtLedger = (client) => {
     rawTxns.forEach(t => {
         const amt = Number(t.amount || 0);
         if (amt > 0) {
+            const rawDate = t.transaction_date || t.date || t.created_at;
             if (t.type === 'income' && (t.status === 'approved' || !t.status)) {
                 allIncomes.push({
                     id: `tx-${t.id}`,
                     amount: amt,
                     payment_method: t.payment_method || 'cash',
-                    transaction_date: t.transaction_date || t.created_at,
-                    notes: t.notes || t.description || 'To\'lov'
+                    transaction_date: rawDate,
+                    notes: t.notes || t.description || 'To\'lov',
+                    description: t.description || ''
                 });
             } else if (t.type === 'expense' && (t.status === 'approved' || !t.status)) {
                 allExpenses.push({
                     id: `tx-${t.id}`,
                     amount: amt,
                     payment_method: t.payment_method || 'cash',
-                    transaction_date: t.transaction_date || t.created_at,
-                    notes: t.notes || t.description || 'Pul qaytarish'
+                    transaction_date: rawDate,
+                    notes: t.notes || t.description || 'Pul qaytarish',
+                    description: t.description || ''
                 });
             }
         }
     });
 
-    // 3. Gather from contract payment schedules with paid_amount > 0
+    // 3. Gather from contract payment schedules with paid_amount > 0 if not already in transactions
     clientContracts.forEach(ct => {
         const schedules = ct.payment_schedules || ct.paymentSchedules || [];
         schedules.forEach(s => {
             const pAmt = Number(s.paid_amount || 0);
             if (pAmt > 0) {
-                const sDate = s.paid_date || s.updated_at || ct.created_at;
-                const alreadyIn = allIncomes.some(inc => Math.abs(inc.amount - pAmt) < 1 && inc.transaction_date && sDate && inc.transaction_date.substring(0,10) === sDate.substring(0,10));
+                const sDate = s.actual_payment_date || s.paid_date || s.due_date || ct.contract_date || ct.created_at;
+                const alreadyIn = allIncomes.some(inc => Math.abs(inc.amount - pAmt) < 1 && inc.transaction_date && sDate && String(inc.transaction_date).substring(0,10) === String(sDate).substring(0,10));
                 if (!alreadyIn) {
                     allIncomes.push({
                         id: `sch-${s.id}`,
                         amount: pAmt,
                         payment_method: s.payment_method || 'cash',
                         transaction_date: sDate,
-                        notes: s.notes || s.description || (s.payment_type === 'down_payment' ? 'Boshlang\'ich to\'lov' : 'Oylik to\'lov')
+                        notes: s.notes || s.description || (s.payment_type === 'down_payment' ? 'Boshlang\'ich to\'lov' : 'Oylik to\'lov'),
+                        description: s.description || ''
                     });
                 }
             }
         });
 
-        // Down payment fallback if contract paid_amount > 0 but not in transactions yet
+        // Down payment fallback if contract down_payment > 0 but not in transactions yet
         const dAmt = Number(ct.down_payment || 0);
         if (dAmt > 0 && allIncomes.length === 0) {
             allIncomes.push({
                 id: `dp-${ct.id}`,
                 amount: dAmt,
                 payment_method: 'cash',
-                transaction_date: ct.created_at,
+                transaction_date: ct.contract_date || ct.created_at,
                 notes: 'Boshlang\'ich to\'lov'
             });
         }
     });
 
-    // Fallback if client has paid_amount recorded on summary but list is empty
+    // Fallback if client has paid_amount recorded on summary but list is still empty
     const summaryPaid = Number(client.paid_amount || client.paid || 0);
     if (summaryPaid > 0 && allIncomes.length === 0) {
+        const firstContract = clientContracts[0];
         allIncomes.push({
             id: `sum-paid-${client.id}`,
             amount: summaryPaid,
             payment_method: 'cash',
-            transaction_date: client.created_at || new Date().toISOString(),
+            transaction_date: firstContract?.contract_date || firstContract?.created_at || client.created_at || new Date().toISOString(),
             notes: 'Mijoz to\'lovi'
         });
     }
@@ -347,7 +389,7 @@ const exportDebtClientExcel = () => {
         
         let incDate = '', incBank = '', incCash = '';
         if (inc) {
-            incDate = new Date(inc.transaction_date || inc.created_at).toLocaleDateString('uz-UZ');
+            incDate = formatLedgerDate(inc.transaction_date || inc.created_at);
             if (inc.payment_method === 'bank_transfer' || inc.payment_method === 'card') {
                 incBank = Number(inc.amount);
                 sumIncomeBank += incBank;
@@ -359,7 +401,7 @@ const exportDebtClientExcel = () => {
         
         let expDate = '', expBank = '', expCash = '';
         if (exp) {
-            expDate = new Date(exp.transaction_date || exp.created_at).toLocaleDateString('uz-UZ');
+            expDate = formatLedgerDate(exp.transaction_date || exp.created_at);
             if (exp.payment_method === 'bank_transfer' || exp.payment_method === 'card') {
                 expBank = Number(exp.amount);
                 sumExpenseBank += expBank;
@@ -11208,11 +11250,11 @@ const ledgerReportData = computed(() => {
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white">
                             <tr v-for="i in debtLedgerMaxLength" :key="i" class="hover:bg-gray-50/80">
-                                <td class="p-2 border-r border-gray-200 text-gray-600 font-mono">{{ debtLedgerIncomes[i-1] ? new Date(debtLedgerIncomes[i-1].transaction_date || debtLedgerIncomes[i-1].created_at).toLocaleDateString('uz-UZ') : '' }}</td>
+                                <td class="p-2 border-r border-gray-200 text-gray-600 font-mono">{{ debtLedgerIncomes[i-1] ? formatLedgerDate(debtLedgerIncomes[i-1].transaction_date || debtLedgerIncomes[i-1].created_at) : '' }}</td>
                                 <td class="p-2 border-r border-gray-200 font-mono font-bold text-blue-700">{{ debtLedgerIncomes[i-1] && (debtLedgerIncomes[i-1].payment_method === 'bank_transfer' || debtLedgerIncomes[i-1].payment_method === 'card') ? Number(debtLedgerIncomes[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
                                 <td class="p-2 border-r border-gray-200 font-mono font-bold text-blue-700">{{ debtLedgerIncomes[i-1] && (debtLedgerIncomes[i-1].payment_method === 'cash' || !debtLedgerIncomes[i-1].payment_method) ? Number(debtLedgerIncomes[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
                                 
-                                <td class="p-2 border-r border-gray-200 text-gray-600 font-mono">{{ debtLedgerExpenses[i-1] ? new Date(debtLedgerExpenses[i-1].transaction_date || debtLedgerExpenses[i-1].created_at).toLocaleDateString('uz-UZ') : '' }}</td>
+                                <td class="p-2 border-r border-gray-200 text-gray-600 font-mono">{{ debtLedgerExpenses[i-1] ? formatLedgerDate(debtLedgerExpenses[i-1].transaction_date || debtLedgerExpenses[i-1].created_at) : '' }}</td>
                                 <td class="p-2 border-r border-gray-200 font-mono font-bold text-emerald-700">{{ debtLedgerExpenses[i-1] && (debtLedgerExpenses[i-1].payment_method === 'bank_transfer' || debtLedgerExpenses[i-1].payment_method === 'card') ? Number(debtLedgerExpenses[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
                                 <td class="p-2 border-r border-gray-200 font-mono font-bold text-emerald-700">{{ debtLedgerExpenses[i-1] && (debtLedgerExpenses[i-1].payment_method === 'cash' || !debtLedgerExpenses[i-1].payment_method) ? Number(debtLedgerExpenses[i-1].amount).toLocaleString('uz-UZ') : '' }}</td>
                                 

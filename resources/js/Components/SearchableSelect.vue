@@ -29,6 +29,10 @@ const props = defineProps({
     disabled: {
         type: Boolean,
         default: false
+    },
+    customClass: {
+        type: String,
+        default: ''
     }
 });
 
@@ -48,7 +52,7 @@ const filteredOptions = computed(() => {
 });
 
 const selectedOption = computed(() => {
-    return props.options.find(option => getValue(option) === props.modelValue);
+    return props.options.find(option => String(getValue(option)) === String(props.modelValue));
 });
 
 function getLabel(option) {
@@ -61,7 +65,7 @@ function getLabel(option) {
 
 function getValue(option) {
     if (typeof option === 'object' && option !== null) {
-        return props.valueKey.split('.').reduce((o, i) => (o ? o[i] : ''), option) || '';
+        return props.valueKey.split('.').reduce((o, i) => (o !== undefined && o !== null ? o[i] : ''), option);
     }
     return option;
 }
@@ -101,23 +105,23 @@ onUnmounted(() => {
         <!-- Main Select Button -->
         <div 
             @click="toggleDropdown"
-            class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full pl-3 pr-8 cursor-pointer flex items-center min-h-[42px]"
-            :class="[disabled ? 'opacity-50 cursor-not-allowed' : '']"
+            class="bg-white border border-gray-300 text-gray-900 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full pl-3 pr-8 cursor-pointer flex items-center min-h-[38px] text-xs select-none"
+            :class="[disabled ? 'opacity-50 cursor-not-allowed' : '', customClass]"
             :style="{ 
-                borderColor: isOpen ? 'var(--color-neon-primary, #00F0FF)' : '',
-                boxShadow: isOpen ? 'var(--shadow-sm, 0 0 15px rgba(0, 240, 255, 0.3))' : ''
+                borderColor: isOpen ? '#3b82f6' : '',
+                boxShadow: isOpen ? '0 0 0 1px rgba(59, 130, 246, 0.5)' : ''
             }"
         >
-            <span v-if="selectedOption" class="text-gray-900 truncate pr-2">
+            <span v-if="selectedOption" class="text-gray-900 truncate pr-2 font-medium">
                 {{ getLabel(selectedOption) }}
             </span>
-            <span v-else class="text-gray-900/50 truncate pr-2">
+            <span v-else class="text-gray-500 truncate pr-2">
                 {{ placeholder }}
             </span>
             
-            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-900/50">
-                <svg v-if="isOpen" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            <div class="absolute right-2.5 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">
+                <svg v-if="isOpen" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
             </div>
         </div>
 
@@ -130,23 +134,19 @@ onUnmounted(() => {
         <!-- Dropdown Options -->
         <div 
             v-if="isOpen" 
-            class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-300 searchable-select-dropdown"
-            :style="{ 
-                backgroundColor: 'var(--dropdown-bg-color, #ffffff)',
-                color: 'var(--dropdown-text-color, #111827)'
-            }"
+            class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl searchable-select-dropdown"
         >
             <!-- Search Input -->
-            <div class="sticky top-0 p-2 z-10 border-b border-gray-200" :style="{ backgroundColor: 'var(--dropdown-bg-color, #ffffff)' }">
+            <div class="sticky top-0 p-2 z-10 border-b border-gray-100 bg-gray-50">
                 <div class="relative">
                     <input 
                         type="text" 
                         v-model="searchQuery" 
-                        class="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-3 text-sm text-gray-900 focus:outline-none focus:border-white/30"
+                        class="w-full bg-white border border-gray-200 rounded-md py-1 pl-7 pr-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Izlash..."
                         @click.stop
                     >
-                    <div class="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-900/40">
+                    <div class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     </div>
                 </div>
@@ -158,13 +158,14 @@ onUnmounted(() => {
                     v-for="(option, index) in filteredOptions" 
                     :key="index"
                     @click="selectOption(option)"
-                    class="px-4 py-2 hover:bg-blue-600 hover:text-white cursor-pointer text-sm transition-colors"
-                    :class="{ ' font-bold': getValue(option) === modelValue }"
+                    class="px-3 py-1.5 hover:bg-blue-600 hover:text-white cursor-pointer text-xs transition-colors flex items-center justify-between"
+                    :class="{ 'bg-blue-50 text-blue-700 font-bold': String(getValue(option)) === String(modelValue) }"
                 >
-                    {{ getLabel(option) }}
+                    <span>{{ getLabel(option) }}</span>
+                    <span v-if="String(getValue(option)) === String(modelValue)" class="text-blue-600 font-bold text-[10px]">✓</span>
                 </div>
                 
-                <div v-if="filteredOptions.length === 0" class="px-4 py-3 text-sm text-center opacity-50 italic">
+                <div v-if="filteredOptions.length === 0" class="px-4 py-3 text-xs text-center text-gray-400 italic">
                     Hech narsa topilmadi
                 </div>
             </div>

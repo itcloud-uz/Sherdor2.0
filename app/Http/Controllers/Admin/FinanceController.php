@@ -695,7 +695,7 @@ class FinanceController extends Controller
         }
 
         // 4. Partner Special Balances
-        if ($transaction->partner_id) {
+        if ($transaction->partner_id && empty($transaction->target_type)) {
             $accountPartner = Partner::find($transaction->partner_id);
             if ($accountPartner) {
                 if ($transaction->type === 'income') {
@@ -1025,7 +1025,11 @@ class FinanceController extends Controller
         } elseif ($type === 'partner') {
             $partner = Partner::find($id);
             if ($partner) {
-                $txnType === 'income' ? $partner->increment('invested_amount', $amount) : $partner->increment('withdrawn_amount', $amount);
+                if (\Illuminate\Support\Facades\Schema::hasColumn('partners', 'accountable_balance')) {
+                    $txnType === 'income' ? $partner->increment('accountable_balance', $amount) : $partner->decrement('accountable_balance', $amount);
+                } elseif (\Illuminate\Support\Facades\Schema::hasColumn('partners', 'total_invested')) {
+                    $txnType === 'income' ? $partner->increment('total_invested', $amount) : $partner->decrement('total_invested', $amount);
+                }
             }
         } elseif ($type === 'worker') {
             $worker = Worker::find($id);
@@ -1065,7 +1069,11 @@ class FinanceController extends Controller
         } elseif ($type === 'partner') {
             $partner = Partner::find($id);
             if ($partner) {
-                $txnType === 'income' ? $partner->decrement('invested_amount', $amount) : $partner->decrement('withdrawn_amount', $amount);
+                if (\Illuminate\Support\Facades\Schema::hasColumn('partners', 'accountable_balance')) {
+                    $txnType === 'income' ? $partner->decrement('accountable_balance', $amount) : $partner->increment('accountable_balance', $amount);
+                } elseif (\Illuminate\Support\Facades\Schema::hasColumn('partners', 'total_invested')) {
+                    $txnType === 'income' ? $partner->decrement('total_invested', $amount) : $partner->increment('total_invested', $amount);
+                }
             }
         } elseif ($type === 'worker') {
             $worker = Worker::find($id);

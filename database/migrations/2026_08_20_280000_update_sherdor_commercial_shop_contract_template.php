@@ -11,6 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        $setting = \App\Models\SystemSetting::first();
+        $isSherdor = ($setting && str_contains(strtolower($setting->company_name), 'sher')) 
+            || str_contains(strtolower(config('app.name', '')), 'sher') 
+            || str_contains(strtolower(config('app.url', '')), 'sher-dor');
+        
+        if (!$isSherdor) {
+            return;
+        }
+
         $shopHtml = view('contracts.shop_template', [
             'contract' => new Contract([
                 'id' => 1,

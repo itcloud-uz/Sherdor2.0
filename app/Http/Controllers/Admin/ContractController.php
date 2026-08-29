@@ -1011,11 +1011,10 @@ class ContractController extends Controller
                 ->where('type', 'income')
                 ->sum('amount');
 
-            $contract->paid_amount = $allApprovedTxns;
             if ($allApprovedTxns >= (float)$contract->total_amount && $contract->status === 'draft') {
                 $contract->status = 'active';
+                $contract->save();
             }
-            $contract->save();
         });
 
         $updatedContract = \App\Models\Contract::with([

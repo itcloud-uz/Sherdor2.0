@@ -775,4 +775,277 @@ class ContractController extends Controller
             'contract' => $contract
         ]);
     }
+
+    public function downloadPaymentsTemplate()
+    {
+        $headers = [
+            '№',
+            'Тўланган сана',
+            'Naqt to`lov so`mmasi',
+            'Plastik to`lov so`mmasi',
+            'Bank to`lov so`mmasi',
+            'Izoh'
+        ];
+
+        $sampleData = [
+            [1, '29.08.2022', 25000000, '', '', 'Boshlang\'ich to\'lov'],
+            [2, '29.09.2022', '', 10000000, '', 'Oylik to\'lov'],
+            [3, '15.12.2022', 10000000, '', '', 'Oylik to\'lov'],
+            [4, '25.01.2023', '', '', 15000000, 'Bank orqali to\'lov'],
+            ['Жами', '', 35000000, 10000000, 15000000, '']
+        ];
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Tolovlar_Shablon');
+
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+            $col++;
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => '000000']],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => 'E2EFDA']
+            ]
+        ];
+        $sheet->getStyle('A1:F1')->applyFromArray($headerStyle);
+
+        $rowNum = 2;
+        foreach ($sampleData as $row) {
+            $sheet->setCellValue('A' . $rowNum, $row[0]);
+            $sheet->setCellValue('B' . $rowNum, $row[1]);
+            $sheet->setCellValue('C' . $rowNum, $row[2]);
+            $sheet->setCellValue('D' . $rowNum, $row[3]);
+            $sheet->setCellValue('E' . $rowNum, $row[4]);
+            $sheet->setCellValue('F' . $rowNum, $row[5]);
+            $rowNum++;
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $fileName = 'Tolovlar_Import_Shabloni.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    public function importPayments(\Illuminate\Http\Request $request, \App\Models\Contract $contract)
+    {
+        $validated = $request->validate([
+            'default_account_id' => 'nullable|exists:cash_registers,id',
+            'cash_account_id' => 'nullable|exists:cash_registers,id',
+            'card_account_id' => 'nullable|exists:cash_registers,id',
+            'bank_account_id' => 'nullable|exists:cash_registers,id',
+            'payments' => 'nullable|array',
+            'file' => 'nullable|file|mimes:xlsx,xls,csv'
+        ]);
+
+        $defaultAccountId = $validated['default_account_id'] ?? null;
+        if (!$defaultAccountId) {
+            $defaultAccountId = \App\Models\CashRegister::first()?->id;
+        }
+
+        $cashAccountId = !empty($validated['cash_account_id']) ? $validated['cash_account_id'] : $defaultAccountId;
+        $cardAccountId = !empty($validated['card_account_id']) ? $validated['card_account_id'] : $defaultAccountId;
+        $bankAccountId = !empty($validated['bank_account_id']) ? $validated['bank_account_id'] : $defaultAccountId;
+
+        $rowsToImport = [];
+
+        // 1. If payments array is sent from Vue frontend
+        if (!empty($validated['payments']) && is_array($validated['payments'])) {
+            $rowsToImport = $validated['payments'];
+        } 
+        // 2. If an Excel file is directly uploaded
+        elseif ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
+            $sheet = $spreadsheet->getActiveSheet();
+            $data = $sheet->toArray(null, true, true, true);
+
+            $isFirst = true;
+            foreach ($data as $row) {
+                if ($isFirst) {
+                    $isFirst = false;
+                    continue;
+                }
+
+                $num = trim($row['A'] ?? '');
+                $dateRaw = trim($row['B'] ?? '');
+                $cashRaw = trim($row['C'] ?? '');
+                $cardRaw = trim($row['D'] ?? '');
+                $bankRaw = trim($row['E'] ?? '');
+                $notes = trim($row['F'] ?? '');
+
+                if (empty($dateRaw) || mb_strtolower($num) === 'jami' || mb_strtolower($num) === 'жами' || mb_strtolower($dateRaw) === 'jami' || mb_strtolower($dateRaw) === 'жами') {
+                    continue;
+                }
+
+                $cleanNumber = function($val) {
+                    if (empty($val)) return 0;
+                    $cleaned = preg_replace('/[^\d.]/', '', str_replace([' ', ','], ['', '.'], (string)$val));
+                    return is_numeric($cleaned) ? (float)$cleaned : 0;
+                };
+
+                $cashAmt = $cleanNumber($cashRaw);
+                $cardAmt = $cleanNumber($cardRaw);
+                $bankAmt = $cleanNumber($bankRaw);
+
+                if ($cashAmt <= 0 && $cardAmt <= 0 && $bankAmt <= 0) {
+                    continue;
+                }
+
+                $parsedDate = null;
+                if (preg_match('/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/', $dateRaw, $matches)) {
+                    $parsedDate = sprintf('%04d-%02d-%02d', $matches[3], $matches[2], $matches[1]);
+                } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateRaw)) {
+                    $parsedDate = $dateRaw;
+                } elseif (is_numeric($dateRaw)) {
+                    $parsedDate = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((int)$dateRaw)->format('Y-m-d');
+                } else {
+                    try {
+                        $parsedDate = date('Y-m-d', strtotime($dateRaw));
+                    } catch (\Exception $e) {
+                        $parsedDate = now()->toDateString();
+                    }
+                }
+
+                $rowsToImport[] = [
+                    'date' => $parsedDate,
+                    'cash_amount' => $cashAmt,
+                    'card_amount' => $cardAmt,
+                    'bank_amount' => $bankAmt,
+                    'notes' => $notes
+                ];
+            }
+        }
+
+        if (empty($rowsToImport)) {
+            return response()->json(['error' => 'Import qilish uchun to\'lovlar topilmadi. Shablonni to\'g\'ri to\'ldirganingizni tekshiring.'], 422);
+        }
+
+        $clientId = $contract->client_id;
+        $counterpartyId = null;
+        if ($clientId) {
+            $counterparty = \App\Models\Counterparty::firstOrCreate(
+                ['customable_type' => \App\Models\Client::class, 'customable_id' => $clientId],
+                ['name' => ($contract->client ? ($contract->client->first_name . ' ' . $contract->client->last_name) : 'Mijoz #' . $clientId), 'type' => 'client', 'is_active' => true]
+            );
+            $counterpartyId = $counterparty->id;
+        }
+
+        $buildingId = $contract->unit?->floor?->building_id ?? null;
+        $incomeCategory = \App\Models\TransactionCategory::firstOrCreate(
+            ['name' => 'Mijoz To\'lovi (Shartnoma)'],
+            ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
+        );
+
+        $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
+        $importedTransactions = [];
+        $totalImportedSum = 0;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use (
+            $rowsToImport, $contract, $clientId, $counterpartyId, $buildingId, $incomeCategory,
+            $cashAccountId, $cardAccountId, $bankAccountId, $defaultAccountId,
+            $financeController, &$importedTransactions, &$totalImportedSum
+        ) {
+            foreach ($rowsToImport as $row) {
+                $txDate = !empty($row['date']) ? $row['date'] : now()->toDateString();
+                $notes = !empty($row['notes']) ? $row['notes'] : 'Excel orqali import qilingan to\'lov';
+
+                $createTx = function($amount, $method, $accId, $methodName) use (
+                    $txDate, $notes, $contract, $clientId, $counterpartyId, $buildingId, $incomeCategory,
+                    $financeController, &$importedTransactions, &$totalImportedSum
+                ) {
+                    if ($amount <= 0) return;
+
+                    $tx = \App\Models\Transaction::create([
+                        'type' => 'income',
+                        'amount' => $amount,
+                        'payment_method' => $method,
+                        'account_id' => $accId,
+                        'contract_id' => $contract->id,
+                        'client_id' => $clientId,
+                        'counterparty_id' => $counterpartyId,
+                        'building_id' => $buildingId,
+                        'category_id' => $incomeCategory->id,
+                        'status' => 'pending',
+                        'transaction_date' => $txDate,
+                        'notes' => $notes . " [{$methodName}]",
+                        'created_by' => auth()->id() ?? 1,
+                    ]);
+
+                    $financeController->approveTransaction(request(), $tx);
+                    $importedTransactions[] = $tx;
+                    $totalImportedSum += $amount;
+                };
+
+                $cashAmt = (float)($row['cash_amount'] ?? 0);
+                if ($cashAmt > 0) {
+                    $createTx($cashAmt, 'cash', $cashAccountId, 'Naqd');
+                }
+
+                $cardAmt = (float)($row['card_amount'] ?? 0);
+                if ($cardAmt > 0) {
+                    $createTx($cardAmt, 'card', $cardAccountId, 'Plastik');
+                }
+
+                $bankAmt = (float)($row['bank_amount'] ?? 0);
+                if ($bankAmt > 0) {
+                    $createTx($bankAmt, 'bank_transfer', $bankAccountId, 'Bank');
+                }
+            }
+
+            // Recalculate contract total paid
+            $allApprovedTxns = \App\Models\Transaction::where('contract_id', $contract->id)
+                ->where('status', 'approved')
+                ->where('type', 'income')
+                ->sum('amount');
+
+            $contract->paid_amount = $allApprovedTxns;
+            if ($allApprovedTxns >= (float)$contract->total_amount && $contract->status === 'draft') {
+                $contract->status = 'active';
+            }
+            $contract->save();
+        });
+
+        $updatedContract = \App\Models\Contract::with([
+            'client',
+            'partner.user',
+            'unit.floor.building',
+            'paymentSchedules',
+            'transactions.category',
+            'refundSchedules'
+        ])->find($contract->id);
+
+        $updatedClient = null;
+        if ($clientId) {
+            $updatedClient = \App\Models\Client::with([
+                'contracts.unit.floor.building',
+                'contracts.partner.user',
+                'contracts.user',
+                'contracts.paymentSchedules',
+                'contracts.transactions',
+                'comments.user'
+            ])->find($clientId);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Muvaffaqiyatli import qilindi: " . count($importedTransactions) . " ta to'lov (Jami: " . number_format($totalImportedSum) . " so'm) qo'shildi.",
+            'imported_count' => count($importedTransactions),
+            'total_amount' => $totalImportedSum,
+            'contract' => $updatedContract,
+            'client' => $updatedClient
+        ]);
+    }
 }

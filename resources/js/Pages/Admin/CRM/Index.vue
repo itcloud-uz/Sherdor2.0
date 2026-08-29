@@ -1050,6 +1050,228 @@ watch(sotildiAccountId, (newAccountId) => {
     }
 });
 
+// --- PAYMENTS EXCEL IMPORT STATE & METHODS ---
+const isPaymentImportModalOpen = ref(false);
+const paymentImportLoading = ref(false);
+const paymentImportFile = ref(null);
+const paymentImportParsedRows = ref([]);
+const paymentImportError = ref('');
+const importCashAccountId = ref('');
+const importCardAccountId = ref('');
+const importBankAccountId = ref('');
+const importDefaultAccountId = ref('');
+
+function openPaymentImportModal() {
+    if (!selectedContract.value) return;
+    const defaultAcc = props.cashRegisters && props.cashRegisters.length > 0 ? props.cashRegisters[0].id : '';
+    importDefaultAccountId.value = defaultAcc;
+    
+    // Attempt to pre-match cash, card, and bank accounts
+    const cashAcc = props.cashRegisters?.find(r => r.type === 'cash' || (r.name && r.name.toLowerCase().includes('naqd')) || (r.name && r.name.toLowerCase().includes('asosiy')) || (r.name && r.name.toLowerCase().includes('kassa')) )?.id || defaultAcc;
+    const cardAcc = props.cashRegisters?.find(r => r.type === 'card' || (r.name && r.name.toLowerCase().includes('plastik')) || (r.name && r.name.toLowerCase().includes('terminal')) || (r.name && r.name.toLowerCase().includes('uzcard')) || (r.name && r.name.toLowerCase().includes('humo')) )?.id || defaultAcc;
+    const bankAcc = props.cashRegisters?.find(r => r.type === 'bank' || (r.name && r.name.toLowerCase().includes('bank')) || (r.name && r.name.toLowerCase().includes('hisob')) || (r.name && r.name.toLowerCase().includes('schet')) )?.id || defaultAcc;
+    
+    importCashAccountId.value = cashAcc;
+    importCardAccountId.value = cardAcc;
+    importBankAccountId.value = bankAcc;
+
+    paymentImportFile.value = null;
+    paymentImportParsedRows.value = [];
+    paymentImportError.value = '';
+    isPaymentImportModalOpen.value = true;
+}
+
+function downloadPaymentsExcelTemplate() {
+    try {
+        const headers = [
+            '№',
+            'Тўланган сана',
+            'Naqt to`lov so`mmasi',
+            'Plastik to`lov so`mmasi',
+            'Bank to`lov so`mmasi',
+            'Izoh'
+        ];
+
+        const sampleRows = [
+            [1, '29.08.2022', 25000000, '', '', 'Boshlang\'ich to\'lov'],
+            [2, '29.09.2022', '', 10000000, '', 'Oylik to\'lov'],
+            [3, '15.12.2022', 10000000, '', '', 'Oylik to\'lov'],
+            [4, '25.01.2023', '', '', 15000000, 'Bank orqali to\'lov'],
+            ['Жами', '', 35000000, 10000000, 15000000, '']
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
+
+        ws['!cols'] = [
+            { wch: 6 },
+            { wch: 18 },
+            { wch: 24 },
+            { wch: 24 },
+            { wch: 24 },
+            { wch: 30 }
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, "To'lovlar Shablon");
+        XLSX.writeFile(wb, "Tolovlar_Import_Shabloni.xlsx");
+    } catch (e) {
+        window.location.href = route('contracts.download_payments_template');
+    }
+}
+
+function parseExcelDate(rawDate) {
+    if (!rawDate) return '';
+    if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+        return rawDate.toISOString().split('T')[0];
+    }
+    const str = String(rawDate).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return str;
+    }
+    const dotMatch = str.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
+    if (dotMatch) {
+        const d = dotMatch[1].padStart(2, '0');
+        const m = dotMatch[2].padStart(2, '0');
+        const y = dotMatch[3];
+        return `${y}-${m}-${d}`;
+    }
+    if (!isNaN(Number(str)) && Number(str) > 20000) {
+        const jsDate = new Date(Math.round((Number(str) - 25569) * 86400 * 1000));
+        if (!isNaN(jsDate.getTime())) {
+            return jsDate.toISOString().split('T')[0];
+        }
+    }
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+        return parsed.toISOString().split('T')[0];
+    }
+    return str;
+}
+
+function cleanExcelNumber(val) {
+    if (val === null || val === undefined || val === '') return 0;
+    const str = String(val).replace(/\s+/g, '').replace(/,/g, '.');
+    const cleaned = str.replace(/[^\d.]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? 0 : num;
+}
+
+function handlePaymentImportFileUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    paymentImportFile.value = file;
+    paymentImportError.value = '';
+    paymentImportParsedRows.value = [];
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
+
+            if (!json || json.length < 2) {
+                paymentImportError.value = "Faylda to'lovlar topilmadi yoki fayl bo'sh.";
+                return;
+            }
+
+            const rows = [];
+            for (let i = 1; i < json.length; i++) {
+                const r = json[i];
+                if (!r || r.length === 0) continue;
+
+                const colNo = String(r[0] || '').trim();
+                const colDateRaw = String(r[1] || '').trim();
+                const colCashRaw = r[2];
+                const colCardRaw = r[3];
+                const colBankRaw = r[4];
+                const colNotes = String(r[5] || '').trim();
+
+                if (!colDateRaw || colNo.toLowerCase() === 'jami' || colNo.toLowerCase() === 'жами' || colDateRaw.toLowerCase() === 'jami' || colDateRaw.toLowerCase() === 'жами') {
+                    continue;
+                }
+
+                const cashAmount = cleanExcelNumber(colCashRaw);
+                const cardAmount = cleanExcelNumber(colCardRaw);
+                const bankAmount = cleanExcelNumber(colBankRaw);
+
+                if (cashAmount <= 0 && cardAmount <= 0 && bankAmount <= 0) {
+                    continue;
+                }
+
+                const parsedDate = parseExcelDate(colDateRaw);
+
+                rows.push({
+                    idx: rows.length + 1,
+                    original_no: colNo || (rows.length + 1),
+                    date: parsedDate,
+                    display_date: colDateRaw,
+                    cash_amount: cashAmount,
+                    card_amount: cardAmount,
+                    bank_amount: bankAmount,
+                    total_row_amount: cashAmount + cardAmount + bankAmount,
+                    notes: colNotes
+                });
+            }
+
+            if (rows.length === 0) {
+                paymentImportError.value = "Excel fayldan yaroqli to'lovlar topilmadi. Sana va summalar to'g'ri kiritilganini tekshiring.";
+                return;
+            }
+
+            paymentImportParsedRows.value = rows;
+        } catch (err) {
+            console.error("Excel parse error:", err);
+            paymentImportError.value = "Excel faylni o'qishda xatolik: " + err.message;
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+async function submitPaymentImport() {
+    if (!selectedContract.value || paymentImportParsedRows.value.length === 0) return;
+    paymentImportLoading.value = true;
+    paymentImportError.value = '';
+
+    try {
+        const payload = {
+            default_account_id: importDefaultAccountId.value,
+            cash_account_id: importCashAccountId.value,
+            card_account_id: importCardAccountId.value,
+            bank_account_id: importBankAccountId.value,
+            payments: paymentImportParsedRows.value.map(r => ({
+                date: r.date,
+                cash_amount: r.cash_amount,
+                card_amount: r.card_amount,
+                bank_amount: r.bank_amount,
+                notes: r.notes
+            }))
+        };
+
+        const response = await axios.post(route('contracts.import_payments', selectedContract.value.id), payload);
+        
+        if (response.data.success) {
+            alert(response.data.message || "To'lovlar muvaffaqiyatli import qilindi!");
+            isPaymentImportModalOpen.value = false;
+            
+            if (detailedClientData.value) {
+                selectClientForDetail(detailedClientData.value, false, selectedContract.value);
+            } else {
+                router.reload({ only: ['contracts', 'clients'] });
+            }
+        } else {
+            paymentImportError.value = response.data.error || "Import qilishda xatolik yuz berdi.";
+        }
+    } catch (err) {
+        console.error("Import error:", err);
+        paymentImportError.value = err.response?.data?.error || err.response?.data?.message || err.message;
+    } finally {
+        paymentImportLoading.value = false;
+    }
+}
+
 const forceActivateContract = async (accountId = null, paymentMethod = null) => {
     if (!confirm("Haqiqatan ham ushbu shartnomani qo'lda 'Sotildi' holatiga o'tkazmoqchimisiz?")) return;
     
@@ -5979,6 +6201,11 @@ const ledgerReportData = computed(() => {
                     </div>
                     <!-- Right Actions -->
                     <div class="flex items-center gap-2" v-if="detailedClientData">
+                        <!-- To'lovlar importi Button -->
+                        <button v-if="selectedContract" @click="openPaymentImportModal" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            To'lovlar importi
+                        </button>
                         <!-- Tasdiqlash Button -->
                         <button v-if="selectedContract && selectedContract.status !== 'active'" @click="handleSotildiClick" :disabled="isProcessing" class="px-4 py-2 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1 disabled:opacity-50">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4" /></svg>
@@ -11307,6 +11534,155 @@ const ledgerReportData = computed(() => {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- PAYMENT EXCEL IMPORT MODAL -->
+        <Modal :show="isPaymentImportModalOpen" @close="isPaymentImportModalOpen = false" maxWidth="4xl">
+            <div class="p-6 text-left">
+                <!-- Header -->
+                <div class="flex items-center justify-between border-b border-gray-100 pb-4 mb-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900">To'lovlarni Excel orqali import qilish</h3>
+                            <p class="text-xs text-gray-500 mt-0.5" v-if="selectedContract">
+                                Shartnoma #{{ selectedContract.contract_number || selectedContract.id }} — {{ detailedClientData?.last_name }} {{ detailedClientData?.first_name }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <button @click="downloadPaymentsExcelTemplate" type="button" class="px-3.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Shablonni yuklab olish (Excel)
+                        </button>
+                        <button @click="isPaymentImportModalOpen = false" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Account Selection Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Naqd to'lov kassasi:</label>
+                        <select v-model="importCashAccountId" class="w-full bg-slate-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            <option v-for="cr in filteredCashRegisters" :key="cr.id" :value="cr.id">
+                                {{ cr.name }} ({{ cr.currency || 'UZS' }})
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Plastik to'lov kassasi:</label>
+                        <select v-model="importCardAccountId" class="w-full bg-slate-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            <option v-for="cr in filteredCashRegisters" :key="cr.id" :value="cr.id">
+                                {{ cr.name }} ({{ cr.currency || 'UZS' }})
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Bank hisob raqami:</label>
+                        <select v-model="importBankAccountId" class="w-full bg-slate-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                            <option v-for="cr in filteredCashRegisters" :key="cr.id" :value="cr.id">
+                                {{ cr.name }} ({{ cr.currency || 'UZS' }})
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Upload Area -->
+                <div class="mb-5">
+                    <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">To'ldirilgan Excel faylini tanlang:</label>
+                    <div class="border-2 border-dashed border-gray-200 hover:border-emerald-400 bg-slate-50/50 rounded-2xl p-6 text-center transition-all cursor-pointer relative group">
+                        <input type="file" accept=".xlsx,.xls,.csv" @change="handlePaymentImportFileUpload" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-100/60 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                            </div>
+                            <div v-if="paymentImportFile" class="text-xs">
+                                <span class="font-bold text-emerald-700 block">{{ paymentImportFile.name }}</span>
+                                <span class="text-gray-400 text-[11px] block mt-0.5">{{ (paymentImportFile.size / 1024).toFixed(1) }} KB &bull; Boshqa fayl tanlash uchun bosing</span>
+                            </div>
+                            <div v-else class="text-xs text-gray-500">
+                                <span class="font-bold text-emerald-600 hover:underline">Faylni tanlang</span> yoki bu yerga sudrab tashlang
+                                <p class="text-[10px] text-gray-400 mt-0.5">Qo'llab-quvvatlanadi: .xlsx, .xls, .csv</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Alert -->
+                <div v-if="paymentImportError" class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2">
+                    <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>{{ paymentImportError }}</span>
+                </div>
+
+                <!-- Preview Statistics Badges -->
+                <div v-if="paymentImportParsedRows.length > 0" class="mb-4 space-y-3">
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                        <div class="bg-slate-100/80 rounded-xl p-2.5 text-center">
+                            <span class="text-[9px] font-bold uppercase text-gray-400 block">Jami To'lovlar</span>
+                            <strong class="text-xs font-bold text-gray-900 font-mono">{{ paymentImportParsedRows.length }} ta</strong>
+                        </div>
+                        <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-2.5 text-center">
+                            <span class="text-[9px] font-bold uppercase text-blue-500 block">Naqd</span>
+                            <strong class="text-xs font-bold text-blue-700 font-mono">{{ Number(paymentImportParsedRows.reduce((sum, r) => sum + r.cash_amount, 0)).toLocaleString('uz-UZ') }}</strong>
+                        </div>
+                        <div class="bg-amber-50/70 border border-amber-100 rounded-xl p-2.5 text-center">
+                            <span class="text-[9px] font-bold uppercase text-amber-500 block">Plastik</span>
+                            <strong class="text-xs font-bold text-amber-700 font-mono">{{ Number(paymentImportParsedRows.reduce((sum, r) => sum + r.card_amount, 0)).toLocaleString('uz-UZ') }}</strong>
+                        </div>
+                        <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-2.5 text-center">
+                            <span class="text-[9px] font-bold uppercase text-indigo-500 block">Bank</span>
+                            <strong class="text-xs font-bold text-indigo-700 font-mono">{{ Number(paymentImportParsedRows.reduce((sum, r) => sum + r.bank_amount, 0)).toLocaleString('uz-UZ') }}</strong>
+                        </div>
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-center col-span-2 sm:col-span-1">
+                            <span class="text-[9px] font-bold uppercase text-emerald-600 block">JAMI SUMMA</span>
+                            <strong class="text-xs font-bold text-emerald-800 font-mono">{{ Number(paymentImportParsedRows.reduce((sum, r) => sum + r.total_row_amount, 0)).toLocaleString('uz-UZ') }}</strong>
+                        </div>
+                    </div>
+
+                    <!-- Parsed Rows Preview Table -->
+                    <div class="overflow-x-auto border border-gray-200 rounded-2xl max-h-60 overflow-y-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead class="bg-slate-100 text-gray-700 font-bold sticky top-0 border-b border-gray-200 shadow-sm">
+                                <tr>
+                                    <th class="p-2.5 text-center w-10">№</th>
+                                    <th class="p-2.5 text-center">To'langan sana</th>
+                                    <th class="p-2.5 text-right">Naqd to'lov</th>
+                                    <th class="p-2.5 text-right">Plastik to'lov</th>
+                                    <th class="p-2.5 text-right">Bank to'lov</th>
+                                    <th class="p-2.5">Izoh</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 font-mono text-xs bg-white">
+                                <tr v-for="(row, idx) in paymentImportParsedRows" :key="idx" class="hover:bg-slate-50">
+                                    <td class="p-2.5 text-center text-gray-400">{{ idx + 1 }}</td>
+                                    <td class="p-2.5 text-center font-bold text-gray-800">{{ row.display_date || row.date }}</td>
+                                    <td class="p-2.5 text-right font-bold text-blue-600">{{ row.cash_amount > 0 ? Number(row.cash_amount).toLocaleString('uz-UZ') : '—' }}</td>
+                                    <td class="p-2.5 text-right font-bold text-amber-600">{{ row.card_amount > 0 ? Number(row.card_amount).toLocaleString('uz-UZ') : '—' }}</td>
+                                    <td class="p-2.5 text-right font-bold text-indigo-600">{{ row.bank_amount > 0 ? Number(row.bank_amount).toLocaleString('uz-UZ') : '—' }}</td>
+                                    <td class="p-2.5 text-gray-600 font-sans text-[11px]">{{ row.notes || '—' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                    <button @click="isPaymentImportModalOpen = false" type="button" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-all">
+                        Bekor qilish
+                    </button>
+                    <button @click="submitPaymentImport" :disabled="paymentImportLoading || paymentImportParsedRows.length === 0" type="button" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 disabled:opacity-50">
+                        <span v-if="paymentImportLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <span>To'lovlarni import qilish ({{ paymentImportParsedRows.length }} ta)</span>
+                    </button>
                 </div>
             </div>
         </Modal>

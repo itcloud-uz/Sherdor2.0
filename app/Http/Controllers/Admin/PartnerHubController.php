@@ -62,16 +62,18 @@ class PartnerHubController extends Controller
             $registerIds = $this->getPartnerRegisterIds($partner);
 
             $isPartnerPayoutQ = function($q) use ($partner) {
-                $q->where('target_type', 'partner')
-                  ->orWhere('transaction_subtype', 'partner_payout')
-                  ->orWhereIn('category', ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi'])
-                  ->orWhere(function($sq) use ($partner) {
-                      $sq->where('partner_id', $partner->id)
-                         ->where(function($catQ) {
-                             $catQ->whereNull('category')
-                                  ->orWhereNotIn('category', ['Qurilish', 'Material', 'Ish haqi', 'Ovqatlanish', 'Texnika', 'Boshqa xarajat']);
-                         });
-                  });
+                $q->where(function($sq) use ($partner) {
+                    $sq->where('target_type', 'partner')
+                       ->where('target_id', $partner->id);
+                })
+                ->orWhereIn('category', ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi'])
+                ->orWhere(function($sq) use ($partner) {
+                    $sq->where('partner_id', $partner->id)
+                       ->where(function($catQ) {
+                           $catQ->whereNull('category')
+                                ->orWhereNotIn('category', ['Qurilish', 'Material', 'Ish haqi', 'Ovqatlanish', 'Texnika', 'Boshqa xarajat']);
+                       });
+                });
             };
 
             // Jami olingan so'mma: all expenses paid to or withdrawn by the partner

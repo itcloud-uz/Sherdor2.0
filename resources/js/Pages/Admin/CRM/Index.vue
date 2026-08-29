@@ -2686,10 +2686,22 @@ function exportExcel(contract) {
 function getContractFinancials(contract) {
     if (!contract) return { total: 0, paid: 0, debt: 0, percent: 0 };
     const total = Number(contract.total_amount || 0);
+    
+    // 1. Transactions sum (actual cash/bank inflows for this contract)
+    const txnPaid = (contract.transactions || [])
+        .filter(t => (t.status === 'approved' || !t.status) && t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+        
+    // 2. Schedules paid sum
     const schedules = contract.payment_schedules || contract.paymentSchedules || [];
-    const paid = schedules.reduce((sum, s) => sum + Number(s.paid_amount || 0), 0);
+    const schedPaid = schedules.reduce((sum, s) => sum + Number(s.paid_amount || (s.status === 'paid' ? s.expected_amount : 0) || 0), 0);
+    
+    // 3. Direct contract paid_amount
+    const directPaid = Number(contract.paid_amount || contract.paid || 0);
+    
+    const paid = Math.max(txnPaid, schedPaid, directPaid);
     const debt = Math.max(0, total - paid);
-    const percent = total > 0 ? Math.round((paid / total) * 100) : 0;
+    const percent = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
     return { total, paid, debt, percent };
 }
 
@@ -3136,10 +3148,14 @@ const canceledContracts = computed(() => {
 });
 
 function calculatePaidAmount(contract) {
-    if (!contract.payment_schedules) return 0;
-    return contract.payment_schedules
-        .filter(ps => ps.status === 'paid')
-        .reduce((sum, ps) => sum + Number(ps.paid_amount || ps.expected_amount), 0);
+    if (!contract) return 0;
+    const txnPaid = (contract.transactions || [])
+        .filter(t => (t.status === 'approved' || !t.status) && t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const schedules = contract.payment_schedules || contract.paymentSchedules || [];
+    const schedPaid = schedules.reduce((sum, ps) => sum + Number(ps.paid_amount || (ps.status === 'paid' ? ps.expected_amount : 0) || 0), 0);
+    const directPaid = Number(contract.paid_amount || contract.paid || 0);
+    return Math.max(txnPaid, schedPaid, directPaid);
 }
 
 function calculateProgress(contract) {
@@ -6632,6 +6648,22 @@ const ledgerReportData = computed(() => {
                                         <td colspan="8" class="py-12 text-center text-gray-400 font-sans">To'lov jadvali mavjud emas.</td>
                                     </tr>
                                 </tbody>
+                                <tfoot v-if="getContractPaymentRows(selectedContract).length > 0" class="bg-slate-100/90 border-t-2 border-slate-300 font-bold text-xs font-mono">
+                                    <tr class="text-slate-900">
+                                        <td colspan="2" class="p-3 text-center uppercase font-sans font-extrabold text-slate-700 tracking-wider">JAMI:</td>
+                                        <td class="p-3 text-right text-slate-900 font-extrabold">{{ Number(getContractPaymentRows(selectedContract).reduce((sum, r) => sum + Number(r.expected_amount || 0), 0)).toLocaleString('en-US') }}</td>
+                                        <td class="p-3 text-right text-emerald-600 font-extrabold">{{ Number(getContractPaymentRows(selectedContract).reduce((sum, r) => sum + Number(r.paid_amount || 0), 0)).toLocaleString('en-US') }}</td>
+                                        <td class="p-3 text-right text-red-500 font-extrabold">{{ Number(getContractPaymentRows(selectedContract).reduce((sum, r) => sum + Number(Math.max(0, (r.expected_amount || 0) - (r.paid_amount || 0))), 0)).toLocaleString('en-US') }}</td>
+                                        <td class="p-3"></td>
+                                        <td class="p-3 text-right text-indigo-600 font-extrabold">{{ Number(getContractPaymentRows(selectedContract).reduce((sum, r) => sum + Number(r.penalty || 0), 0)).toLocaleString('en-US') }}</td>
+                                        <td class="p-3 text-center">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase font-sans"
+                                                  :class="getContractPaymentRows(selectedContract).reduce((sum, r) => sum + Number(Math.max(0, (r.expected_amount || 0) - (r.paid_amount || 0))), 0) <= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">
+                                                {{ getContractPaymentRows(selectedContract).reduce((sum, r) => sum + Number(Math.max(0, (r.expected_amount || 0) - (r.paid_amount || 0))), 0) <= 0 ? "To'liq To'langan" : "Qoldiq Mavjud" }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>

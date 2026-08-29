@@ -224,10 +224,11 @@ const expandedExpenses = computed(() => {
     let list = [];
     let idx = 1;
     
-    // Filter to get sarmoyalar: expense transactions (excluding advances and dividends) plus any incomes
+    // Filter to get sarmoyalar: expense transactions (excluding partner payouts/advances/dividends) plus any incomes
     const sarmoyalar = transactions.value.filter(t => {
-        const catName = t.category_display || '';
-        return t.type === 'income' || (t.type === 'expense' && catName !== 'Partner Advance' && catName !== 'Divident');
+        const catName = t.category_display || t.category || '';
+        const isPartnerPayout = t.target_type === 'partner' || t.transaction_subtype === 'partner_payout' || ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi'].includes(catName);
+        return t.type === 'income' || (t.type === 'expense' && !isPartnerPayout && catName !== '' && catName !== 'Partner Advance' && catName !== 'Divident');
     });
 
     sarmoyalar.forEach(t => {
@@ -251,7 +252,7 @@ const expandedExpenses = computed(() => {
                 id: t.id,
                 idx: idx++,
                 date: t.transaction_date || t.created_at,
-                tovar_nomi: parsedInfo.purpose || t.category_display || 'Sarmoya',
+                tovar_nomi: parsedInfo.purpose || t.category_display || t.category || 'Sarmoya',
                 amount: t.amount,
                 notes: parsedInfo.comment,
                 status: t.status,
@@ -274,10 +275,11 @@ const expandedAdvances = computed(() => {
     let list = [];
     let idx = 1;
     
-    // Filter to get olingan pullar: Partner Advance and Divident
+    // Filter to get olingan pullar: Partner Advance, Divident, and any payout to partner
     const advances = transactions.value.filter(t => {
-        const catName = t.category_display || '';
-        return t.type === 'expense' && (catName === 'Partner Advance' || catName === 'Divident');
+        const catName = t.category_display || t.category || '';
+        const isPartnerPayout = t.target_type === 'partner' || t.transaction_subtype === 'partner_payout' || ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi'].includes(catName);
+        return t.type === 'expense' && (isPartnerPayout || (!catName && t.partner_id));
     });
 
     advances.forEach(t => {
@@ -297,7 +299,7 @@ const expandedAdvances = computed(() => {
                 });
             });
         } else {
-            let defaultName = t.category_display === 'Divident' ? 'Divident (Shaxsiy foyda)' : 'Avans (Kassadan pul olish)';
+            let defaultName = (t.category_display === 'Divident' || t.category === 'Divident') ? 'Divident (Shaxsiy foyda)' : (t.notes || 'Hamkorga to\'lov (Kassadan pul berildi)');
             list.push({
                 id: t.id,
                 idx: idx++,

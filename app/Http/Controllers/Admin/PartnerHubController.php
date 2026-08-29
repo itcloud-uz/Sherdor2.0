@@ -61,7 +61,35 @@ class PartnerHubController extends Controller
         foreach ($partners as $partner) {
             $registerIds = $this->getPartnerRegisterIds($partner);
 
-            // Jami qilingan sarmoya: sum of expense transactions reported by the partner OR their cash registers (not advance/dividend) + any incomes
+            $isPartnerPayoutQ = function($q) use ($partner) {
+                $q->where('target_type', 'partner')
+                  ->orWhere('transaction_subtype', 'partner_payout')
+                  ->orWhereIn('category', ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi'])
+                  ->orWhere(function($sq) use ($partner) {
+                      $sq->where('partner_id', $partner->id)
+                         ->where(function($catQ) {
+                             $catQ->whereNull('category')
+                                  ->orWhereNotIn('category', ['Qurilish', 'Material', 'Ish haqi', 'Ovqatlanish', 'Texnika', 'Boshqa xarajat']);
+                         });
+                  });
+            };
+
+            // Jami olingan so'mma: all expenses paid to or withdrawn by the partner
+            $partner->total_olingan = \App\Models\Transaction::where('status', 'approved')
+                ->where(function($q) use ($partner, $registerIds) {
+                    $q->where('partner_id', $partner->id)
+                      ->orWhere(function($sq) use ($partner) {
+                          $sq->where('target_type', 'partner')->where('target_id', $partner->id);
+                      });
+                    if (!empty($registerIds)) {
+                        $q->orWhereIn('account_id', $registerIds);
+                    }
+                })
+                ->where('type', 'expense')
+                ->where($isPartnerPayoutQ)
+                ->sum('amount');
+
+            // Jami qilingan sarmoya: initial investment + reported expenses on behalf of the company (not payouts/advances) + any incomes
             $dynamicSarmoya = \App\Models\Transaction::where('status', 'approved')
                 ->where(function($q) use ($partner, $registerIds) {
                     $q->where('partner_id', $partner->id);
@@ -69,31 +97,16 @@ class PartnerHubController extends Controller
                         $q->orWhereIn('account_id', $registerIds);
                     }
                 })
-                ->where(function($q) {
-                    $q->where(function($sq) {
+                ->where(function($q) use ($isPartnerPayoutQ) {
+                    $q->where(function($sq) use ($isPartnerPayoutQ) {
                         $sq->where('type', 'expense')
-                            ->where(function($cQuery) {
-                                $cQuery->whereNotIn('category', ['Partner Advance', 'Divident'])
-                                       ->orWhereNull('category');
-                            });
+                           ->whereNot($isPartnerPayoutQ);
                     })->orWhere('type', 'income');
                 })
                 ->sum('amount');
 
             $partner->dynamic_sarmoya = $dynamicSarmoya;
             $partner->total_sarmoya = $partner->total_invested + $dynamicSarmoya;
-
-            // Jami olingan so'mma: advances and dividends
-            $partner->total_olingan = \App\Models\Transaction::where('status', 'approved')
-                ->where(function($q) use ($partner, $registerIds) {
-                    $q->where('partner_id', $partner->id);
-                    if (!empty($registerIds)) {
-                        $q->orWhereIn('account_id', $registerIds);
-                    }
-                })
-                ->where('type', 'expense')
-                ->whereIn('category', ['Partner Advance', 'Divident'])
-                ->sum('amount');
 
             // Hisoblangan ulush: 50% (or share %) of the total cash balance / net profit
             $umumiySumma = $dynamicUZS > 0 ? $dynamicUZS : ($netProfit > 0 ? $netProfit : 0);
@@ -226,7 +239,10 @@ class PartnerHubController extends Controller
         $registerIds = $this->getPartnerRegisterIds($partner);
         
         $query = \App\Models\Transaction::where(function($q) use ($partner, $registerIds) {
-            $q->where('partner_id', $partner->id);
+            $q->where('partner_id', $partner->id)
+              ->orWhere(function($sq) use ($partner) {
+                  $sq->where('target_type', 'partner')->where('target_id', $partner->id);
+              });
             if (!empty($registerIds)) {
                 $q->orWhereIn('account_id', $registerIds);
             }

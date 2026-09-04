@@ -303,9 +303,21 @@ class CrmController extends Controller
             $client = new \App\Models\Client($validated);
             $client->is_blacklisted = $request->has('is_blacklisted') ? (bool)$request->is_blacklisted : false;
             if (!empty($validated['created_at'])) {
-                $client->created_at = $validated['created_at'];
+                $client->created_at = \Carbon\Carbon::parse($validated['created_at'])->format('Y-m-d H:i:s');
             }
             $client->save();
+
+            // Sync counterparty record
+            \App\Models\Counterparty::firstOrCreate(
+                ['customable_type' => \App\Models\Client::class, 'customable_id' => $client->id],
+                [
+                    'name' => trim($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')),
+                    'type' => 'client',
+                    'phone' => $client->phone,
+                    'is_active' => true
+                ]
+            );
+
             if ($request->wantsJson()) {
                 return response()->json(['status' => 'success', 'client' => $client]);
             }
@@ -366,8 +378,6 @@ class CrmController extends Controller
             unset($validated['passport_photo']);
         }
 
-
-
         if ($request->hasFile('profile_photo')) {
             if ($client->profile_photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($client->profile_photo)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($client->profile_photo);
@@ -381,11 +391,29 @@ class CrmController extends Controller
             $client->fill($validated);
             $client->is_blacklisted = $request->has('is_blacklisted') ? (bool)$request->is_blacklisted : false;
             if (!empty($validated['created_at'])) {
-                $client->created_at = $validated['created_at'];
+                $client->created_at = \Carbon\Carbon::parse($validated['created_at'])->format('Y-m-d H:i:s');
             }
             $client->save();
+
+            // Sync counterparty record
+            $counterparty = \App\Models\Counterparty::where('customable_type', \App\Models\Client::class)
+                ->where('customable_id', $client->id)
+                ->first();
+            if ($counterparty) {
+                $counterparty->update([
+                    'name' => trim($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')),
+                    'phone' => $client->phone
+                ]);
+            }
+
+            if ($request->wantsJson()) {
+                return response()->json(['status' => 'success', 'client' => $client]);
+            }
             return redirect()->back()->with('message', 'Client updated successfully.');
         } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            }
             return back()->withErrors(['server_error' => $e->getMessage()]);
         }
     }

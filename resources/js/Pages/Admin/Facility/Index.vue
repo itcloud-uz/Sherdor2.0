@@ -50,6 +50,26 @@ const isAdmin = computed(() => {
     return roles.includes('Super_Admin') || roles.includes('Admin');
 });
 
+function getLocalDateString(date = new Date()) {
+    if (!date) return '';
+    if (typeof date === 'string') {
+        const trimmed = date.trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+            return trimmed.substring(0, 10);
+        }
+        const parsed = new Date(trimmed);
+        if (isNaN(parsed.getTime())) return trimmed;
+        date = parsed;
+    }
+    if (date instanceof Date && !isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    return '';
+}
+
 const currentObject = ref(null);
 const currentView = ref('objects');
 const selectedBuilding = ref(null);
@@ -1873,7 +1893,7 @@ function openSellUnit(unit) {
         down_payment_split_months: 1,
         term_months: 12,
         payment_type: 'installment',
-        created_at: new Date().toISOString().split('T')[0], // Default to today's date
+        created_at: getLocalDateString(), // Default to today's date
         actual_paid_amount: '',
         payment_method: 'bank',
         account_id: '',
@@ -2153,7 +2173,7 @@ const quickClientForm = ref({
     address: '',
     passport_issued_date: '',
     passport_issued_by: '',
-    created_at: new Date().toISOString().split('T')[0],
+    created_at: getLocalDateString(),
     birth_date: '',
     phone_2: '+998',
     gender: 'erkak',
@@ -2336,7 +2356,7 @@ function openQuickClientAdd() {
         address: '',
         passport_issued_date: '',
         passport_issued_by: '',
-        created_at: new Date().toISOString().split('T')[0],
+        created_at: getLocalDateString(),
         birth_date: '',
         phone_2: '+998',
         gender: 'erkak',

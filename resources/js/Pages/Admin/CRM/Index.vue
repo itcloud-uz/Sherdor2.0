@@ -48,6 +48,26 @@ const props = defineProps({
     buildings: Array,
 });
 
+function getLocalDateString(date = new Date()) {
+    if (!date) return '';
+    if (typeof date === 'string') {
+        const trimmed = date.trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+            return trimmed.substring(0, 10);
+        }
+        const parsed = new Date(trimmed);
+        if (isNaN(parsed.getTime())) return trimmed;
+        date = parsed;
+    }
+    if (date instanceof Date && !isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    return '';
+}
+
 const isAdmin = computed(() => {
     const user = page.props.auth?.user;
     if (!user) return false;
@@ -303,7 +323,7 @@ const openDebtLedger = (client) => {
             id: `sum-paid-${client.id}`,
             amount: summaryPaid,
             payment_method: 'cash',
-            transaction_date: firstContract?.contract_date || firstContract?.created_at || client.created_at || new Date().toISOString(),
+            transaction_date: firstContract?.contract_date || firstContract?.created_at || client.created_at || getLocalDateString(),
             notes: 'Mijoz to\'lovi'
         });
     }
@@ -762,13 +782,13 @@ function openCustomScheduleModal() {
 }
 
 function addLocalScheduleRow() {
-    let defaultDate = new Date().toISOString().substring(0, 10);
+    let defaultDate = getLocalDateString();
     if (localSchedules.value.length > 0) {
         const lastDateStr = localSchedules.value[localSchedules.value.length - 1].due_date;
         if (lastDateStr) {
             const lastDate = new Date(lastDateStr);
             lastDate.setMonth(lastDate.getMonth() + 1);
-            defaultDate = lastDate.toISOString().substring(0, 10);
+            defaultDate = getLocalDateString(lastDate);
         }
     }
     localSchedules.value.push({
@@ -946,8 +966,8 @@ function editSchedule(schedule) {
     editingPaidAmount.value = '';
     editingPaymentMethod.value = schedule.payment_method || 'naqd';
     editingActualPaymentDate.value = schedule.actual_payment_date 
-        ? schedule.actual_payment_date.substring(0, 10)
-        : new Date().toISOString().split('T')[0];
+        ? getLocalDateString(schedule.actual_payment_date)
+        : getLocalDateString();
 }
 
 function saveSchedulePayment(schedule) {
@@ -1122,7 +1142,7 @@ function downloadPaymentsExcelTemplate() {
 function parseExcelDate(rawDate) {
     if (!rawDate) return '';
     if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
-        return rawDate.toISOString().split('T')[0];
+        return getLocalDateString(rawDate);
     }
     const str = String(rawDate).trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
@@ -1138,12 +1158,12 @@ function parseExcelDate(rawDate) {
     if (!isNaN(Number(str)) && Number(str) > 20000) {
         const jsDate = new Date(Math.round((Number(str) - 25569) * 86400 * 1000));
         if (!isNaN(jsDate.getTime())) {
-            return jsDate.toISOString().split('T')[0];
+            return getLocalDateString(jsDate);
         }
     }
     const parsed = new Date(str);
     if (!isNaN(parsed.getTime())) {
-        return parsed.toISOString().split('T')[0];
+        return getLocalDateString(parsed);
     }
     return str;
 }
@@ -1567,7 +1587,7 @@ function openCreateClientModal() {
         address: '',
         passport_issued_date: '',
         passport_issued_by: '',
-        created_at: new Date().toISOString().split('T')[0],
+        created_at: getLocalDateString(),
         birth_date: '',
         phone_2: '+998',
         region: '',
@@ -1597,17 +1617,17 @@ function openEditClientModal(client) {
     selectedBuildingId.value = '';
     selectedFacilityName.value = '';
     clientForm.value = { 
-        first_name: client.first_name, 
-        last_name: client.last_name, 
+        first_name: client.first_name || '', 
+        last_name: client.last_name || '', 
         middle_name: client.middle_name || '',
-        passport_series: client.passport_number || client.passport_series, 
-        pinfl: client.pinfl, 
+        passport_series: client.passport_number || client.passport_series || '', 
+        pinfl: client.pinfl || '', 
         phone: client.phone || '+998', 
         address: client.address || '',
-        passport_issued_date: client.passport_issued_date || '',
+        passport_issued_date: client.passport_issued_date ? getLocalDateString(client.passport_issued_date) : '',
         passport_issued_by: client.passport_issued_by || '',
-        created_at: client.created_at ? new Date(client.created_at).toISOString().slice(0, 10) : '',
-        birth_date: client.birth_date || '',
+        created_at: client.created_at ? getLocalDateString(client.created_at) : getLocalDateString(),
+        birth_date: client.birth_date ? getLocalDateString(client.birth_date) : '',
         phone_2: client.phone_2 || '+998',
         region: client.region || '',
         district: client.district || '',
@@ -1640,7 +1660,7 @@ function openEditClientModal(client) {
             down_payment: contract.down_payment, 
             term_months: contract.term_months, 
             payment_type: contract.payment_type || 'installment',
-            created_at: contract.created_at ? new Date(contract.created_at).toISOString().split('T')[0] : '',
+            created_at: contract.created_at ? getLocalDateString(contract.created_at) : getLocalDateString(),
             actual_paid_amount: existingPaidSum || '',
             payment_method: firstTx ? firstTx.account_type || 'bank' : 'bank',
             account_id: firstTx ? firstTx.account_id || '' : '',
@@ -1694,25 +1714,34 @@ function prevStep() {
 function saveClient() {
     isProcessing.value = true;
     if (isEditingClient.value) {
-        router.post(route('admin.crm.clients.update', editingClientId.value), {
-            _method: 'PUT',
-            ...clientForm.value
-        }, {
+        const formData = new FormData();
+        formData.append('_method', 'PUT');
+        for (const key in clientForm.value) {
+            if (clientForm.value[key] !== null && clientForm.value[key] !== undefined) {
+                formData.append(key, clientForm.value[key]);
+            }
+        }
+
+        axios.post(route('admin.crm.clients.update', editingClientId.value), formData, {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                showCreateClientModal.value = false;
-                isProcessing.value = false;
-                if (detailedClientData.value && detailedClientData.value.id === editingClientId.value) {
-                    selectClientForDetail(detailedClientData.value);
-                }
-            },
-            onError: (errors) => {
-                isProcessing.value = false;
-                console.error("Mijozni saqlashda xatolik:", errors);
-                const errorMsgs = Object.values(errors).join("\n");
-                alert("Mijozni saqlashda xatolik yuz berdi:\n" + errorMsgs);
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'Accept': 'application/json'
             }
+        }).then(response => {
+            showCreateClientModal.value = false;
+            isProcessing.value = false;
+            if (detailedClientData.value && detailedClientData.value.id === editingClientId.value) {
+                selectClientForDetail(detailedClientData.value);
+            } else {
+                router.reload({ only: ['clients', 'contracts'] });
+            }
+        }).catch(error => {
+            isProcessing.value = false;
+            console.error("Mijozni saqlashda xatolik:", error);
+            const msg = error.response?.data?.message || error.message || 'Mijozni saqlashda xatolik yuz berdi';
+            alert("Mijozni saqlashda xatolik: " + msg);
         });
     } else {
         const formData = new FormData();
@@ -1922,13 +1951,7 @@ function editContract(contract) {
     const existingPaidSum = incomeTxns.reduce((sum, t) => sum + Number(t.amount || 0), 0);
     const firstTx = incomeTxns.length > 0 ? incomeTxns[0] : null;
 
-    let createdAtStr = '';
-    if (contract.created_at) {
-        const d = new Date(contract.created_at);
-        if (!isNaN(d.getTime())) {
-            createdAtStr = d.toISOString().split('T')[0];
-        }
-    }
+    let createdAtStr = contract.created_at ? getLocalDateString(contract.created_at) : getLocalDateString();
 
     contractForm.value = { 
         buyer_type: contract.partner_id ? 'partner' : 'client',
@@ -2385,7 +2408,7 @@ const exportSalesStatsToExcel = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `sotuv_xodimlari_statistikasi_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `sotuv_xodimlari_statistikasi_${getLocalDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -3617,7 +3640,7 @@ function openContractModalForLead() {
         down_payment: '', 
         term_months: 36, 
         payment_type: 'installment', 
-        created_at: new Date().toISOString().split('T')[0], 
+        created_at: getLocalDateString(), 
         actual_paid_amount: '', 
         payment_method: 'bank', 
         account_id: '', 
@@ -3708,7 +3731,7 @@ function distributeRefundInstallments() {
     for (let i = 1; i <= count; i++) {
         const d = new Date();
         d.setMonth(d.getMonth() + i);
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = getLocalDateString(d);
         
         // Handle remainder in the last installment
         const amt = i === count ? (totalToRefund - (splitAmount * (count - 1))) : splitAmount;
@@ -4852,7 +4875,7 @@ const transactionForm = ref({
     counterparty_id: '',
     contract_id: '',
     client_id: '',
-    transaction_date: new Date().toISOString().split('T')[0],
+    transaction_date: getLocalDateString(),
     notes: '',
     auto_approve: true,
 });
@@ -4875,7 +4898,7 @@ function openQuickTransaction(type = 'income', client = null) {
         counterparty_id: '',
         contract_id: '',
         client_id: '',
-        transaction_date: new Date().toISOString().split('T')[0],
+        transaction_date: getLocalDateString(),
         notes: '',
         auto_approve: true,
     };

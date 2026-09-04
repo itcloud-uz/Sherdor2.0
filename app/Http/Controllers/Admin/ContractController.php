@@ -93,8 +93,9 @@ class ContractController extends Controller
             }
             
             if (!empty($validated['created_at'])) {
-                $contract->created_at = $validated['created_at'];
-                $contract->updated_at = $validated['created_at'];
+                $contractDate = \Carbon\Carbon::parse($validated['created_at'])->format('Y-m-d H:i:s');
+                $contract->created_at = $contractDate;
+                $contract->updated_at = $contractDate;
                 $contract->timestamps = false; // Disable timestamps for this specific insert
             }
             $contract->save();
@@ -749,7 +750,7 @@ class ContractController extends Controller
                 ['type' => 'income', 'description' => 'Shartnoma bo\'yicha mijozdan tushgan to\'lov']
             );
 
-            $paymentMethod = request()->input('payment_method', 'bank');
+            $txDate = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at)->toDateString() : now()->toDateString();
 
             $tx = \App\Models\Transaction::create([
                 'type' => 'income',
@@ -762,7 +763,7 @@ class ContractController extends Controller
                 'building_id' => $buildingId,
                 'category_id' => $incomeCategory->id,
                 'status' => 'pending',
-                'transaction_date' => now(),
+                'transaction_date' => $txDate,
                 'notes' => 'Shartnoma aktivlashtirish paytidagi to\'lov (' . $paymentMethod . ')',
                 'created_by' => auth()->id() ?? 1,
             ]);

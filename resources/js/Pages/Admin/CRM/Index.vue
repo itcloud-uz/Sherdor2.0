@@ -1384,6 +1384,7 @@ function openEditLeadModal(lead) {
         assigned_employee_id: lead.assigned_employee_id || '', 
         source: lead.source || 'manual', 
         is_manual: lead.source === 'manual',
+        status: lead.status || 'new',
         email: lead.email || '',
         social_url: lead.social_url || '',
         passport_photo: null,
@@ -1417,6 +1418,7 @@ function openDetailedLeadModal() {
         budget: '', 
         currency: 'uzs', 
         comment: '',
+        status: 'qualified',
         passport_photo: null,
         passport_photo_back: null,
         passport_issued_date: '',
@@ -1448,6 +1450,7 @@ function openCreateLeadModal() {
         budget: '',
         currency: 'uzs',
         comment: '',
+        status: 'new',
         passport_photo: null,
         passport_photo_back: null,
         passport_issued_date: '',
@@ -1517,15 +1520,12 @@ function submitNewLead() {
                     budget: '',
                     currency: 'uzs',
                     comment: '',
+                    status: 'new',
                     passport_photo: null,
                     passport_photo_back: null,
                     passport_issued_date: '',
                     passport_issued_by: '',
                 };
-                
-                if (response.data?.client) {
-                    activeTab.value = 'clients';
-                }
                 
                 router.reload({ preserveScroll: true });
             })

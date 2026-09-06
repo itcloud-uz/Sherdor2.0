@@ -23,7 +23,7 @@ class LeadController extends Controller
             'phone' => 'required|string|max:20',
             'phone_2' => 'nullable|string|max:20',
             'passport_series' => 'nullable|string|max:255',
-            'gender' => 'nullable|string|in:Erkak,Ayol',
+            'gender' => 'nullable|string|in:Erkak,Ayol,erkak,ayol',
             'birth_date' => 'nullable|date',
             'region' => 'nullable|string|max:255',
             'district' => 'nullable|string|max:255',
@@ -33,6 +33,7 @@ class LeadController extends Controller
             'email' => 'nullable|string|email|max:255',
             'social_url' => 'nullable|string|max:1000',
             'source' => 'nullable|string|max:255',
+            'status' => 'nullable|string|in:new,contacted,qualified,lost',
             'user_id' => 'nullable|exists:users,id',
             'passport_photo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
             'passport_photo_back' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
@@ -63,6 +64,17 @@ class LeadController extends Controller
                 $passportPhotoBackPath = $request->file('passport_photo_back')->store('passport_photos', 'public');
             }
 
+            $targetStatus = $request->input('status', 'new');
+            if (!in_array($targetStatus, ['new', 'contacted', 'qualified', 'lost'])) {
+                $targetStatus = 'new';
+            }
+
+            $comment = $validated['comment'] ?? null;
+            if ($request->filled('budget')) {
+                $budgetStr = "Byudjet: " . $request->input('budget') . " " . strtoupper($request->input('currency', 'uzs'));
+                $comment = !empty($comment) ? "[{$budgetStr}] " . $comment : $budgetStr;
+            }
+
             $lead = Lead::create([
                 'full_name' => $fullName,
                 'first_name' => $validated['first_name'] ?? null,
@@ -79,23 +91,16 @@ class LeadController extends Controller
                 'region' => $validated['region'] ?? null,
                 'district' => $validated['district'] ?? null,
                 'address' => $validated['address'] ?? null,
-                'comment' => $validated['comment'] ?? null,
+                'comment' => $comment,
                 'assigned_employee_id' => $validated['assigned_employee_id'] ?? null,
                 'email' => $validated['email'] ?? null,
                 'social_url' => $validated['social_url'] ?? null,
                 'source' => $source,
-                'status' => 'new',
+                'status' => $targetStatus,
                 'user_id' => $validated['user_id'] ?? null,
                 'passport_issued_date' => $validated['passport_issued_date'] ?? null,
                 'passport_issued_by' => $validated['passport_issued_by'] ?? null,
             ]);
-
-            // Sync to Client table while keeping lead in Saralangan column
-            $lead->status = 'qualified';
-            $lead->save();
-
-            $crmController = new \App\Http\Controllers\Admin\CrmController();
-            return $crmController->syncLeadToClient($lead, $request, false);
 
             // Send Telegram Notification
             $settings = \App\Models\SystemSetting::first();
@@ -124,10 +129,16 @@ class LeadController extends Controller
                 }
             }
 
-            $successMsg = $settings->promo_success_message ?? 'Rahmat! Menejerimiz tez orada aloqaga chiqadi';
+            // If explicitly created as 'qualified' (e.g. via '+ Yangi Lid qo\'shish'), sync to Client table
+            if ($targetStatus === 'qualified') {
+                $crmController = new \App\Http\Controllers\Admin\CrmController();
+                return $crmController->syncLeadToClient($lead, $request, false);
+            }
+
+            $successMsg = $settings->promo_success_message ?? 'Yangi lid muvaffaqiyatli saqlandi!';
 
             return response()->json([
-                'message' => $successMsg,
+                'message' => 'Yangi lid muvaffaqiyatli saqlandi!',
                 'lead' => $lead
             ], 201);
             

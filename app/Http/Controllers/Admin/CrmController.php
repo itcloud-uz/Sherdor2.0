@@ -526,10 +526,6 @@ class CrmController extends Controller
             return $this->syncLeadToClient($lead, $request, false);
         }
 
-        if (!empty($lead->passport_series) && !empty($lead->region) && !empty($lead->district) && !empty($lead->address)) {
-            return $this->syncLeadToClient($lead, $request, false);
-        }
-
         return redirect()->back()->with('message', 'Status yangilandi.');
     }
 

@@ -28,6 +28,7 @@ class Building extends Model
         'photo_path',
         'block_name',
         'corpus_name',
+        'construction_area',
         'length_m',
         'width_m',
         'height_m',

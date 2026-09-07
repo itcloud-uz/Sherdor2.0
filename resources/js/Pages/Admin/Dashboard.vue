@@ -72,6 +72,7 @@ const groupedBuildingsSummary = computed(() => {
                 name: name,
                 photo_path: b.photo_path,
                 total_units: 0,
+                total_construction_area: 0,
                 residential_count: 0,
                 commercial_count: 0,
                 parking_count: 0,
@@ -87,10 +88,12 @@ const groupedBuildingsSummary = computed(() => {
                 rooms_distribution: {},
                 total_sum: 0,
                 sold_sum: 0,
-                debt_sum: 0
+                debt_sum: 0,
+                blocks: []
             };
         }
         groups[name].total_units += b.total_units || 0;
+        groups[name].total_construction_area += Number(b.construction_area) || 0;
         groups[name].residential_count += b.residential_count || 0;
         groups[name].commercial_count += b.commercial_count || 0;
         groups[name].parking_count += b.parking_count || 0;
@@ -115,6 +118,25 @@ const groupedBuildingsSummary = computed(() => {
                 groups[name].rooms_distribution[r] = (groups[name].rooms_distribution[r] || 0) + (rd.count || 0);
             });
         }
+
+        groups[name].blocks.push({
+            id: b.id,
+            block_name: b.block_name || 'Asosiy Blok',
+            corpus_name: b.corpus_name,
+            total_floors: b.total_floors,
+            construction_area: Math.round((Number(b.construction_area) || 0) * 100) / 100,
+            total_area: Math.round((Number(b.total_area) || 0) * 100) / 100,
+            residential_count: b.residential_count || 0,
+            residential_area: Math.round((Number(b.residential_area) || 0) * 100) / 100,
+            commercial_count: b.commercial_count || 0,
+            commercial_area: Math.round((Number(b.commercial_area) || 0) * 100) / 100,
+            parking_count: b.parking_count || 0,
+            parking_area: Math.round((Number(b.parking_area) || 0) * 100) / 100,
+            total_units: b.total_units || 0,
+            sold_units: b.sold_units || 0,
+            available_units: b.available_units || 0,
+            reserved_units: b.reserved_units || 0,
+        });
     });
     
     return Object.values(groups).map(g => {
@@ -124,6 +146,7 @@ const groupedBuildingsSummary = computed(() => {
             
         return {
             ...g,
+            total_construction_area: Math.round(g.total_construction_area * 100) / 100,
             total_area: Math.round(g.total_area * 100) / 100,
             residential_area: Math.round(g.residential_area * 100) / 100,
             commercial_area: Math.round(g.commercial_area * 100) / 100,
@@ -349,7 +372,7 @@ const monthlySalesSeries = computed(() => [{
                     <div 
                         v-for="building in filteredBuildingsSummary" 
                         :key="building.id" 
-                        class="w-[340px] sm:w-[360px] shrink-0 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 space-y-5"
+                        class="w-[360px] sm:w-[410px] shrink-0 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 space-y-5"
                     >
                         <!-- Top Header & Progress -->
                         <div>
@@ -388,22 +411,97 @@ const monthlySalesSeries = computed(() => [{
                                 </div>
                             </div>
 
-                            <!-- 3-Item Category Breakdown Banner -->
-                            <div class="grid grid-cols-3 gap-2 mb-4">
-                                <div class="bg-slate-50 p-2.5 rounded-xl border border-gray-100 text-center">
-                                    <span class="text-base">🏠</span>
-                                    <p class="text-sm font-black text-gray-900 leading-tight mt-0.5">{{ building.residential_count || 0 }} ta</p>
-                                    <p class="text-[11px] text-gray-500 font-semibold">Turar-joy</p>
+                            <!-- 1. JAMI QURILISH MAYDONI -->
+                            <div class="mb-3.5 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-3.5 rounded-2xl border border-amber-200/80 shadow-2xs">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center text-white font-bold text-sm shadow-xs shrink-0">
+                                            🏗️
+                                        </div>
+                                        <div>
+                                            <p class="text-[11px] text-amber-900 font-black uppercase tracking-wider">1. Jami Qurilish Maydoni</p>
+                                            <p class="text-[11px] text-amber-700/80 font-medium">Barcha bloklar umumiy qurilishi</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-base font-black text-amber-950 font-mono tracking-tight">
+                                            {{ Number(building.total_construction_area).toLocaleString('uz-UZ') }} m²
+                                        </span>
+                                    </div>
                                 </div>
-                                <div class="bg-slate-50 p-2.5 rounded-xl border border-gray-100 text-center">
-                                    <span class="text-base">🏬</span>
-                                    <p class="text-sm font-black text-gray-900 leading-tight mt-0.5">{{ building.commercial_count || 0 }} ta</p>
-                                    <p class="text-[11px] text-gray-500 font-semibold">Do'kon</p>
+                            </div>
+
+                            <!-- 2. QURILADIGAN BLOK MAYDONI -->
+                            <div class="mb-3.5 bg-slate-50/90 p-3.5 rounded-2xl border border-gray-200/70 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-xs">🏢</span>
+                                        <p class="text-[11px] text-gray-800 font-extrabold uppercase tracking-wider">2. Quriladigan Blok Maydonlari</p>
+                                    </div>
+                                    <span class="text-[10px] font-extrabold text-gray-500 bg-white px-2 py-0.5 rounded-md border border-gray-200">
+                                        {{ building.blocks?.length || 0 }} ta blok
+                                    </span>
                                 </div>
-                                <div class="bg-slate-50 p-2.5 rounded-xl border border-gray-100 text-center">
-                                    <span class="text-base">🚗</span>
-                                    <p class="text-sm font-black text-gray-900 leading-tight mt-0.5">{{ building.parking_count || 0 }} ta</p>
-                                    <p class="text-[11px] text-gray-500 font-semibold">Parking</p>
+
+                                <div class="space-y-1.5 max-h-[145px] overflow-y-auto pr-0.5 custom-scrollbar">
+                                    <div 
+                                        v-for="blk in building.blocks" 
+                                        :key="blk.id"
+                                        class="bg-white p-2.5 rounded-xl border border-gray-100 shadow-2xs hover:border-amber-200 transition-colors"
+                                    >
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                {{ blk.block_name }}
+                                            </span>
+                                            <span class="text-xs font-black text-amber-800 font-mono bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
+                                                {{ Number(blk.construction_area).toLocaleString('uz-UZ') }} m²
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center justify-between text-[11px] text-gray-500 mt-1">
+                                            <span>Foydali: <b class="text-gray-800 font-semibold">{{ Number(blk.total_area).toLocaleString('uz-UZ') }} m²</b></span>
+                                            <div class="flex items-center gap-1.5 text-[10px] text-gray-600 font-medium">
+                                                <span v-if="blk.residential_count" title="Turar-joy">🏠 {{ blk.residential_count }}</span>
+                                                <span v-if="blk.commercial_count" title="Do'kon">🏬 {{ blk.commercial_count }}</span>
+                                                <span v-if="blk.parking_count" title="Parking">🚗 {{ blk.parking_count }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. SOTILADIGAN JAMI FOYDALI BINO (UY, DO'KON, PARKING) -->
+                            <div class="mb-3.5 bg-emerald-50/50 p-3.5 rounded-2xl border border-emerald-100/90 space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-xs">✨</span>
+                                        <p class="text-[11px] text-emerald-950 font-black uppercase tracking-wider">3. Sotiladigan Jami Foydali Maydon</p>
+                                    </div>
+                                    <span class="text-xs font-black text-emerald-900 font-mono bg-emerald-100/80 px-2 py-0.5 rounded-md border border-emerald-200">
+                                        {{ Number(building.total_area).toLocaleString('uz-UZ') }} m²
+                                    </span>
+                                </div>
+
+                                <!-- 3-Item Breakdown Grid -->
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div class="bg-white p-2 rounded-xl border border-emerald-100 text-center shadow-2xs">
+                                        <span class="text-sm">🏠</span>
+                                        <p class="text-xs font-black text-gray-900 leading-tight mt-0.5">{{ building.residential_count || 0 }} ta</p>
+                                        <p class="text-[10px] text-emerald-700 font-bold mt-0.5">{{ Number(building.residential_area).toLocaleString('uz-UZ') }} m²</p>
+                                        <p class="text-[10px] text-gray-500 font-semibold">Turar-joy</p>
+                                    </div>
+                                    <div class="bg-white p-2 rounded-xl border border-emerald-100 text-center shadow-2xs">
+                                        <span class="text-sm">🏬</span>
+                                        <p class="text-xs font-black text-gray-900 leading-tight mt-0.5">{{ building.commercial_count || 0 }} ta</p>
+                                        <p class="text-[10px] text-emerald-700 font-bold mt-0.5">{{ Number(building.commercial_area).toLocaleString('uz-UZ') }} m²</p>
+                                        <p class="text-[10px] text-gray-500 font-semibold">Do'kon</p>
+                                    </div>
+                                    <div class="bg-white p-2 rounded-xl border border-emerald-100 text-center shadow-2xs">
+                                        <span class="text-sm">🚗</span>
+                                        <p class="text-xs font-black text-gray-900 leading-tight mt-0.5">{{ building.parking_count || 0 }} ta</p>
+                                        <p class="text-[10px] text-emerald-700 font-bold mt-0.5">{{ Number(building.parking_area).toLocaleString('uz-UZ') }} m²</p>
+                                        <p class="text-[10px] text-gray-500 font-semibold">Parking</p>
+                                    </div>
                                 </div>
                             </div>
 

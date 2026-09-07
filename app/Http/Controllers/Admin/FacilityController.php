@@ -1508,15 +1508,12 @@ class FacilityController extends Controller
 
             foreach ($existingPodezes as $oldId => $oldPodez) {
                 if (!in_array($oldId, $requestedIds)) {
-                    $hasNonAvailableUnits = Unit::where('podez_id', $oldId)
-                        ->where('status', '!=', 'available')
-                        ->exists();
-
-                    if ($hasNonAvailableUnits) {
-                        throw new \Exception("Bu podezda band qilingan yoki sotilgan kvartiralar bor! Avval ularni bekor qiling.");
+                    $hasAnyUnits = Unit::where('podez_id', $oldId)->exists();
+                    if ($hasAnyUnits) {
+                        $requestedIds[] = $oldId; // Keep existing podez and its units safe
+                        continue;
                     }
 
-                    Unit::where('podez_id', $oldId)->delete();
                     Floor::where('podez_id', $oldId)->delete();
                     $oldPodez->delete();
                 }
@@ -1537,10 +1534,12 @@ class FacilityController extends Controller
 
     private function syncFloorsForPodez(Podez $podez, ?array $floorsConfig = null): void
     {
-        $totalFloors = (int) $podez->total_floors;
         $building = $podez->building;
-
         $existingFloors = $podez->floors()->get()->keyBy('floor_number');
+        $maxExistingFloor = $existingFloors->keys()->filter(fn($k) => is_numeric($k) && $k > 0)->max() ?: 1;
+        $buildingTotalFloors = (int) ($building->total_floors ?? 1);
+        $totalFloors = max((int) $podez->total_floors, $buildingTotalFloors, $maxExistingFloor);
+
         $basementFloors = (int) ($building->basement_floors ?? 0);
         $desiredFloorNumbers = [];
         for ($b = -$basementFloors; $b <= -1; $b++) { $desiredFloorNumbers[] = $b; }
@@ -1548,13 +1547,11 @@ class FacilityController extends Controller
 
         foreach ($existingFloors as $floorNum => $floor) {
             if (!in_array($floorNum, $desiredFloorNumbers)) {
-                $hasNonAvailable = $floor->units()->where('status', '!=', 'available')->exists();
-                if (!$hasNonAvailable) {
-                    $floor->units()->delete();
-                    $floor->delete();
-                } else {
-                    throw new \Exception("Podezda band qilingan yoki sotilgan kvartiralar bor qavatni o'chirib bo'lmaydi.");
+                // Never delete a floor if it contains ANY units (whether available, reserved, or sold)
+                if ($floor->units()->exists()) {
+                    continue;
                 }
+                $floor->delete();
             }
         }
 

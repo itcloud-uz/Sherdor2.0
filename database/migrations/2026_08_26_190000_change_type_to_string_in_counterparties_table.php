@@ -12,6 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
         // Alter type column from ENUM to VARCHAR(50)
         DB::statement("ALTER TABLE `counterparties` MODIFY COLUMN `type` VARCHAR(50) NOT NULL DEFAULT 'client'");
     }
@@ -21,6 +24,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
         DB::statement("ALTER TABLE `counterparties` MODIFY COLUMN `type` VARCHAR(50) NOT NULL DEFAULT 'client'");
     }
 };

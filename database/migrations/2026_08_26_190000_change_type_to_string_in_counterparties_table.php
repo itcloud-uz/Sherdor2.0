@@ -12,10 +12,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (DB::getDriverName() === 'sqlite') {
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
             return;
         }
-        // Alter type column from ENUM to VARCHAR(50)
+        if ($driver === 'pgsql') {
+            DB::statement("ALTER TABLE counterparties ALTER COLUMN type TYPE VARCHAR(50), ALTER COLUMN type SET DEFAULT 'client'");
+            return;
+        }
+        // Alter type column from ENUM to VARCHAR(50) (MySQL)
         DB::statement("ALTER TABLE `counterparties` MODIFY COLUMN `type` VARCHAR(50) NOT NULL DEFAULT 'client'");
     }
 
@@ -24,7 +29,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (DB::getDriverName() === 'sqlite') {
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+            return;
+        }
+        if ($driver === 'pgsql') {
+            DB::statement("ALTER TABLE counterparties ALTER COLUMN type TYPE VARCHAR(50), ALTER COLUMN type SET DEFAULT 'client'");
             return;
         }
         DB::statement("ALTER TABLE `counterparties` MODIFY COLUMN `type` VARCHAR(50) NOT NULL DEFAULT 'client'");

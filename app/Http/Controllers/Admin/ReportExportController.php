@@ -102,10 +102,17 @@ class ReportExportController extends Controller
                     </thead>
                     <tbody>';
                 foreach ($group['transactions'] as $txn) {
+                    $creatorName = 'N/A';
+                    if (is_object($txn->creator)) {
+                        $creatorName = $txn->creator->name ?? 'N/A';
+                    } elseif (is_string($txn->creator)) {
+                        $creatorName = $txn->creator;
+                    }
+
                     $html .= '<tr>
                         <td>' . Carbon::parse($txn->transaction_date ?: $txn->updated_at)->format('d/m/Y') . '</td>
                         <td>' . htmlspecialchars($txn->notes ?: 'Izohsiz') . '</td>
-                        <td>' . htmlspecialchars($txn->creator->name ?? 'N/A') . '</td>
+                        <td>' . htmlspecialchars($creatorName) . '</td>
                         <td style="text-align: right;">' . number_format($txn->amount, 0, '.', ' ') . '</td>
                     </tr>';
                 }

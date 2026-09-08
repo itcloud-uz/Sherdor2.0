@@ -84,6 +84,11 @@ class Client extends Model
         return $this->hasMany(Contract::class);
     }
 
+    public function transactions()
+    {
+        return $this->hasManyThrough(Transaction::class, Contract::class);
+    }
+
     public function comments()
     {
         return $this->hasMany(ClientComment::class)->latest();

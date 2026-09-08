@@ -53,6 +53,11 @@ class Building extends Model
         return $this->hasMany(Floor::class);
     }
 
+    public function units()
+    {
+        return $this->hasManyThrough(Unit::class, Floor::class);
+    }
+
     public function podezes()
     {
         return $this->hasMany(Podez::class, 'building_id');

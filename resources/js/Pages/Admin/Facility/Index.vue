@@ -1510,23 +1510,23 @@ function exportSmetaExcel() {
     
     XLSX.writeFile(wb, bName.replace(/\s+/g, '_') + "_Qurilish_Smetasi.xlsx");
 }
-const selectedCity = ref('');
+const selectedRegion = ref('');
 const selectedDistrict = ref('');
 const selectedRoomsFilter = ref('');
 const selectedStatusFilter = ref('');
 
-const cities = computed(() => {
+const regions = computed(() => {
     if (!props.buildings) return [];
-    return [...new Set(props.buildings.map(b => b.city).filter(Boolean))].sort();
+    return [...new Set(props.buildings.map(b => b.district).filter(Boolean))].sort();
 });
 
 const districts = computed(() => {
     if (!props.buildings) return [];
     let filtered = props.buildings;
-    if (selectedCity.value) {
-        filtered = filtered.filter(b => b.city === selectedCity.value);
+    if (selectedRegion.value) {
+        filtered = filtered.filter(b => b.district === selectedRegion.value);
     }
-    return [...new Set(filtered.map(b => b.district).filter(Boolean))].sort();
+    return [...new Set(filtered.map(b => b.city).filter(Boolean))].sort();
 });
 
 const filteredBuildings = computed(() => {
@@ -1564,13 +1564,13 @@ const filteredBuildings = computed(() => {
             }
         }
 
-        // 2. City Filter
-        if (!currentObject.value && selectedCity.value && b.city !== selectedCity.value) {
+        // 2. Viloyat (Region) Filter
+        if (!currentObject.value && selectedRegion.value && b.district !== selectedRegion.value) {
             return false;
         }
 
-        // 3. District Filter
-        if (!currentObject.value && selectedDistrict.value && b.district !== selectedDistrict.value) {
+        // 3. Tuman (District) Filter
+        if (!currentObject.value && selectedDistrict.value && b.city !== selectedDistrict.value) {
             return false;
         }
 
@@ -3611,15 +3611,15 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </div>
 
                     <div class="flex flex-wrap items-center gap-4">
-                        <!-- Shahar/Viloyat Filtr -->
+                        <!-- Viloyat Filtr -->
                         <div class="w-full sm:w-44 relative">
                             <select 
-                                v-model="selectedCity" 
+                                v-model="selectedRegion" 
                                 @change="selectedDistrict = ''"
                                 class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
                             >
                                 <option value="">Barchasi (Viloyat)</option>
-                                <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
+                                <option v-for="region in regions" :key="region" :value="region">{{ region }}</option>
                             </select>
                             <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3684,8 +3684,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 
                         <!-- Tozalash tugmasi -->
                         <button 
-                            v-if="searchQuery || selectedCity || selectedDistrict || selectedRoomsFilter || selectedStatusFilter"
-                            @click="searchQuery = ''; selectedCity = ''; selectedDistrict = ''; selectedRoomsFilter = ''; selectedStatusFilter = '';"
+                            v-if="searchQuery || selectedRegion || selectedDistrict || selectedRoomsFilter || selectedStatusFilter"
+                            @click="searchQuery = ''; selectedRegion = ''; selectedDistrict = ''; selectedRoomsFilter = ''; selectedStatusFilter = '';"
                             class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 justify-center"
                         >
                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3754,15 +3754,15 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </div>
 
                     <div class="flex flex-wrap items-center gap-4">
-                        <!-- Shahar/Viloyat Filtr -->
+                        <!-- Viloyat Filtr -->
                         <div class="w-full sm:w-44 relative">
                             <select 
-                                v-model="selectedCity" 
+                                v-model="selectedRegion" 
                                 @change="selectedDistrict = ''"
                                 class="w-full py-2.5 pl-3 pr-8 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all appearance-none cursor-pointer bg-white"
                             >
                                 <option value="">Barchasi (Viloyat)</option>
-                                <option v-for="city in cities" :key="city" :value="city">{{ city }}</option>
+                                <option v-for="region in regions" :key="region" :value="region">{{ region }}</option>
                             </select>
                             <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3827,8 +3827,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 
                         <!-- Tozalash tugmasi -->
                         <button 
-                            v-if="searchQuery || selectedCity || selectedDistrict || selectedRoomsFilter || selectedStatusFilter"
-                            @click="searchQuery = ''; selectedCity = ''; selectedDistrict = ''; selectedRoomsFilter = ''; selectedStatusFilter = '';"
+                            v-if="searchQuery || selectedRegion || selectedDistrict || selectedRoomsFilter || selectedStatusFilter"
+                            @click="searchQuery = ''; selectedRegion = ''; selectedDistrict = ''; selectedRoomsFilter = ''; selectedStatusFilter = '';"
                             class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 justify-center"
                         >
                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

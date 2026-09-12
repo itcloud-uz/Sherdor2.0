@@ -3956,24 +3956,53 @@ const docDownloadDocxUrl = ref('');
 const docPreviewLoading = ref(false);
 
 function openDocumentPreview(type, contract) {
-    if (!contract) return;
+    const target = contract?.value || contract || selectedContract.value;
+    if (!target || !target.id) return;
     docPreviewLoading.value = true;
+    const contractId = target.id;
+    const currentLang = locale?.value || 'uz';
+
     if (type === 'contract') {
         docPreviewTitle.value = 'Shartnoma';
-        docPreviewUrl.value = route('admin.contracts.document.preview', contract.id) + '?lang=' + locale.value;
-        docDownloadUrl.value = route('admin.contracts.document.export.pdf', contract.id) + '?lang=' + locale.value;
-        docDownloadDocxUrl.value = route('admin.contracts.document.export.docx', contract.id) + '?lang=' + locale.value;
+        try {
+            docPreviewUrl.value = route('admin.contracts.document.preview', contractId) + '?lang=' + currentLang;
+        } catch (e) {
+            docPreviewUrl.value = `/admin/crm/contracts/${contractId}/preview?lang=${currentLang}`;
+        }
+        try {
+            docDownloadUrl.value = route('admin.contracts.document.export.pdf', contractId) + '?lang=' + currentLang;
+        } catch (e) {
+            docDownloadUrl.value = `/admin/crm/contracts/${contractId}/export-doc/pdf?lang=${currentLang}`;
+        }
+        try {
+            docDownloadDocxUrl.value = route('admin.contracts.document.export.docx', contractId) + '?lang=' + currentLang;
+        } catch (e) {
+            docDownloadDocxUrl.value = `/admin/crm/contracts/${contractId}/export-doc/docx?lang=${currentLang}`;
+        }
     } else {
         docPreviewTitle.value = 'To\'lov Grafiki';
-        docPreviewUrl.value = route('admin.contracts.ledger.preview', contract.id);
+        try {
+            docPreviewUrl.value = route('admin.contracts.ledger.preview', contractId);
+        } catch (e) {
+            docPreviewUrl.value = `/admin/crm/ledger/${contractId}/preview`;
+        }
         
         // Dynamically use PDF/DOCX export if a schedule template exists in templates list
         const hasScheduleTpl = props.contractTemplates?.some(t => t.type === 'schedule');
         if (hasScheduleTpl) {
-            docDownloadUrl.value = route('admin.contracts.export.pdf', contract.id);
-            docDownloadDocxUrl.value = route('admin.contracts.export.docx', contract.id);
+            try {
+                docDownloadUrl.value = route('admin.contracts.export.pdf', contractId);
+                docDownloadDocxUrl.value = route('admin.contracts.export.docx', contractId);
+            } catch (e) {
+                docDownloadUrl.value = `/admin/crm/ledger/${contractId}/export/pdf`;
+                docDownloadDocxUrl.value = `/admin/crm/ledger/${contractId}/export/docx`;
+            }
         } else {
-            docDownloadUrl.value = route('admin.contracts.export.xlsx', contract.id);
+            try {
+                docDownloadUrl.value = route('admin.contracts.export.xlsx', contractId);
+            } catch (e) {
+                docDownloadUrl.value = `/admin/crm/ledger/${contractId}/export/xlsx`;
+            }
             docDownloadDocxUrl.value = '';
         }
     }
@@ -8594,8 +8623,8 @@ const ledgerReportData = computed(() => {
         </div>
 
         <!-- DOCUMENT PREVIEW MODAL (PREMIUM PREVIEW) -->
-        <div v-if="showDocPreviewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/50 transition-all">
-            <div class="bg-white border border-gray-200 shadow-xl w-full max-w-6xl rounded-2xl border border-blue-200 shadow-sm overflow-hidden flex flex-col h-[90vh]">
+        <div v-if="showDocPreviewModal" class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-all">
+            <div class="bg-white border border-gray-200 shadow-2xl w-full max-w-6xl rounded-2xl overflow-hidden flex flex-col h-[90vh]">
                 <!-- Header -->
                 <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                     <div class="flex items-center gap-2">

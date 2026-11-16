@@ -372,7 +372,7 @@ const monthlySalesSeries = computed(() => [{
                     <div 
                         v-for="building in filteredBuildingsSummary" 
                         :key="building.id" 
-                        class="w-[360px] sm:w-[410px] shrink-0 bg-white rounded-3xl border border-gray-100 p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 space-y-5"
+                        class="w-[85vw] max-w-[360px] sm:w-[410px] sm:max-w-none shrink-0 bg-white rounded-3xl border border-gray-100 p-5 sm:p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 space-y-5"
                     >
                         <!-- Top Header & Progress -->
                         <div>

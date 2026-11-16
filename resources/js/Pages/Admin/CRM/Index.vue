@@ -5591,7 +5591,7 @@ const ledgerReportData = computed(() => {
         </div>
 
         <!-- TAB 2: CLIENTS ROSTER -->
-        <div v-if="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'canceled'].includes(activeTab)" class="bg-[#f8fafc] p-6 rounded-2xl min-h-[500px]">
+        <div v-if="['clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'canceled'].includes(activeTab)" class="bg-[#f8fafc] p-3 sm:p-6 rounded-2xl min-h-[500px]">
             <div v-if="!selectedClientForDetail">
                 <!-- Breadcrumbs & Quick Sub-tabs Bar -->
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -5607,7 +5607,7 @@ const ledgerReportData = computed(() => {
                     </div>
 
                     <!-- Sub-tabs Navigation Buttons -->
-                    <div class="flex items-center gap-1.5 bg-white border border-gray-200 p-1 rounded-xl shadow-sm">
+                    <div class="flex flex-wrap items-center gap-1.5 bg-white border border-gray-200 p-1 rounded-xl shadow-sm">
                         <button 
                             @click="activeTab = 'clients'" 
                             class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
@@ -6041,6 +6041,7 @@ const ledgerReportData = computed(() => {
                 </div>
 
                 <!-- Table -->
+                <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
                     <table class="w-full text-left border-collapse text-xs font-sans whitespace-nowrap">
                         <thead>
                             <tr class="bg-[#f8fafc] border-b border-gray-200 text-gray-500 font-semibold uppercase text-[10px] tracking-wider select-none">
@@ -6199,6 +6200,7 @@ const ledgerReportData = computed(() => {
                             </tr>
                         </tbody>
                     </table>
+                </div>
                 </div>
             </div>
             

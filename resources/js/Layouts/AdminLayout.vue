@@ -388,7 +388,7 @@ const formattedDate = computed(() => {
         <div v-if="isMobileMenuOpen" @click="isMobileMenuOpen = false" class="fixed inset-0 bg-gray-500/50  z-40 md:hidden"></div>
 
         <!-- Sidebar -->
-        <aside :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" class="fixed md:relative w-[260px] h-full bg-white border-r border-gray-200 flex flex-col z-50 transition-transform duration-300 shadow-sm">
+        <aside :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" class="fixed md:relative inset-y-0 left-0 w-[260px] h-full bg-white border-r border-gray-200 flex flex-col z-50 transition-transform duration-300 shadow-sm">
             <div class="h-20 flex items-center justify-center border-b border-gray-100 px-4">
                 <div class="flex items-center gap-3 w-full">
                     <div class="w-12 h-12 rounded-full border-2 border-[#dfb15b] bg-[#090b10] flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
@@ -920,39 +920,39 @@ const formattedDate = computed(() => {
         <!-- Main Content -->
         <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
             <!-- Top Header -->
-            <header class="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-6 md:px-8 relative z-30 shrink-0 shadow-sm">
+            <header class="h-16 md:h-20 bg-white border-b border-gray-100 flex items-center justify-between px-3 sm:px-6 md:px-8 relative z-30 shrink-0 shadow-sm">
                 <!-- Left side: Title/Icon -->
-                <div class="flex items-center gap-3 flex-1 min-w-0">
-                    <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="md:hidden p-2 text-gray-500 hover:text-blue-600 focus:outline-none shrink-0">
+                <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="md:hidden p-1.5 sm:p-2 text-gray-500 hover:text-blue-600 focus:outline-none shrink-0" aria-label="Open menu">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     </button>
                     <slot name="header">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-white shrink-0 shadow-sm border border-amber-300">
-                                <svg class="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-white shrink-0 shadow-sm border border-amber-300">
+                                <svg class="w-4 h-4 sm:w-5.5 sm:h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                                     <rect x="3" y="3" width="18" height="18" rx="5" />
                                     <path d="M9 3v18M15 3v18" />
                                 </svg>
                             </div>
-                            <div>
-                                <h2 class="text-lg font-bold text-gray-900 leading-tight">
+                            <div class="min-w-0 truncate">
+                                <h2 class="text-sm sm:text-lg font-bold text-gray-900 leading-tight truncate">
                                     {{ currentNav ? $t(currentNav.name) : 'Dashboard' }}
                                 </h2>
-                                <p class="text-xs text-gray-500 font-medium mt-0.5">{{ formattedDate }}</p>
+                                <p class="text-[10px] sm:text-xs text-gray-500 font-medium mt-0.5 hidden sm:block">{{ formattedDate }}</p>
                             </div>
                         </div>
                     </slot>
                 </div>
                 
                 <!-- Right side: User Profile & Lang Switcher -->
-                <div class="flex items-center gap-4 justify-end flex-1 shrink-0">
+                <div class="flex items-center gap-2 sm:gap-4 justify-end shrink-0">
                     <!-- Language Switcher Directly Visible -->
                     <LanguageSwitcher />
 
                     <!-- User Profile Dropdown -->
                     <div class="relative group">
-                        <button class="flex items-center gap-3 p-1.5 pr-3 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200 cursor-default">
-                            <div class="w-9 h-9 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-sm border border-amber-400 overflow-hidden shadow-sm shrink-0">
+                        <button class="flex items-center gap-2 sm:gap-3 p-1 sm:p-1.5 sm:pr-3 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200 cursor-default">
+                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-xs sm:text-sm border border-amber-400 overflow-hidden shadow-sm shrink-0">
                                 <img v-if="$page.props.auth?.user?.photo_path" :src="'/storage/' + $page.props.auth.user.photo_path" class="w-full h-full object-cover">
                                 <span v-else>{{ $page.props.auth?.user?.name?.charAt(0).toUpperCase() }}</span>
                             </div>
@@ -979,7 +979,7 @@ const formattedDate = computed(() => {
             </header>
 
             <!-- Page Content -->
-            <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50" scroll-region>
+            <div class="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 bg-gray-50" scroll-region>
                 <slot />
             </div>
         </main>

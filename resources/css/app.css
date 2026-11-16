@@ -4,7 +4,12 @@
 
 @layer base {
   html {
-    font-size: 125%; /* Increases all rem-based typography globally by 25% (2 sizes) */
+    font-size: 100%;
+  }
+  @media (min-width: 1024px) {
+    html {
+      font-size: 125%; /* Increases all rem-based typography globally by 25% on desktop */
+    }
   }
   body {
     background-color: var(--body-bg-color, #F9FAFB);

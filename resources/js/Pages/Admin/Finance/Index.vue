@@ -4285,7 +4285,7 @@ function deleteCategory(id) {
                     </div>
                 </div>
 
-                <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
+                <div class="bg-white border border-gray-150 rounded-2xl overflow-x-auto shadow-sm">
                     <table class="w-full text-left text-sm font-mono">
                         <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
                             <tr>
@@ -4339,7 +4339,7 @@ function deleteCategory(id) {
                     </div>
                 </div>
 
-                <div class="bg-white border border-gray-150 rounded-2xl overflow-hidden shadow-sm">
+                <div class="bg-white border border-gray-150 rounded-2xl overflow-x-auto shadow-sm">
                     <table class="w-full text-left text-sm font-mono">
                         <thead class="bg-gray-50 text-gray-500 uppercase text-xs border-b border-gray-200">
                             <tr>

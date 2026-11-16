@@ -4324,45 +4324,43 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
             <!-- VIEW 2: Object Detail View (3rd screenshot) -->
             <div v-else-if="currentObject !== null && selectedBuilding === null" class="space-y-6">
                 <!-- Large banner with photo, showroom toggle, and Bino qo'shish button -->
-                <div class="relative h-64 rounded-2xl overflow-hidden shadow-sm">
-                    <img :src="getObjectPhoto(groupedObjects[currentObject] || [])" class="w-full h-full object-cover" />
-                    <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
-                    <div class="absolute inset-0 p-8 flex flex-col justify-between text-white">
-                        <div class="flex justify-between items-start w-full">
-                            <div></div>
-                            <!-- Controls on the right -->
-                            <div class="flex items-center gap-3 bg-black/30 p-2 rounded-xl backdrop-blur-sm border border-white/10">
-                                <div class="flex items-center gap-2 text-xs font-bold px-2">
-                                    <span class="opacity-75">2d</span>
-                                    <div class="w-10 h-5 bg-amber-500 rounded-full p-0.5 cursor-pointer relative transition-colors">
-                                        <div class="w-4 h-4 bg-white rounded-full absolute right-0.5 shadow-md"></div>
-                                    </div>
-                                    <span>3d</span>
+                <div class="relative min-h-[260px] md:h-64 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between p-4 sm:p-8">
+                    <img :src="getObjectPhoto(groupedObjects[currentObject] || [])" class="absolute inset-0 w-full h-full object-cover" />
+                    <div class="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/30"></div>
+                    <div class="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-4 w-full">
+                        <div></div>
+                        <!-- Controls on the right -->
+                        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 bg-black/40 p-1.5 sm:p-2 rounded-xl backdrop-blur-sm border border-white/10 w-full sm:w-auto justify-start sm:justify-end">
+                            <div class="flex items-center gap-1.5 text-xs font-bold px-1.5 text-white">
+                                <span class="opacity-75">2d</span>
+                                <div class="w-9 h-5 bg-amber-500 rounded-full p-0.5 cursor-pointer relative transition-colors">
+                                    <div class="w-4 h-4 bg-white rounded-full absolute right-0.5 shadow-md"></div>
                                 </div>
-                                <button @click="openShowroomModal" class="px-3 py-1.5 bg-white/15 hover:bg-white/25 border border-white/10 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5">
-                                    👁️ Showroom
-                                </button>
-                                <button @click="openUploadModelsModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1">
-                                    📁 Modellar yuklash
-                                </button>
-                                <Link :href="route('admin.facility.buildings.edit', getObjectContainerId(currentObject) || 0) + '?type=object'" class="px-3 py-1.5 bg-indigo-600 hover:indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
-                                    ✏️ Obyektni tahrirlash
-                                </Link>
-                                <button @click="openAddParkingModal" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
-                                    🚗 + Avtoturargoh Qo'shish
-                                </button>
-                                <Link :href="route('admin.facility.buildings.create', { object_id: getObjectContainerId(currentObject) })" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm inline-block">
-                                    + Yangi Blok
-                                </Link>
+                                <span>3d</span>
                             </div>
+                            <button @click="openShowroomModal" class="px-2.5 sm:px-3 py-1.5 bg-white/15 hover:bg-white/25 border border-white/10 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1">
+                                👁️ Showroom
+                            </button>
+                            <button @click="openUploadModelsModal()" class="px-2.5 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1">
+                                📁 Modellar yuklash
+                            </button>
+                            <Link :href="route('admin.facility.buildings.edit', getObjectContainerId(currentObject) || 0) + '?type=object'" class="px-2.5 sm:px-3 py-1.5 bg-indigo-600 hover:indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
+                                ✏️ Obyektni tahrirlash
+                            </Link>
+                            <button @click="openAddParkingModal" class="px-2.5 sm:px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1 inline-block">
+                                🚗 + Avtoturargoh
+                            </button>
+                            <Link :href="route('admin.facility.buildings.create', { object_id: getObjectContainerId(currentObject) })" class="px-2.5 sm:px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-sm inline-block">
+                                + Yangi Blok
+                            </Link>
                         </div>
-                        <div>
-                            <h1 class="text-4xl font-extrabold tracking-tight">{{ currentObject }}</h1>
-                            <span class="inline-flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full mt-2 shadow-sm">
-                                <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-                                Ish holatida
-                            </span>
-                        </div>
+                    </div>
+                    <div class="relative z-10 mt-3 sm:mt-0 text-white">
+                        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight">{{ currentObject }}</h1>
+                        <span class="inline-flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full mt-2 shadow-sm">
+                            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                            Ish holatida
+                        </span>
                     </div>
                 </div>
 
@@ -6643,19 +6641,19 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
         <!-- 👁️ Showroom Fullscreen Modal -->
         <div v-if="showShowroomModal" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col select-none animate-[fadeIn_0.3s_ease-out]">
             <!-- Header -->
-            <div class="px-6 py-4 border-b border-white/10 flex justify-between items-center text-white shrink-0 bg-black/40">
-                <div class="flex items-center gap-3">
-                    <span class="text-xl">👁️</span>
-                    <div>
-                        <h2 class="text-base font-bold uppercase tracking-wider font-display">{{ currentObject }} showroomi</h2>
-                        <p class="text-[10px] text-gray-400 font-medium">Barcha 3D chizmalar va showroom rasmlari galereyasi</p>
+            <div class="px-4 py-3 sm:px-6 sm:py-4 border-b border-white/10 flex justify-between items-center text-white shrink-0 bg-black/40 gap-2">
+                <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <span class="text-lg sm:text-xl shrink-0">👁️</span>
+                    <div class="min-w-0 truncate">
+                        <h2 class="text-xs sm:text-base font-bold uppercase tracking-wider font-display truncate">{{ currentObject }} showroomi</h2>
+                        <p class="text-[9px] sm:text-[10px] text-gray-400 font-medium hidden sm:block">Barcha 3D chizmalar va showroom rasmlari galereyasi</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
                     <!-- Manage Button -->
-                    <button @click="showroomManageMode = !showroomManageMode" class="px-4 py-2 border text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
+                    <button @click="showroomManageMode = !showroomManageMode" class="px-2.5 sm:px-4 py-1.5 sm:py-2 border text-[11px] sm:text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
                         :class="showroomManageMode ? 'bg-amber-500 hover:bg-amber-600 border-transparent text-white' : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'">
-                        {{ showroomManageMode ? '👁️ Galereya' : '⚙️ Rasmlarni boshqarish' }}
+                        {{ showroomManageMode ? '👁️ Galereya' : '⚙️ Boshqarish' }}
                     </button>
                     <!-- Close Button -->
                     <button @click="showShowroomModal = false" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all border border-white/10">
@@ -6665,7 +6663,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
             </div>
 
             <!-- Body -->
-            <div class="flex-1 overflow-hidden relative flex flex-col items-center justify-center p-6 text-white">
+            <div class="flex-1 overflow-y-auto relative flex flex-col items-center justify-center p-2 sm:p-6 text-white">
                 <!-- VIEW MODE: Gallery -->
                 <div v-if="!showroomManageMode" class="w-full h-full flex flex-col justify-between">
                     <!-- Image Display Area -->
@@ -6674,20 +6672,20 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <!-- Left Arrow -->
                             <button v-if="currentObjectContainer.showroom_images.length > 1" 
                                 @click="activeShowroomImageIndex = (activeShowroomImageIndex - 1 + currentObjectContainer.showroom_images.length) % currentObjectContainer.showroom_images.length"
-                                class="absolute left-4 w-12 h-12 rounded-full bg-black/40 hover:bg-black/75 text-white flex items-center justify-center border border-white/10 text-xl font-bold transition-all z-10">
+                                class="absolute left-2 sm:left-4 w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/75 text-white flex items-center justify-center border border-white/10 text-lg sm:text-xl font-bold transition-all z-10">
                                 ‹
                             </button>
 
                             <!-- Active Image -->
-                            <div class="max-w-full max-h-full flex items-center justify-center relative p-4">
+                            <div class="max-w-full max-h-full flex items-center justify-center relative p-2 sm:p-4">
                                 <img :src="'/storage/' + currentObjectContainer.showroom_images[activeShowroomImageIndex]" 
                                      class="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl border border-white/5 animate-[scaleIn_0.3s_ease-out]" />
                                 
                                 <!-- Floating Download Button -->
-                                <div class="absolute bottom-6 right-6">
+                                <div class="absolute bottom-4 right-4 sm:bottom-6 sm:right-6">
                                     <a :href="'/storage/' + currentObjectContainer.showroom_images[activeShowroomImageIndex]" 
                                        download 
-                                       class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5 uppercase font-mono tracking-wider">
+                                       class="px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] sm:text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5 uppercase font-mono tracking-wider">
                                         📥 Yuklab olish
                                     </a>
                                 </div>
@@ -6696,7 +6694,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                             <!-- Right Arrow -->
                             <button v-if="currentObjectContainer.showroom_images.length > 1" 
                                 @click="activeShowroomImageIndex = (activeShowroomImageIndex + 1) % currentObjectContainer.showroom_images.length"
-                                class="absolute right-4 w-12 h-12 rounded-full bg-black/40 hover:bg-black/75 text-white flex items-center justify-center border border-white/10 text-xl font-bold transition-all z-10">
+                                class="absolute right-2 sm:right-4 w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/75 text-white flex items-center justify-center border border-white/10 text-lg sm:text-xl font-bold transition-all z-10">
                                 ›
                             </button>
                         </template>
@@ -6707,15 +6705,15 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                 🖼️
                             </div>
                             <h3 class="text-lg font-bold text-gray-200">Showroom rasmlari yuklanmagan</h3>
-                            <p class="text-xs text-gray-400 leading-relaxed">Ushbu obyekt uchun hali showroom yoki 3D rasmlari kiritilmagan. Yuqoridagi "Rasmlarni boshqarish" tugmasi orqali rasm yuklashingiz mumkin.</p>
+                            <p class="text-xs text-gray-400 leading-relaxed">Ushbu obyekt uchun hali showroom yoki 3D rasmlari kiritilmagan. Yuqoridagi "Boshqarish" tugmasi orqali rasm yuklashingiz mumkin.</p>
                         </div>
                     </div>
 
                     <!-- Bottom Indicator Carousel / Thumbnails -->
-                    <div v-if="currentObjectContainer?.showroom_images?.length" class="h-24 border-t border-white/5 bg-black/20 shrink-0 flex items-center justify-center gap-2 overflow-x-auto px-6 py-2">
+                    <div v-if="currentObjectContainer?.showroom_images?.length" class="h-20 sm:h-24 border-t border-white/5 bg-black/20 shrink-0 flex items-center justify-center gap-2 overflow-x-auto px-4 sm:px-6 py-2">
                         <div v-for="(img, idx) in currentObjectContainer.showroom_images" :key="img"
                              @click="activeShowroomImageIndex = idx"
-                             class="w-20 h-16 rounded-lg overflow-hidden border-2 cursor-pointer transition-all shrink-0 relative group"
+                             class="w-16 sm:w-20 h-14 sm:h-16 rounded-lg overflow-hidden border-2 cursor-pointer transition-all shrink-0 relative group"
                              :class="activeShowroomImageIndex === idx ? 'border-amber-500 scale-105 shadow-md' : 'border-transparent opacity-50 hover:opacity-100'">
                             <img :src="'/storage/' + img" class="w-full h-full object-cover" />
                             <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
@@ -6724,7 +6722,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                 </div>
 
                 <!-- EDIT/MANAGE MODE: Upload & Remove -->
-                <div v-else class="w-full h-full flex flex-col md:flex-row gap-6 overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+                <div v-else class="w-full h-full flex flex-col md:flex-row gap-4 sm:gap-6 overflow-y-auto md:overflow-hidden animate-[fadeIn_0.3s_ease-out]">
                     <!-- Left: Upload Form Panel -->
                     <div class="w-full md:w-80 bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col gap-4 shrink-0">
                         <h3 class="text-sm font-bold uppercase tracking-wider text-amber-500 font-mono">Yangi rasmlar yuklash</h3>

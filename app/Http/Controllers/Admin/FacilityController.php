@@ -430,8 +430,8 @@ class FacilityController extends Controller
             $photoPath = $building->photo_path;
             if ($request->hasFile('photo')) {
                 $ext = strtolower($request->file('photo')->getClientOriginalExtension());
-                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
-                    return redirect()->back()->withErrors(['photo' => 'Rasm fayli formati noto\'g\'ri (faqat jpg, jpeg, png, webp, gif).']);
+                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'jfif'])) {
+                    return redirect()->back()->withErrors(['photo' => 'Rasm fayli formati noto\'g\'ri (faqat jpg, jpeg, png, webp, gif, svg).']);
                 }
                 $photoPath = $request->file('photo')->store('photos', 'public');
             }
@@ -439,8 +439,8 @@ class FacilityController extends Controller
             $blueprintPath = $building->blueprint_path;
             if ($request->hasFile('blueprint')) {
                 $ext = strtolower($request->file('blueprint')->getClientOriginalExtension());
-                if (!in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf'])) {
-                    return redirect()->back()->withErrors(['blueprint' => '2D chizma fayli formati noto\'g\'ri (faqat pdf, jpg, jpeg, png, dwg, dxf).']);
+                if (!in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf', 'webp', 'svg', 'jfif'])) {
+                    return redirect()->back()->withErrors(['blueprint' => '2D chizma fayli formati noto\'g\'ri (faqat pdf, jpg, jpeg, png, dwg, dxf, webp, svg).']);
                 }
                 $blueprintPath = $request->file('blueprint')->store('blueprints', 'public');
             }
@@ -448,8 +448,8 @@ class FacilityController extends Controller
             $model3dPath = $building->model_3d_path;
             if ($request->hasFile('model_3d')) {
                 $ext = strtolower($request->file('model_3d')->getClientOriginalExtension());
-                if (!in_array($ext, ['gltf', 'glb', 'obj', 'fbx', 'zip', 'png', 'jpg', 'jpeg', 'pdf'])) {
-                    return redirect()->back()->withErrors(['model_3d' => '3D model fayli formati noto\'g\'ri (faqat gltf, glb, obj, fbx, zip, png, jpg, jpeg, pdf).']);
+                if (!in_array($ext, ['gltf', 'glb', 'obj', 'fbx', 'zip', 'png', 'jpg', 'jpeg', 'pdf', 'webp', 'svg', 'jfif'])) {
+                    return redirect()->back()->withErrors(['model_3d' => '3D model fayli formati noto\'g\'ri (faqat gltf, glb, obj, fbx, zip, png, jpg, jpeg, pdf, webp).']);
                 }
                 $model3dPath = $request->file('model_3d')->store('models_3d', 'public');
             }
@@ -459,35 +459,37 @@ class FacilityController extends Controller
             if ($request->boolean('is_object_only')) {
                 Building::where('name', $oldName)->update([
                     'name' => $validated['name'],
-                    'city' => $validated['city'] ?? null,
-                    'district' => $validated['district'] ?? null,
-                    'mahalla' => $validated['mahalla'] ?? null,
-                    'street' => $validated['street'] ?? null,
+                    'city' => $validated['city'] ?? $building->city,
+                    'district' => $validated['district'] ?? $building->district,
+                    'mahalla' => $validated['mahalla'] ?? $building->mahalla,
+                    'street' => $validated['street'] ?? $building->street,
                     'photo_path' => $photoPath,
+                    'blueprint_path' => $blueprintPath,
+                    'model_3d_path' => $model3dPath,
                 ]);
                 return redirect()->route('admin.facility', ['object' => $building->name])->with('message', 'Obyekt ma\'lumotlari muvaffaqiyatli yangilandi!');
             }
 
             $building->update([
                 'name' => $validated['name'],
-                'city' => $validated['city'] ?? null,
-                'district' => $validated['district'] ?? null,
-                'mahalla' => $validated['mahalla'] ?? null,
-                'street' => $validated['street'] ?? null,
-                'block_name' => $validated['block_name'] ?? null,
-                'corpus_name' => $validated['corpus_name'] ?? null,
-                'length_m' => $validated['length_m'] ?? null,
-                'width_m' => $validated['width_m'] ?? null,
-                'height_m' => $validated['height_m'] ?? null,
-                'total_floors' => $validated['total_floors'] ?? 1,
-                'blocks_count' => $validated['blocks_count'] ?? 1,
-                'entrances_count' => $validated['entrances_count'] ?? 1,
-                'total_apartments' => $validated['total_apartments'] ?? 0,
-                'total_shops' => $validated['total_shops'] ?? 0,
-                'shops_per_floor' => $validated['shops_per_floor'] ?? 0,
-                'apartments_per_floor' => $validated['apartments_per_floor'] ?? 0,
-                'estimated_budget' => $validated['estimated_budget'] ?? 0,
-                'basement_floors' => $validated['basement_floors'] ?? 0,
+                'city' => $validated['city'] ?? $building->city,
+                'district' => $validated['district'] ?? $building->district,
+                'mahalla' => $validated['mahalla'] ?? $building->mahalla,
+                'street' => $validated['street'] ?? $building->street,
+                'block_name' => $validated['block_name'] ?? $building->block_name,
+                'corpus_name' => $validated['corpus_name'] ?? $building->corpus_name,
+                'length_m' => $validated['length_m'] ?? $building->length_m,
+                'width_m' => $validated['width_m'] ?? $building->width_m,
+                'height_m' => $validated['height_m'] ?? $building->height_m,
+                'total_floors' => $validated['total_floors'] ?? $building->total_floors,
+                'blocks_count' => $validated['blocks_count'] ?? $building->blocks_count,
+                'entrances_count' => $validated['entrances_count'] ?? $building->entrances_count,
+                'total_apartments' => $validated['total_apartments'] ?? $building->total_apartments,
+                'total_shops' => $validated['total_shops'] ?? $building->total_shops,
+                'shops_per_floor' => $validated['shops_per_floor'] ?? $building->shops_per_floor,
+                'apartments_per_floor' => $validated['apartments_per_floor'] ?? $building->apartments_per_floor,
+                'estimated_budget' => $validated['estimated_budget'] ?? $building->estimated_budget,
+                'basement_floors' => $validated['basement_floors'] ?? $building->basement_floors,
                 'photo_path' => $photoPath,
                 'blueprint_path' => $blueprintPath,
                 'model_3d_path' => $model3dPath,
@@ -1154,22 +1156,27 @@ class FacilityController extends Controller
         $blueprintPath = null;
         if ($request->hasFile('blueprint')) {
             $ext = strtolower($request->file('blueprint')->getClientOriginalExtension());
-            if (in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf'])) {
+            if (in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf', 'webp', 'svg', 'jfif'])) {
                 $blueprintPath = $request->file('blueprint')->store('blueprints/units', 'public');
+            } else {
+                return redirect()->back()->withErrors(['blueprint' => '2D chizma fayli formati noto\'g\'ri (faqat pdf, jpg, jpeg, png, dwg, dxf, webp, svg).']);
             }
         }
 
         $model3dPath = null;
         if ($request->hasFile('model_3d')) {
             $ext = strtolower($request->file('model_3d')->getClientOriginalExtension());
-            if (in_array($ext, ['gltf', 'glb', 'obj', 'fbx', 'zip', 'png', 'jpg', 'jpeg', 'pdf'])) {
+            if (in_array($ext, ['gltf', 'glb', 'obj', 'fbx', 'zip', 'png', 'jpg', 'jpeg', 'pdf', 'webp', 'svg', 'jfif'])) {
                 $model3dPath = $request->file('model_3d')->store('models_3d/units', 'public');
+            } else {
+                return redirect()->back()->withErrors(['model_3d' => '3D model fayli formati noto\'g\'ri (faqat gltf, glb, obj, fbx, zip, png, jpg, jpeg, pdf, webp).']);
             }
         }
 
         $validated['blueprint_path'] = $blueprintPath;
         $validated['model_3d_path'] = $model3dPath;
         $validated['has_balcony'] = $request->boolean('has_balcony');
+        unset($validated['blueprint'], $validated['model_3d']);
 
         Unit::create($validated);
 
@@ -1181,12 +1188,12 @@ class FacilityController extends Controller
         $unit = Unit::findOrFail($id);
         $validated = $request->validate([
             'unit_number' => 'required|string|max:50',
-            'type' => 'required|in:residential,commercial',
+            'type' => 'required|in:residential,commercial,parking',
             'area_sqm' => 'required|numeric|min:0',
-            'price' => 'required|numeric|min:0',
+            'price' => 'nullable|numeric|min:0',
             'status' => 'required|in:available,reserved,sold',
             'svg_polygon' => 'nullable|string',
-            'rooms_count' => 'nullable|integer|min:1',
+            'rooms_count' => 'nullable|integer|min:0',
             'kitchens_count' => 'nullable|integer|min:0',
             'bathrooms_count' => 'nullable|integer|min:0',
             'toilets_count' => 'nullable|integer|min:0',
@@ -1196,6 +1203,8 @@ class FacilityController extends Controller
             'blueprint' => 'nullable|file|max:256000',
             'model_3d' => 'nullable|file|max:1024000',
         ]);
+
+        $validated['price'] = $validated['price'] ?? 0;
 
         $floor = $unit->floor;
         $building = $floor ? $floor->building : null;
@@ -1229,22 +1238,27 @@ class FacilityController extends Controller
         $blueprintPath = $unit->blueprint_path;
         if ($request->hasFile('blueprint')) {
             $ext = strtolower($request->file('blueprint')->getClientOriginalExtension());
-            if (in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf'])) {
+            if (in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'dwg', 'dxf', 'webp', 'svg', 'jfif'])) {
                 $blueprintPath = $request->file('blueprint')->store('blueprints/units', 'public');
+            } else {
+                return redirect()->back()->withErrors(['blueprint' => '2D chizma fayli formati noto\'g\'ri (faqat pdf, jpg, jpeg, png, dwg, dxf, webp, svg).']);
             }
         }
 
         $model3dPath = $unit->model_3d_path;
         if ($request->hasFile('model_3d')) {
             $ext = strtolower($request->file('model_3d')->getClientOriginalExtension());
-            if (in_array($ext, ['gltf', 'glb', 'obj', 'fbx', 'zip', 'png', 'jpg', 'jpeg', 'pdf'])) {
+            if (in_array($ext, ['gltf', 'glb', 'obj', 'fbx', 'zip', 'png', 'jpg', 'jpeg', 'pdf', 'webp', 'svg', 'jfif'])) {
                 $model3dPath = $request->file('model_3d')->store('models_3d/units', 'public');
+            } else {
+                return redirect()->back()->withErrors(['model_3d' => '3D model fayli formati noto\'g\'ri (faqat gltf, glb, obj, fbx, zip, png, jpg, jpeg, pdf, webp).']);
             }
         }
 
         $validated['blueprint_path'] = $blueprintPath;
         $validated['model_3d_path'] = $model3dPath;
         $validated['has_balcony'] = $request->boolean('has_balcony');
+        unset($validated['blueprint'], $validated['model_3d']);
 
         $unit->update($validated);
 

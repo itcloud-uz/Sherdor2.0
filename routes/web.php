@@ -133,7 +133,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::get('/facility/buildings/create', [\App\Http\Controllers\Admin\FacilityController::class, 'createBuilding'])->name('facility.buildings.create');
     Route::get('/facility/buildings/{building}/edit', [\App\Http\Controllers\Admin\FacilityController::class, 'editBuilding'])->name('facility.buildings.edit');
     Route::post('/facility/buildings', [\App\Http\Controllers\Admin\FacilityController::class, 'storeBuilding'])->name('facility.buildings.store');
-    Route::put('/facility/buildings/{building}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateBuilding'])->name('facility.buildings.update');
+    Route::match(['put', 'post'], '/facility/buildings/{building}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateBuilding'])->name('facility.buildings.update');
     Route::delete('/facility/buildings/{building}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyBuilding'])->name('facility.buildings.destroy');
     Route::delete('/facility/objects/{building}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyObject'])->name('facility.objects.destroy');
     Route::post('/facility/buildings/{building}/showroom-images', [\App\Http\Controllers\Admin\FacilityController::class, 'uploadShowroomImages'])->name('facility.buildings.showroom-images.store');
@@ -151,7 +151,7 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::put('/facility/floors/{floor}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateFloor'])->name('facility.floors.update');
     Route::delete('/facility/floors/{floor}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyFloor'])->name('facility.floors.destroy');
     Route::post('/facility/units', [\App\Http\Controllers\Admin\FacilityController::class, 'storeUnit'])->name('facility.units.store');
-    Route::put('/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateUnit'])->name('facility.units.update');
+    Route::match(['put', 'post'], '/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'updateUnit'])->name('facility.units.update');
     Route::delete('/facility/podezes/{podez}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyPodez'])->name('facility.podezes.destroy');
 
     // Smeta Routes

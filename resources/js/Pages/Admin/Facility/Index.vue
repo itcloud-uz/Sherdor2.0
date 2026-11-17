@@ -2580,19 +2580,30 @@ function openUploadModelsModal() {
 
 function submitUploadModels() {
     if (!uploadModelsForm.building_id) return;
-    // Set other form fields if we need to preserve unchanged values, but updateBuilding validation allows just these
     const selectedObj = props.buildings.find(b => b.id === uploadModelsForm.building_id);
     if (selectedObj) {
         uploadModelsForm.name = selectedObj.name;
         uploadModelsForm.total_floors = selectedObj.total_floors;
+        uploadModelsForm.city = selectedObj.city;
+        uploadModelsForm.district = selectedObj.district;
+        uploadModelsForm.mahalla = selectedObj.mahalla;
+        uploadModelsForm.street = selectedObj.street;
+        uploadModelsForm.block_name = selectedObj.block_name;
+        uploadModelsForm.corpus_name = selectedObj.corpus_name;
+        uploadModelsForm.is_object_only = selectedObj.total_floors === 0 ? 1 : 0;
     }
     uploadModelsForm.transform((data) => ({
         ...data,
         _method: 'put'
-    })).post(route('admin.facility.buildings.update', uploadModelsForm.building_id), { preserveScroll: true, preserveState: true,
+    })).post(route('admin.facility.buildings.update', uploadModelsForm.building_id), { 
+        preserveScroll: true, 
+        preserveState: true,
         onSuccess: () => {
             showUploadModelsModal.value = false;
             uploadModelsForm.reset();
+        },
+        onError: (errors) => {
+            alert("Xatolik yuz berdi:\n" + Object.values(errors).join("\n"));
         }
     });
 }
@@ -3261,7 +3272,11 @@ function printCalculatorDetails() {
 }
 
 const selectedUnitBlueprint = computed(() => {
-    if (!selectedUnit.value || !selectedBuilding.value || !selectedBuilding.value.floors) return '/modern_apartment_render.png';
+    if (!selectedUnit.value) return '/modern_apartment_render.png';
+    if (selectedUnit.value.blueprint_path) {
+        return `/storage/${selectedUnit.value.blueprint_path}`;
+    }
+    if (!selectedBuilding.value || !selectedBuilding.value.floors) return '/modern_apartment_render.png';
     const fl = selectedBuilding.value.floors.find(f => f.id === selectedUnit.value.floor_id);
     return fl?.blueprint_path ? `/storage/${fl.blueprint_path}` : '/modern_apartment_render.png';
 });
@@ -3335,18 +3350,39 @@ function cancelEditUnit() {
 
 function submitUnit() {
     if (isEditingUnit.value && editingUnitId.value) {
+        const targetUnitId = editingUnitId.value;
         unitForm.transform((data) => ({
             ...data,
             _method: 'put'
-        })).post(route('admin.facility.units.update', editingUnitId.value), {
+        })).post(route('admin.facility.units.update', targetUnitId), {
             preserveState: true,
             preserveScroll: true,
-            onSuccess: () => {
+            onSuccess: (page) => {
                 showAddUnitModal.value = false;
                 isEditingUnit.value = false;
                 editingUnitId.value = null;
                 unitForm.reset();
                 activeRightPanel.value = 'details';
+
+                // Sync selectedUnit with fresh data from server props
+                if (page?.props?.buildings && targetUnitId) {
+                    for (const b of page.props.buildings) {
+                        if (b.floors) {
+                            for (const fl of b.floors) {
+                                if (fl.units) {
+                                    const u = fl.units.find(item => item.id === targetUnitId);
+                                    if (u) {
+                                        selectedUnit.value = u;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            onError: (errors) => {
+                alert("Xatolik yuz berdi:\n" + Object.values(errors).join("\n"));
             }
         });
     } else {
@@ -3358,6 +3394,9 @@ function submitUnit() {
                 showAddUnitModal.value = false;
                 unitForm.reset();
                 activeRightPanel.value = 'details';
+            },
+            onError: (errors) => {
+                alert("Xatolik yuz berdi:\n" + Object.values(errors).join("\n"));
             }
         });
     }
@@ -5688,13 +5727,13 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-500 mb-1">2D Chizma (Layout)</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2.5">
-                                                    <input type="file" @change="e => unitForm.blueprint = e.target.files[0]" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 w-full" />
+                                                    <input type="file" @change="e => unitForm.blueprint = e.target.files[0]" accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf,.webp,.svg,.jfif" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 w-full" />
                                                 </div>
                                             </div>
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-500 mb-1">3D Render (Surat)</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2.5">
-                                                    <input type="file" @change="e => unitForm.model_3d = e.target.files[0]" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 w-full" />
+                                                    <input type="file" @change="e => unitForm.model_3d = e.target.files[0]" accept=".gltf,.glb,.obj,.fbx,.zip,.png,.jpg,.jpeg,.pdf,.webp,.svg,.jfif" class="text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 w-full" />
                                                 </div>
                                             </div>
                                         </div>
@@ -5935,11 +5974,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-gray-500 mb-1">2D Chizma (Layout)</label>
-                            <input type="file" @change="e => unitForm.blueprint = e.target.files[0]" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all text-xs" />
+                            <input type="file" @change="e => unitForm.blueprint = e.target.files[0]" accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf,.webp,.svg,.jfif" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all text-xs" />
                         </div>
                         <div>
                             <label class="block text-xs font-mono text-gray-500 mb-1">3D Render (Surat)</label>
-                            <input type="file" @change="e => unitForm.model_3d = e.target.files[0]" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all text-xs" />
+                            <input type="file" @change="e => unitForm.model_3d = e.target.files[0]" accept=".gltf,.glb,.obj,.fbx,.zip,.png,.jpg,.jpeg,.pdf,.webp,.svg,.jfif" class="w-full bg-white border border-gray-200 rounded px-3 py-2 text-gray-900 focus:border-blue-500 transition-all text-xs" />
                         </div>
                     </div>
                     <div class="flex justify-end gap-3 mt-6">

@@ -77,11 +77,11 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                             <div>
                                 <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-widest">2D Chizma (Layout)</label>
-                                <input type="file" @change="handleFileChange('blueprint', $event)" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer">
+                                <input type="file" @change="handleFileChange('blueprint', $event)" accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf,.webp,.svg,.jfif" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-widest">3D Model (PNG, JPG, PDF)</label>
-                                <input type="file" @change="handleFileChange('model_3d', $event)" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer">
+                                <input type="file" @change="handleFileChange('model_3d', $event)" accept=".gltf,.glb,.obj,.fbx,.zip,.png,.jpg,.jpeg,.pdf,.webp,.svg,.jfif" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer">
                             </div>
                         </div>
                     </div>
@@ -112,11 +112,11 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">2D Chizma (Layout)</label>
-                                    <input type="file" @change="handleFileChange('blueprint', $event)" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer bg-white border border-slate-200 rounded-xl p-1">
+                                    <input type="file" @change="handleFileChange('blueprint', $event)" accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf,.webp,.svg,.jfif" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer bg-white border border-slate-200 rounded-xl p-1">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">3D Model (PNG, JPG, PDF)</label>
-                                    <input type="file" @change="handleFileChange('model_3d', $event)" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer bg-white border border-slate-200 rounded-xl p-1">
+                                    <input type="file" @change="handleFileChange('model_3d', $event)" accept=".gltf,.glb,.obj,.fbx,.zip,.png,.jpg,.jpeg,.pdf,.webp,.svg,.jfif" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors cursor-pointer bg-white border border-slate-200 rounded-xl p-1">
                                 </div>
                             </div>
                         </div>

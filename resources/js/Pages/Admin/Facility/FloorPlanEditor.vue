@@ -800,6 +800,157 @@ const handleBlueprintUpload = (e) => {
     }).catch(() => {});
 };
 
+// Rotate Blueprint Logic
+const isRotating = ref(false);
+
+const transformShapeForRotation = (shape, angle) => {
+    if (!shape.rawCoords) return shape;
+    if (!shape.rawCoords.norm) {
+        updateShapeRawCoords(shape);
+    }
+    const norm = shape.rawCoords.norm;
+    if (!norm) return shape;
+
+    if (shape.type === 'rect') {
+        let nx, ny, nw, nh;
+        if (angle === 90) {
+            nx = 1 - norm.y - norm.h;
+            ny = norm.x;
+            nw = norm.h;
+            nh = norm.w;
+        } else if (angle === -90 || angle === 270) {
+            nx = norm.y;
+            ny = 1 - norm.x - norm.w;
+            nw = norm.h;
+            nh = norm.w;
+        } else if (angle === 180) {
+            nx = 1 - norm.x - norm.w;
+            ny = 1 - norm.y - norm.h;
+            nw = norm.w;
+            nh = norm.h;
+        } else {
+            return shape;
+        }
+
+        nx = Math.max(0, Math.min(1, nx));
+        ny = Math.max(0, Math.min(1, ny));
+        nw = Math.max(0.001, Math.min(1 - nx, nw));
+        nh = Math.max(0.001, Math.min(1 - ny, nh));
+
+        shape.rawCoords.norm = { x: nx, y: ny, w: nw, h: nh };
+        shape.rawCoords.left = nx;
+        shape.rawCoords.top = ny;
+        shape.rawCoords.width = nw;
+        shape.rawCoords.height = nh;
+    } else if (shape.type === 'polygon' && norm.points) {
+        const newNormPoints = norm.points.map(p => {
+            const px = p.x !== undefined ? p.x : p[0];
+            const py = p.y !== undefined ? p.y : p[1];
+            let npx, npy;
+            if (angle === 90) {
+                npx = 1 - py;
+                npy = px;
+            } else if (angle === -90 || angle === 270) {
+                npx = py;
+                npy = 1 - px;
+            } else if (angle === 180) {
+                npx = 1 - px;
+                npy = 1 - py;
+            } else {
+                npx = px;
+                npy = py;
+            }
+            return {
+                x: Math.max(0, Math.min(1, npx)),
+                y: Math.max(0, Math.min(1, npy))
+            };
+        });
+        shape.rawCoords.norm.points = newNormPoints;
+        shape.rawCoords.points = newNormPoints;
+    }
+    return shape;
+};
+
+const rotateCanvasImageClientSide = (angle) => {
+    return new Promise((resolve, reject) => {
+        if (!canvasImageObj.value) return reject(new Error("Rasm mavjud emas"));
+        const img = canvasImageObj.value;
+        const offCanvas = document.createElement('canvas');
+        const isOrthogonal = Math.abs(angle) === 90 || Math.abs(angle) === 270;
+        offCanvas.width = isOrthogonal ? (img.naturalHeight || img.height) : (img.naturalWidth || img.width);
+        offCanvas.height = isOrthogonal ? (img.naturalWidth || img.width) : (img.naturalHeight || img.height);
+        const offCtx = offCanvas.getContext('2d');
+        if (!offCtx) return reject(new Error("Canvas context xatosi"));
+
+        offCtx.translate(offCanvas.width / 2, offCanvas.height / 2);
+        offCtx.rotate((angle * Math.PI) / 180);
+        offCtx.drawImage(img, -(img.naturalWidth || img.width) / 2, -(img.naturalHeight || img.height) / 2);
+
+        try {
+            const rotatedDataUrl = offCanvas.toDataURL('image/png');
+            loadImage(rotatedDataUrl);
+            resolve(rotatedDataUrl);
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+const rotateFloorBlueprint = async (angle = 90) => {
+    if (!selectedFloorObj.value || isRotating.value) return;
+    const floor = selectedFloorObj.value;
+
+    if (!canvasImageObj.value) {
+        isError.value = true;
+        message.value = "⚠️ Aylantirish uchun avval qavat chizmasi yuklangan bo'lishi kerak!";
+        setTimeout(() => message.value = '', 3000);
+        return;
+    }
+
+    isRotating.value = true;
+    message.value = "🔄 Qavat chizmasi aylantirilmoqda...";
+    isError.value = false;
+
+    // 1. Transform in-memory shapes
+    shapes.value = shapes.value.map(shape => transformShapeForRotation(shape, angle));
+
+    const unitShapesPayload = shapes.value.map(shape => ({
+        id: shape.unitId || shape.id,
+        unit_number: shape.unit_number,
+        svg_polygon: shape.rawCoords ? JSON.stringify(shape.rawCoords) : null
+    }));
+
+    try {
+        const targetUrl = route('admin.facility.floors.rotate_blueprint', floor.id);
+        const res = await axios.post(targetUrl, {
+            angle,
+            shapes: unitShapesPayload
+        });
+
+        if (res.data?.blueprint_path) {
+            floor.blueprint_path = res.data.blueprint_path;
+            const newUrl = res.data.blueprint_url || `/storage/${res.data.blueprint_path}?t=${Date.now()}`;
+            loadImage(newUrl);
+        }
+
+        isError.value = false;
+        message.value = '✅ ' + (res.data?.message || 'Qavat chizmasi muvaffaqiyatli aylantirildi!');
+    } catch (err) {
+        console.error('Rotate server error, trying client-side fallback:', err);
+        try {
+            await rotateCanvasImageClientSide(angle);
+            isError.value = false;
+            message.value = "✓ Qavat chizmasi aylantirildi (Saqlash uchun 'Saqlash' tugmasini bosing)!";
+        } catch (clientErr) {
+            isError.value = true;
+            message.value = '❌ Aylantirishda xatolik: ' + (err.response?.data?.message || err.message);
+        }
+    } finally {
+        isRotating.value = false;
+        setTimeout(() => message.value = '', 3500);
+    }
+};
+
 // Canvas Mouse Events
 const handleCanvasMouseDown = (e) => {
     if (!canvasElement.value) return;
@@ -1912,6 +2063,31 @@ onUnmounted(() => {
                         title="Kattalashtirish"
                     >
                         🔍+
+                    </button>
+                </div>
+
+                <!-- Rotate Blueprint Controls (Scope: Floor) -->
+                <div v-if="editorScope === 'floor'" class="h-8 bg-slate-100 p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200" title="Chizma rasmini aylantirish">
+                    <button
+                        type="button"
+                        @click="rotateFloorBlueprint(-90)"
+                        :disabled="isRotating || !canvasImageObj"
+                        class="h-7 px-2 text-slate-700 hover:bg-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Chizmani 90° chapga aylantirish (soat millariga teskari)"
+                    >
+                        <span>↺</span>
+                        <span class="hidden xl:inline text-[11px]">90° Chapga</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        @click="rotateFloorBlueprint(90)"
+                        :disabled="isRotating || !canvasImageObj"
+                        class="h-7 px-2.5 text-slate-800 hover:bg-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                        title="Chizmani 90° o'ngga aylantirish (soat millari bo'yicha)"
+                    >
+                        <span :class="{ 'inline-block animate-spin': isRotating }">↻</span>
+                        <span class="text-[11px] font-bold">Aylantirish (90°)</span>
                     </button>
                 </div>
 

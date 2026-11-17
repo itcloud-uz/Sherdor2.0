@@ -10,6 +10,8 @@ use App\Models\Podez;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class FacilityController extends Controller
@@ -2040,6 +2042,115 @@ class FacilityController extends Controller
         }
 
         return redirect()->back()->with('message', 'Qavat chizmasi muvaffaqiyatli yuklandi!');
+    }
+
+    public function rotateFloorBlueprint(Request $request, $floorId)
+    {
+        $floor = Floor::findOrFail($floorId);
+
+        if (!$floor->blueprint_path || !Storage::disk('public')->exists($floor->blueprint_path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Qavat chizmasi fayli topilmadi!'
+            ], 404);
+        }
+
+        $ext = strtolower(pathinfo($floor->blueprint_path, PATHINFO_EXTENSION));
+        if (in_array($ext, ['pdf', 'svg'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'PDF va SVG formatidagi fayllarni avtomatik aylantirib bo\'lmaydi. Iltimos, JPG, PNG yoki WEBP formatdagi rasm yuklang.'
+            ], 422);
+        }
+
+        $angle = (int) $request->input('angle', 90);
+        $gdAngle = (360 - ($angle % 360)) % 360;
+
+        $imgData = Storage::disk('public')->get($floor->blueprint_path);
+        $src = @imagecreatefromstring($imgData);
+
+        if (!$src) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Rasmni o\'qishda xatolik yuz berdi!'
+            ], 422);
+        }
+
+        imagealphablending($src, false);
+        imagesavealpha($src, true);
+
+        $transparentColor = imagecolorallocatealpha($src, 0, 0, 0, 127);
+        $rotated = imagerotate($src, $gdAngle, $transparentColor);
+        imagedestroy($src);
+
+        if (!$rotated) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Rasmni aylantirish imkoni bo\'lmadi!'
+            ], 422);
+        }
+
+        imagealphablending($rotated, false);
+        imagesavealpha($rotated, true);
+
+        $dir = dirname($floor->blueprint_path);
+        if ($dir === '.' || empty($dir)) {
+            $dir = 'blueprints/floors';
+        }
+        $newFilename = 'rotated_' . time() . '_' . Str::random(8) . '.' . ($ext ?: 'png');
+        $newRelativePath = $dir . '/' . $newFilename;
+        $newFullPath = Storage::disk('public')->path($newRelativePath);
+
+        if (!file_exists(dirname($newFullPath))) {
+            mkdir(dirname($newFullPath), 0755, true);
+        }
+
+        if (in_array($ext, ['jpg', 'jpeg'])) {
+            imagejpeg($rotated, $newFullPath, 92);
+        } elseif ($ext === 'webp' && function_exists('imagewebp')) {
+            imagewebp($rotated, $newFullPath, 90);
+        } else {
+            imagepng($rotated, $newFullPath, 8);
+        }
+        imagedestroy($rotated);
+
+        $oldPath = $floor->blueprint_path;
+        $floor->update(['blueprint_path' => $newRelativePath]);
+        try {
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        } catch (\Throwable $e) {}
+
+        if ($request->has('shapes')) {
+            $shapes = $request->input('shapes', []);
+            foreach ($shapes as $shapeData) {
+                $unit = Unit::where('floor_id', $floor->id)
+                    ->where(function($q) use ($shapeData) {
+                        if (!empty($shapeData['id'])) {
+                            $q->where('id', $shapeData['id']);
+                        }
+                        if (!empty($shapeData['unit_number'])) {
+                            $q->orWhere('unit_number', $shapeData['unit_number']);
+                        }
+                    })->first();
+
+                if ($unit && isset($shapeData['svg_polygon'])) {
+                    $unit->update([
+                        'svg_polygon' => is_array($shapeData['svg_polygon']) 
+                            ? json_encode($shapeData['svg_polygon']) 
+                            : $shapeData['svg_polygon']
+                    ]);
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Qavat chizmasi muvaffaqiyatli ' . $angle . '° aylantirildi va saqlandi!',
+            'blueprint_path' => $newRelativePath,
+            'blueprint_url' => '/storage/' . $newRelativePath . '?t=' . time()
+        ]);
     }
 
     public function cloneFloorToOtherFloors(Request $request, $floorId)

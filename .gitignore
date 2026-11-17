@@ -27,4 +27,7 @@ Thumbs.db
 # Python
 __pycache__/
 *.pyc
+venv/
+telegram_bot/venv/
+
 

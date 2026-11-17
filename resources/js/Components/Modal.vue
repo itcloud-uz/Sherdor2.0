@@ -144,7 +144,7 @@ const maxWidthClass = computed(() => {
             >
                 <div
                     v-show="show"
-                    class="my-auto transform overflow-hidden rounded-2xl theme-modal border border-gray-200/30 shadow-2xl transition-all sm:w-full max-h-[90vh] flex flex-col"
+                    class="my-auto transform overflow-hidden rounded-2xl theme-modal border border-gray-200/30 shadow-2xl transition-all w-full max-h-[90vh] flex flex-col"
                     :class="maxWidthClass"
                 >
                     <div class="overflow-y-auto flex-1">

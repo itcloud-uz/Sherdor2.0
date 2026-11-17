@@ -5089,8 +5089,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             <input type="number" v-model.number="calcDownPayment" class="bg-transparent border-0 text-gray-800 text-sm outline-none focus:ring-0 w-full p-0 font-sans font-semibold" />
 <div v-if="calcDownPayment" class="text-xs text-blue-600 mt-1 font-bold tracking-wider">{{ new Intl.NumberFormat('uz-UZ').format(calcDownPayment) }} UZS</div>
                                         </div>
-                                        <div class="grid grid-cols-5 gap-2 mt-2">
-                                            <button v-for="pct in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]" :key="pct" type="button" @click="setDownPaymentPercent(pct)" class="px-2 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium text-center">
+                                        <div class="grid grid-cols-5 gap-1 sm:gap-2 mt-2">
+                                            <button v-for="pct in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]" :key="pct" type="button" @click="setDownPaymentPercent(pct)" class="px-1 sm:px-2 py-1.5 border border-gray-200 text-gray-500 rounded-lg text-[10px] sm:text-xs bg-white hover:bg-gray-50 shadow-sm transition-all font-sans font-medium text-center">
                                                 {{ pct }}%
                                             </button>
                                         </div>
@@ -5648,7 +5648,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </div>
 
                                         <!-- Xonalar & Oshxona & Hammom & Hojatxona -->
-                                        <div v-if="unitForm.type === 'residential'" class="grid grid-cols-4 gap-2">
+                                        <div v-if="unitForm.type === 'residential'" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                             <div>
                                                 <label class="block text-xs font-medium text-gray-500 mb-1">Xonalar</label>
                                                 <div class="relative flex items-center bg-[#f8fafc] border border-gray-200 rounded-xl px-2 py-2">
@@ -6114,7 +6114,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
         <!-- Blueprint Fullscreen Page -->
         <div v-if="showBlueprintFullscreen" class="fixed inset-0 z-[100] bg-slate-50 text-slate-800 font-sans flex flex-col select-none overflow-y-auto w-full h-full animate-[fadeIn_0.3s_ease-out]">
             <!-- Header -->
-            <div class="px-6 py-4 bg-white border-b border-gray-200 flex justify-between items-center shrink-0 shadow-sm">
+            <div class="px-4 sm:px-6 py-3 sm:py-4 bg-white border-b border-gray-200 flex justify-between items-center shrink-0 shadow-sm">
                 <div class="flex items-center gap-3">
                     <span class="text-2xl">📐</span>
                     <div>
@@ -6125,17 +6125,17 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                     </div>
                 </div>
                 <!-- Close Button -->
-                <button @click="showBlueprintFullscreen = false" class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 text-xs font-bold rounded-xl transition-all border border-gray-200 shadow-sm flex items-center gap-1.5">
+                <button @click="showBlueprintFullscreen = false" class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 text-xs font-bold rounded-xl transition-all border border-gray-200 shadow-sm flex items-center gap-1.5 cursor-pointer">
                     ✕ Chiqish
                 </button>
             </div>
             
             <!-- Body Area -->
-            <div class="flex-1 p-6 md:p-8">
+            <div class="flex-1 p-3 sm:p-6 md:p-8 overflow-y-auto">
                 <div class="max-w-7xl mx-auto w-full h-full flex flex-col">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 flex-1 min-h-0">
                         <!-- Left Column (Visual Viewer - 70%) -->
-                        <div class="lg:col-span-2 bg-white border border-gray-200 rounded-3xl p-6 relative flex flex-col items-center justify-center min-h-[450px] lg:min-h-[580px] overflow-hidden group shadow-sm">
+                        <div class="lg:col-span-2 bg-white border border-gray-200 rounded-2xl sm:rounded-3xl p-3 sm:p-6 relative flex flex-col items-center justify-center min-h-[260px] sm:min-h-[400px] lg:min-h-[580px] overflow-hidden group shadow-sm">
                             <!-- Main Display Image -->
                             <div class="flex-1 w-full flex items-center justify-center overflow-hidden relative">
                                 <img :src="activeViewMode === '3d' && fullscreen3DModelSrc ? fullscreen3DModelSrc : fullscreenBlueprintSrc" 
@@ -6317,7 +6317,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
         </div>
 
         <!-- INLINE SUBPAGE: UNIFIED CLIENT CREATION & SELL -->
-        <div v-if="showUnifiedSellModal" class="bg-white p-8 rounded-3xl w-full shadow-md border border-gray-150 transition-all font-sans my-4">
+        <div v-if="showUnifiedSellModal" class="bg-white p-3 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl w-full shadow-md border border-gray-150 transition-all font-sans my-2 sm:my-4">
             <!-- Header -->
             <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">

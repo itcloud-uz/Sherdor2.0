@@ -96,6 +96,7 @@ const message = ref('');
 const isError = ref(false);
 const selectedShapeId = ref(null);
 const isSaving = ref(false);
+const mobileActiveView = ref('canvas'); // 'list', 'canvas', 'details'
 
 // Polygon in-progress drawing points
 const polygonPoints = ref([]);
@@ -1380,12 +1381,42 @@ const handleCanvasDoubleClick = () => {
     }
 };
 
+// Touch handling for mobile & tablet canvas interaction
+const handleTouchStart = (e) => {
+    if (e.touches && e.touches.length === 1) {
+        const touch = e.touches[0];
+        handleCanvasMouseDown({
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            preventDefault: () => e.preventDefault?.()
+        });
+    }
+};
+
+const handleTouchMove = (e) => {
+    if (e.touches && e.touches.length === 1) {
+        const touch = e.touches[0];
+        handleCanvasMouseMove({
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            preventDefault: () => e.preventDefault?.()
+        });
+    }
+};
+
+const handleTouchEnd = () => {
+    handleCanvasMouseUp();
+};
+
 // Select floor from left list (Facade mode)
 const handleSelectFloor = (floorNum) => {
     selectedFloor.value = floorNum;
     const existing = shapes.value.find(s => s.floor === floorNum);
     selectedShapeId.value = existing?.id || null;
     redrawCanvas();
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        mobileActiveView.value = 'canvas';
+    }
 };
 
 // Select unit from left list (Floor mode)
@@ -1394,6 +1425,9 @@ const handleSelectUnit = (unitId) => {
     const existing = shapes.value.find(s => s.unitId === unitId || s.id === unitId);
     selectedShapeId.value = existing?.id || null;
     redrawCanvas();
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        mobileActiveView.value = 'canvas';
+    }
 };
 
 // Add New Unit to Current Floor
@@ -1906,8 +1940,8 @@ onUnmounted(() => {
     <!-- Clean, Unified, Minimalist White & Orange Studio -->
     <div class="fixed inset-0 z-50 flex flex-col w-screen h-screen overflow-hidden bg-[#f1f5f9] font-sans text-slate-800 select-none">
         
-        <!-- Clean Unified Navbar (Height 54px) -->
-        <header class="h-[54px] bg-white border-b border-slate-200 px-4 flex items-center justify-between gap-3 shadow-xs shrink-0 z-10">
+        <!-- Clean Unified Navbar -->
+        <header class="min-h-[54px] py-1.5 bg-white border-b border-slate-200 px-3 sm:px-4 flex items-center justify-between gap-2 shadow-xs shrink-0 z-10 overflow-x-auto scrollbar-none">
             <!-- Left: Back Button & Mode / Building Select -->
             <div class="flex items-center gap-2.5 shrink-0">
                 <button
@@ -2186,11 +2220,47 @@ onUnmounted(() => {
             </div>
         </header>
 
+        <!-- Mobile View Switcher Tab Bar (Visible on mobile/tablet < 1024px) -->
+        <div class="lg:hidden bg-white border-b border-slate-200 px-2 py-1.5 flex items-center justify-around gap-1 shrink-0 z-10 shadow-xs">
+            <button
+                type="button"
+                @click="mobileActiveView = 'list'"
+                :class="mobileActiveView === 'list' ? 'bg-orange-500 text-white shadow-xs font-black' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+                <span>📋</span>
+                <span>{{ editorScope === 'master_plan' ? 'Bloklar' : (editorScope === 'facade' ? 'Qavatlar' : 'Xonadonlar') }}</span>
+            </button>
+
+            <button
+                type="button"
+                @click="mobileActiveView = 'canvas'"
+                :class="mobileActiveView === 'canvas' ? 'bg-orange-500 text-white shadow-xs font-black' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+                <span>🎨</span>
+                <span>Chizma / Canvas</span>
+            </button>
+
+            <button
+                type="button"
+                @click="mobileActiveView = 'details'"
+                :class="mobileActiveView === 'details' ? 'bg-orange-500 text-white shadow-xs font-black' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+                <span>⚙️</span>
+                <span>Tafsilotlar</span>
+            </button>
+        </div>
+
         <!-- Main Workspace Area -->
-        <main class="flex flex-1 overflow-hidden p-3 gap-3">
+        <main class="flex flex-1 overflow-hidden p-2 sm:p-3 gap-2 sm:gap-3">
             
             <!-- Left Sidebar: Blocks (Master Plan) OR Floors List (Facade) OR Units List (Floor) -->
-            <aside class="w-64 bg-white border border-slate-200/90 rounded-2xl p-3.5 overflow-y-auto flex flex-col gap-2.5 shadow-sm shrink-0">
+            <aside 
+                :class="[mobileActiveView === 'list' ? 'flex w-full' : 'hidden lg:flex lg:w-64']"
+                class="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-3.5 overflow-y-auto flex-col gap-2.5 shadow-sm shrink-0"
+            >
                 
                 <!-- ================= MODE 0: MASTER PLAN BLOCKS LIST ================= -->
                 <template v-if="editorScope === 'master_plan'">
@@ -2315,7 +2385,8 @@ onUnmounted(() => {
             <!-- Center Canvas Viewport (Maximally Enlarged!) -->
             <section 
                 ref="canvasContainerRef"
-                class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-inner relative overflow-hidden flex items-center justify-center"
+                :class="[mobileActiveView === 'canvas' ? 'flex' : 'hidden lg:flex']"
+                class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-inner relative overflow-hidden items-center justify-center w-full min-h-[300px]"
             >
                 <div
                     :style="{
@@ -2332,18 +2403,34 @@ onUnmounted(() => {
                         @mouseup="handleCanvasMouseUp"
                         @mouseleave="handleCanvasMouseUp"
                         @dblclick="handleCanvasDoubleClick"
-                        class="cursor-crosshair block"
+                        @touchstart="handleTouchStart"
+                        @touchmove="handleTouchMove"
+                        @touchend="handleTouchEnd"
+                        class="cursor-crosshair block touch-none"
                     ></canvas>
                 </div>
 
+                <!-- Mobile Floating Detail Button -->
+                <button
+                    v-if="selectedShapeId"
+                    @click="mobileActiveView = 'details'"
+                    type="button"
+                    class="lg:hidden absolute top-3 right-3 bg-white/95 text-slate-800 text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 shadow-md flex items-center gap-1.5 z-10 cursor-pointer"
+                >
+                    <span>⚙️ Tafsilotlar</span>
+                </button>
+
                 <!-- Hint overlay -->
-                <div v-if="drawingMode === 'polygon'" class="absolute bottom-4 left-6 bg-white/95 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-200 text-slate-800 text-xs font-semibold shadow-lg">
+                <div v-if="drawingMode === 'polygon'" class="absolute bottom-4 left-4 sm:left-6 max-w-[85%] bg-white/95 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-slate-200 text-slate-800 text-[11px] sm:text-xs font-semibold shadow-lg">
                     💡 Nuqtalarni belgilang. Yakunlash uchun oxirgi nuqtani <b>ikki marta bosing (Double-Click)</b>.
                 </div>
             </section>
 
             <!-- Right Sidebar: Coordinates & Shapes Inspector -->
-            <aside class="w-80 bg-white border border-slate-200/90 rounded-2xl p-4 overflow-y-auto flex flex-col gap-3 shadow-sm shrink-0">
+            <aside 
+                :class="[mobileActiveView === 'details' ? 'flex w-full' : 'hidden lg:flex lg:w-80']"
+                class="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 overflow-y-auto flex-col gap-3 shadow-sm shrink-0"
+            >
                 
                 <!-- ================= MASTER PLAN SCOPE INSPECTOR ================= -->
                 <template v-if="editorScope === 'master_plan'">
@@ -2554,8 +2641,8 @@ onUnmounted(() => {
             </aside>
         </main>
 
-        <!-- Clean Status Bar (Height 32px) -->
-        <footer class="h-8 bg-white border-t border-slate-200 px-5 text-slate-600 text-xs flex items-center justify-between font-semibold shrink-0">
+        <!-- Clean Status Bar -->
+        <footer class="min-h-[32px] py-1 bg-white border-t border-slate-200 px-3 sm:px-5 text-slate-600 text-[11px] sm:text-xs flex flex-wrap sm:flex-nowrap items-center justify-between gap-1 font-semibold shrink-0">
             <div>
                 <span v-if="editorScope === 'facade' && selectedFloor" class="text-slate-800">
                     <strong class="text-orange-600">{{ selectedFloor < 0 ? `${selectedFloor}-yerto'la` : `${selectedFloor}-qavat` }}</strong> — 

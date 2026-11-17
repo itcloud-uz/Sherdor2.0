@@ -9818,7 +9818,7 @@ const ledgerReportData = computed(() => {
                         <!-- Uy Haqida Ma'lumot -->
                         <div>
                             <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Uy Haqida Ma'lumot</h4>
-                            <div class="grid grid-cols-7 gap-1 text-center p-4 border border-gray-100 rounded-2xl bg-white shadow-sm overflow-x-auto min-w-[320px]">
+                            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 text-center p-3 sm:p-4 border border-gray-100 rounded-2xl bg-white shadow-sm">
                                 <div>
                                     <p class="text-xs font-semibold text-gray-800">-</p>
                                     <p class="text-[9px] text-gray-400 font-mono mt-1">Bino</p>

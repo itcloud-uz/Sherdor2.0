@@ -577,12 +577,12 @@ const hasUnsavedChanges = computed(() => {
                     <div v-show="activeTab === 'roles'" class="animate-[fadeIn_0.3s_ease-out]">
                         
                         <AccordionItem title="👥 XODIMLAR BOSHQARUVI" :isOpen="openAccordions.users" @toggle="toggleAccordion('users')">
-                            <div class="mb-4 flex justify-between items-end">
+                            <div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
                                 <p class="text-[13px] text-[#64748B]">Foydalanuvchilarni boshqarish va ularni rollarga biriktirish.</p>
-                                <button @click="openAddUserModal" class="px-5 py-2.5 bg-[#2563EB] text-white rounded-lg text-[14px] font-semibold hover:bg-blue-700 transition-colors">+ Xodim Qo'shish</button>
+                                <button @click="openAddUserModal" class="px-5 py-2.5 bg-[#2563EB] text-white rounded-lg text-[14px] font-semibold hover:bg-blue-700 transition-colors shrink-0">+ Xodim Qo'shish</button>
                             </div>
-                            <div class="border border-[#E2E8F0] rounded-lg overflow-hidden bg-white">
-                                <table class="w-full text-left border-collapse">
+                            <div class="border border-[#E2E8F0] rounded-lg overflow-x-auto bg-white">
+                                <table class="w-full text-left border-collapse min-w-[500px]">
                                     <thead class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
                                         <tr>
                                             <th class="p-4 text-[13px] font-medium text-[#64748B]">Ism</th>
@@ -664,8 +664,8 @@ const hasUnsavedChanges = computed(() => {
                                 <button v-if="isEditingSource" type="button" @click="sourceForm.reset(); isEditingSource = false" class="px-6 py-2.5 bg-white text-[#64748B] border border-[#E2E8F0] rounded-lg text-[14px] font-semibold hover:bg-[#F1F5F9] h-[40px]">Bekor qilish</button>
                             </form>
                             
-                            <div class="border border-[#E2E8F0] rounded-lg overflow-hidden bg-white">
-                                <table class="w-full text-left">
+                            <div class="border border-[#E2E8F0] rounded-lg overflow-x-auto bg-white">
+                                <table class="w-full text-left min-w-[400px]">
                                     <thead class="bg-[#F8FAFC] border-b border-[#E2E8F0]">
                                         <tr>
                                             <th class="p-4 text-[13px] font-medium text-[#64748B]">#</th>

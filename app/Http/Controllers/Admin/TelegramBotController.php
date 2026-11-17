@@ -216,7 +216,16 @@ class TelegramBotController extends Controller
             'telegram_chat_id' => 'nullable|string|max:255'
         ]);
 
-        $user->telegram_chat_id = $validated['telegram_chat_id'] ?: null;
+        $chatId = !empty($validated['telegram_chat_id']) ? trim($validated['telegram_chat_id']) : null;
+
+        if ($chatId) {
+            // Agar ushbu chat_id boshqa xodimda bo'lsa, dublikat (unique constraint) xatolik bermaslik uchun undan ajratiladi
+            User::where('telegram_chat_id', $chatId)
+                ->where('id', '!=', $user->id)
+                ->update(['telegram_chat_id' => null]);
+        }
+
+        $user->telegram_chat_id = $chatId;
         $user->save();
 
         return redirect()->back()->with('success', "{$user->name} ning Telegram Chat ID si yangilandi!");

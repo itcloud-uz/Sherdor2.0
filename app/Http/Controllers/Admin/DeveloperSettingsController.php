@@ -73,7 +73,13 @@ class DeveloperSettingsController extends Controller
         ]);
 
         $user = \App\Models\User::findOrFail($id);
-        $user->telegram_chat_id = $request->telegram_chat_id;
+        $chatId = !empty($request->telegram_chat_id) ? trim($request->telegram_chat_id) : null;
+        if ($chatId) {
+            \App\Models\User::where('telegram_chat_id', $chatId)
+                ->where('id', '!=', $user->id)
+                ->update(['telegram_chat_id' => null]);
+        }
+        $user->telegram_chat_id = $chatId;
         $user->save();
 
         return back()->with('success', 'Telegram Chat ID muvaffaqiyatli yangilandi!');

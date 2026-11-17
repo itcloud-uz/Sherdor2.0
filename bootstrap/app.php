@@ -20,6 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo('/');
 
+        $middleware->validateCsrfTokens(except: [
+            'miniapp/api/*',
+            'api/*',
+        ]);
+
         $middleware->alias([
             'role.restrictions' => \App\Http\Middleware\RoleRestrictionsMiddleware::class,
         ]);

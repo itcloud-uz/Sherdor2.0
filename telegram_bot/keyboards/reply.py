@@ -1,8 +1,13 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+from config import APP_URL
 
 def get_main_menu():
+    miniapp_url = f"{APP_URL.rstrip('/')}/miniapp/transactions"
     return ReplyKeyboardMarkup(
         keyboard=[
+            [
+                KeyboardButton(text="📱 Mini App (Kirim / Chiqim)", web_app=WebAppInfo(url=miniapp_url))
+            ],
             [
                 KeyboardButton(text="💰 Kirim qilish"),
                 KeyboardButton(text="💸 Chiqim qilish")

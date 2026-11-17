@@ -245,6 +245,7 @@ const navItems = [
     { name: 'Asosiy Vositalar', route: 'admin.fixed_assets', icon: '📦' },
     { name: 'Taminotchilar', route: 'admin.warehouse.index', icon: '📦' },
     { name: 'settings', route: 'admin.settings.index', icon: '⚙️' },
+    { name: 'bot_management', route: 'admin.telegram_bot.index', icon: '🤖' },
     { name: 'Developer', route: 'admin.developer.settings', icon: '🛠️' },
 ];
 
@@ -285,6 +286,7 @@ const filteredNavItems = computed(() => {
         if (item.name === 'Taminotchilar') return hasPerm('access objects') || hasPerm('access finance');
         if (item.name === 'hr_payroll') return hasPerm('access hr');
         if (item.name === 'settings') return hasPerm('access settings');
+        if (item.name === 'bot_management') return hasPerm('access settings') || roles.includes('Super_Admin') || roles.includes('Admin');
         if (item.name === 'Developer') return roles.includes('Super_Admin');
         return false;
     });

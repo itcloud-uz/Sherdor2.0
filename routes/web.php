@@ -176,6 +176,15 @@ Route::middleware(['auth', 'verified', 'role.restrictions'])->prefix('admin')->n
     Route::post('/developer/integrations', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updateIntegrationSettings'])->name('developer.integrations.update');
     Route::put('/developer/users/{id}/chat-id', [\App\Http\Controllers\Admin\DeveloperSettingsController::class, 'updateUserChatId'])->name('developer.users.update_chat_id');
 
+    // Telegram Bot Management
+    Route::get('/telegram-bot', [\App\Http\Controllers\Admin\TelegramBotController::class, 'index'])->name('telegram_bot.index');
+    Route::post('/telegram-bot/service', [\App\Http\Controllers\Admin\TelegramBotController::class, 'controlService'])->name('telegram_bot.control_service');
+    Route::get('/telegram-bot/logs', [\App\Http\Controllers\Admin\TelegramBotController::class, 'getLogs'])->name('telegram_bot.get_logs');
+    Route::post('/telegram-bot/test-token', [\App\Http\Controllers\Admin\TelegramBotController::class, 'testToken'])->name('telegram_bot.test_token');
+    Route::post('/telegram-bot/config', [\App\Http\Controllers\Admin\TelegramBotController::class, 'updateConfig'])->name('telegram_bot.update_config');
+    Route::post('/telegram-bot/users/{user}', [\App\Http\Controllers\Admin\TelegramBotController::class, 'updateUser'])->name('telegram_bot.update_user');
+    Route::post('/telegram-bot/send-message', [\App\Http\Controllers\Admin\TelegramBotController::class, 'sendMessage'])->name('telegram_bot.send_message');
+
     Route::delete('/facility/units/{unit}', [\App\Http\Controllers\Admin\FacilityController::class, 'destroyUnit'])->name('facility.units.destroy');
     
     // Finance Module

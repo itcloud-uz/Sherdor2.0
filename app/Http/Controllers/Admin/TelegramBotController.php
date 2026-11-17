@@ -23,14 +23,14 @@ class TelegramBotController extends Controller
         $serviceStatus = $this->getServiceStatus();
         $logs = $this->fetchLogs(40);
 
-        // Fetch tokens from env or config
-        $financeToken = env('FINANCE_BOT_TOKEN');
-        $botSecretKey = env('BOT_SECRET_KEY', 'default_secret_key_for_dev');
-        $pinToken = env('PIN_BOT_TOKEN');
-        $backupToken = env('BACKUP_BOT_TOKEN');
-
+        // Fetch tokens from env, config or systemSettings
         $systemSettings = SystemSetting::first();
         $leadChatId = $systemSettings ? $systemSettings->telegram_lead_chat_id : null;
+
+        $financeToken = trim((string) (config('services.telegram.finance_bot_token') ?: (env('FINANCE_BOT_TOKEN') ?: $systemSettings?->telegram_lead_bot_token)));
+        $botSecretKey = trim((string) env('BOT_SECRET_KEY', 'default_secret_key_for_dev'));
+        $pinToken = trim((string) (config('services.telegram.pin_bot_token') ?: env('PIN_BOT_TOKEN')));
+        $backupToken = trim((string) (config('services.telegram.backup_bot_token') ?: env('BACKUP_BOT_TOKEN')));
 
         // Test finance bot token to get bot details
         $botInfo = null;
@@ -126,7 +126,7 @@ class TelegramBotController extends Controller
             'token' => 'required|string'
         ]);
 
-        $info = $this->queryTelegramGetMe($request->token);
+        $info = $this->queryTelegramGetMe(trim((string) $request->token));
 
         if ($info && !empty($info['ok'])) {
             return response()->json([
@@ -235,10 +235,11 @@ class TelegramBotController extends Controller
 
         $botType = $request->bot_type ?: 'finance';
         $token = match ($botType) {
-            'pin' => env('PIN_BOT_TOKEN'),
-            'backup' => env('BACKUP_BOT_TOKEN'),
-            default => env('FINANCE_BOT_TOKEN'),
+            'pin' => config('services.telegram.pin_bot_token') ?: env('PIN_BOT_TOKEN'),
+            'backup' => config('services.telegram.backup_bot_token') ?: env('BACKUP_BOT_TOKEN'),
+            default => config('services.telegram.finance_bot_token') ?: (env('FINANCE_BOT_TOKEN') ?: SystemSetting::first()?->telegram_lead_bot_token),
         };
+        $token = trim((string) $token);
 
         if (empty($token)) {
             return response()->json([

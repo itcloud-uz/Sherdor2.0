@@ -48,10 +48,24 @@ const configForm = useForm({
 });
 
 const isSavingConfig = ref(false);
+const saveConfigMessage = ref('');
+const isSaveConfigError = ref(false);
+
 const saveConfig = () => {
     isSavingConfig.value = true;
+    saveConfigMessage.value = '';
+    isSaveConfigError.value = false;
     configForm.post(route('admin.telegram_bot.update_config'), {
         preserveScroll: true,
+        onSuccess: () => {
+            saveConfigMessage.value = "✅ Sozlamalar muvaffaqiyatli saqlandi!";
+            setTimeout(() => saveConfigMessage.value = '', 4000);
+        },
+        onError: (errors) => {
+            isSaveConfigError.value = true;
+            saveConfigMessage.value = "❌ " + (Object.values(errors).join(', ') || 'Saqlashda xatolik yuz berdi');
+            setTimeout(() => saveConfigMessage.value = '', 6000);
+        },
         onFinish: () => {
             isSavingConfig.value = false;
         }
@@ -541,11 +555,16 @@ const showBackupToken = ref(false);
                     </div>
 
                     <!-- Submit Button -->
-                    <div class="flex justify-end">
+                    <div class="flex items-center justify-between flex-wrap gap-3">
+                        <div v-if="saveConfigMessage" :class="isSaveConfigError ? 'text-red-600 bg-red-50 border-red-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200'" class="px-4 py-2 rounded-xl text-xs font-bold border">
+                            {{ saveConfigMessage }}
+                        </div>
+                        <div v-else></div>
+
                         <button
                             type="submit"
                             :disabled="isSavingConfig"
-                            class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white font-black text-xs sm:text-sm rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                            class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 text-white font-black text-xs sm:text-sm rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 ml-auto"
                         >
                             <span>{{ isSavingConfig ? '⏳' : '💾' }}</span>
                             <span>Sozlamalarni Saqlash</span>

@@ -147,52 +147,64 @@ class TelegramBotController extends Controller
      */
     public function updateConfig(Request $request)
     {
-        $validated = $request->validate([
-            'finance_bot_token' => 'nullable|string',
-            'bot_secret_key' => 'nullable|string',
-            'pin_bot_token' => 'nullable|string',
-            'backup_bot_token' => 'nullable|string',
-            'telegram_lead_chat_id' => 'nullable|string',
-        ]);
+        try {
+            $validated = $request->validate([
+                'finance_bot_token' => 'nullable|string',
+                'bot_secret_key' => 'nullable|string',
+                'pin_bot_token' => 'nullable|string',
+                'backup_bot_token' => 'nullable|string',
+                'telegram_lead_chat_id' => 'nullable|string',
+            ]);
 
-        // 1. Update .env variables
-        $envUpdates = [];
-        if ($request->has('finance_bot_token')) {
-            $envUpdates['FINANCE_BOT_TOKEN'] = $validated['finance_bot_token'] ?? '';
-        }
-        if ($request->has('bot_secret_key')) {
-            $envUpdates['BOT_SECRET_KEY'] = $validated['bot_secret_key'] ?? 'default_secret_key_for_dev';
-        }
-        if ($request->has('pin_bot_token')) {
-            $envUpdates['PIN_BOT_TOKEN'] = $validated['pin_bot_token'] ?? '';
-        }
-        if ($request->has('backup_bot_token')) {
-            $envUpdates['BACKUP_BOT_TOKEN'] = $validated['backup_bot_token'] ?? '';
-        }
+            // 1. Update .env variables
+            $envUpdates = [];
+            if ($request->has('finance_bot_token')) {
+                $envUpdates['FINANCE_BOT_TOKEN'] = $validated['finance_bot_token'] ?? '';
+            }
+            if ($request->has('bot_secret_key')) {
+                $envUpdates['BOT_SECRET_KEY'] = $validated['bot_secret_key'] ?? 'default_secret_key_for_dev';
+            }
+            if ($request->has('pin_bot_token')) {
+                $envUpdates['PIN_BOT_TOKEN'] = $validated['pin_bot_token'] ?? '';
+            }
+            if ($request->has('backup_bot_token')) {
+                $envUpdates['BACKUP_BOT_TOKEN'] = $validated['backup_bot_token'] ?? '';
+            }
 
-        $this->updateEnvFile($envUpdates);
+            $this->updateEnvFile($envUpdates);
 
-        // 2. Update SystemSetting for lead chat id
-        if ($request->has('telegram_lead_chat_id')) {
+            // 2. Update SystemSetting for lead chat id & bot token
             $settings = SystemSetting::first();
             if ($settings) {
-                $settings->telegram_lead_chat_id = $validated['telegram_lead_chat_id'];
+                if ($request->has('telegram_lead_chat_id')) {
+                    $settings->telegram_lead_chat_id = $validated['telegram_lead_chat_id'];
+                }
+                if (!empty($validated['finance_bot_token'])) {
+                    $settings->telegram_lead_bot_token = $validated['finance_bot_token'];
+                }
                 $settings->save();
             }
+
+            // 3. Clear cache
+            try {
+                Artisan::call('config:clear');
+            } catch (\Throwable $e) {}
+
+            // 4. If finance bot service is running, restart it to apply new token
+            try {
+                $status = $this->getServiceStatus();
+                if ($status['status'] === 'active') {
+                    shell_exec("sudo /usr/bin/systemctl restart moliyabot.service 2>&1");
+                }
+            } catch (\Throwable $e) {}
+
+            return redirect()->back()->with('success', 'Bot sozlamalari muvaffaqiyatli saqlandi!');
+        } catch (\Throwable $e) {
+            Log::error("TelegramBot updateConfig error: " . $e->getMessage());
+            return redirect()->back()->withErrors([
+                'config' => 'Sozlamalarni saqlashda xatolik: ' . $e->getMessage()
+            ]);
         }
-
-        // 3. Clear cache
-        try {
-            Artisan::call('config:clear');
-        } catch (\Throwable $e) {}
-
-        // 4. If finance bot service is running, restart it to apply new token
-        $status = $this->getServiceStatus();
-        if ($status['status'] === 'active') {
-            shell_exec("sudo /usr/bin/systemctl restart moliyabot.service 2>&1");
-        }
-
-        return redirect()->back()->with('success', 'Bot sozlamalari muvaffaqiyatli saqlandi!');
     }
 
     /**
@@ -360,6 +372,17 @@ class TelegramBotController extends Controller
             }
         }
 
-        file_put_contents($envPath, $content);
+        try {
+            $written = @file_put_contents($envPath, $content);
+            if ($written === false) {
+                Log::warning("Direct file_put_contents to .env failed, trying shell cp");
+                $tmpFile = tempnam(sys_get_temp_dir(), 'env_');
+                file_put_contents($tmpFile, $content);
+                shell_exec("cp " . escapeshellarg($tmpFile) . " " . escapeshellarg($envPath) . " 2>&1");
+                @unlink($tmpFile);
+            }
+        } catch (\Throwable $e) {
+            Log::error("Failed to update .env: " . $e->getMessage());
+        }
     }
 }

@@ -1877,6 +1877,19 @@ function openSellUnit(unit) {
     discountPerSqm.value = 0;
     initialDownPaymentPaid.value = '';
     initialInstallmentPaid.value = '';
+
+    const blockMatch = (unit.block_name || unit.corpus_name || selectedBuilding.value?.block_name || selectedBuilding.value?.corpus_name || selectedBuilding.value?.name || '1').match(/\d+/);
+    const blockNum = blockMatch ? blockMatch[0] : '1';
+    let suggestedContractNumber = '';
+    if (unit.type === 'commercial') {
+        const uNum = String(unit.unit_number || '').replace(/^D-?/i, '');
+        suggestedContractNumber = `${blockNum}B/${uNum}P`;
+    } else if (unit.type === 'parking') {
+        const uNum = String(unit.unit_number || '').replace(/^P-?/i, '');
+        suggestedContractNumber = `${blockNum}B/${uNum}PARK`;
+    } else {
+        suggestedContractNumber = `${blockNum}B/${unit.unit_number || ''}`;
+    }
     
     contractForm.value = {
         buyer_type: 'client',
@@ -1884,7 +1897,7 @@ function openSellUnit(unit) {
         client_id: '',
         employee_id: '',
         unit_id: unit.id,
-        contract_number: '',
+        contract_number: suggestedContractNumber,
         contract_type: unit.type === 'commercial' ? 'commercial' : (unit.type === 'parking' ? 'parking' : 'residential'),
         price_per_sqm: '',
         total_amount: unit.price || '',

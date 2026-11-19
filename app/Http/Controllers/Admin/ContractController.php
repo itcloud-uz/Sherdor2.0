@@ -40,6 +40,10 @@ class ContractController extends Controller
             'custom_monthly_amount' => 'nullable|numeric|min:0',
             'parking_unit_id' => 'nullable|exists:units,id',
             'parking_price' => 'nullable|numeric|min:0'
+        ], [
+            'contract_number.unique' => 'Ushbu shartnoma raqami allaqachon mavjud! Iltimos, boshqa raqam kiriting.',
+            'client_id.required_if' => 'Iltimos, mijozni tanlang.',
+            'unit_id.required' => 'Xonadon yoki do\'kon tanlanmagan.',
         ]);
 
         $paymentType = $validated['payment_type'] ?? 'installment';

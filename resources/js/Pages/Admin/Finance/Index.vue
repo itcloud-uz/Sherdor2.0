@@ -3760,7 +3760,7 @@ function deleteCategory(id) {
             <!-- TAB 0: Boshqaruv Paneli (Dashboard) -->
             <div v-if="activeTab === 0" class="space-y-6">
                 <!-- Summary Metrics (Screenshot 2 Style but for dashboard) -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <!-- Jami tushumlar -->
                     <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
                         <div class="flex items-center gap-3 mb-4">
@@ -3771,6 +3771,7 @@ function deleteCategory(id) {
                             <h2 class="text-2xl font-bold font-display text-emerald-600">
                                 {{ formatMoney(totalTushumUzs, 'UZS') }}
                             </h2>
+                            <p class="text-xs text-gray-400 font-mono">Barcha tasdiqlangan kirimlar</p>
                         </div>
                     </div>
                     <!-- Jami to'lovlar -->
@@ -3783,19 +3784,33 @@ function deleteCategory(id) {
                             <h2 class="text-2xl font-bold font-display text-red-600">
                                 {{ formatMoney(totalTolovUzs, 'UZS') }}
                             </h2>
-                            <p class="text-xs text-gray-400 font-mono">Barcha tasdiqlangan xarajatlar summasi</p>
+                            <p class="text-xs text-gray-400 font-mono">Barcha tasdiqlangan xarajatlar</p>
+                        </div>
+                    </div>
+                    <!-- Sof Foyda (Net Profit) -->
+                    <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center font-bold">📈</div>
+                            <span class="text-sm font-semibold text-gray-500">Sof Foyda</span>
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-2xl font-bold font-display" :class="(totalTushumUzs - totalTolovUzs) >= 0 ? 'text-emerald-700' : 'text-red-600'">
+                                {{ formatMoney(totalTushumUzs - totalTolovUzs, 'UZS') }}
+                            </h2>
+                            <p class="text-xs text-gray-400 font-mono">Kirim - Chiqim farqi</p>
                         </div>
                     </div>
                     <!-- Balans -->
                     <div class="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
                         <div class="flex items-center gap-3 mb-4">
                             <div class="w-8 h-8 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center font-bold">🏦</div>
-                            <span class="text-sm font-semibold text-gray-500">Balans</span>
+                            <span class="text-sm font-semibold text-gray-500">Kassa Balansi</span>
                         </div>
                         <div class="space-y-1">
                             <h2 class="text-2xl font-bold font-display text-orange-500">
                                 {{ formatMoney(totalBalansUzs, 'UZS') }}
                             </h2>
+                            <p class="text-xs text-gray-400 font-mono">Kassalardagi mavjud qoldiq</p>
                         </div>
                     </div>
                 </div>
@@ -5518,7 +5533,10 @@ function deleteCategory(id) {
 
                     <!-- Hamkorlar (Partners shares) -->
                     <div class="bg-white p-6 rounded-2xl border border-gray-150 shadow-sm space-y-4">
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Ta'sischilar/Hamkorlar Hisobi</h3>
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900 font-mono">Ta'sischilar/Hamkorlar Hisobi</h3>
+                            <a :href="route('admin.partners')" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">Ta'sischilar paneliga o'tish &rarr;</a>
+                        </div>
                         <div class="overflow-x-auto border border-gray-100 rounded-xl">
                             <table class="w-full text-left text-xs font-mono">
                                 <thead class="bg-gray-50 text-gray-500 border-b border-gray-100">
@@ -5526,18 +5544,20 @@ function deleteCategory(id) {
                                         <th class="p-3">F.I.SH</th>
                                         <th class="p-3 text-right">Kiritgan sarmoya</th>
                                         <th class="p-3 text-right">Olingan pul</th>
-                                        <th class="p-3 text-right">Joriy hisob</th>
+                                        <th class="p-3 text-right">Ulush (50%)</th>
+                                        <th class="p-3 text-right">Joriy hisob / Qarz</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
                                     <tr v-for="p in partners" :key="p.id" class="hover:bg-gray-50">
                                         <td class="p-3 font-bold text-gray-900">{{ p.user?.name || p.name }}</td>
-                                        <td class="p-3 text-right text-emerald-600 font-bold">{{ formatMoney(p.invested_amount) }}</td>
-                                        <td class="p-3 text-right text-red-600 font-bold">{{ formatMoney(p.withdrawn_amount) }}</td>
-                                        <td class="p-3 text-right font-bold text-gray-900">{{ formatMoney(p.accountable_balance) }}</td>
+                                        <td class="p-3 text-right text-emerald-600 font-bold">{{ formatMoney(p.total_sarmoya ?? p.invested_amount ?? 0) }}</td>
+                                        <td class="p-3 text-right text-red-600 font-bold">{{ formatMoney(p.total_olingan ?? p.withdrawn_amount ?? 0) }}</td>
+                                        <td class="p-3 text-right text-blue-600 font-bold">{{ Number(p.investment_share_percentage || 0) }}% ({{ formatMoney(p.calculated_share || 0) }})</td>
+                                        <td class="p-3 text-right font-bold" :class="Number(p.accountable_balance) < 0 ? 'text-rose-600' : 'text-emerald-600'">{{ formatMoney(p.accountable_balance) }}</td>
                                     </tr>
                                     <tr v-if="!partners || !partners.length">
-                                        <td colspan="4" class="p-6 text-center text-gray-400">Hamkorlar topilmadi.</td>
+                                        <td colspan="5" class="p-6 text-center text-gray-400">Hamkorlar topilmadi.</td>
                                     </tr>
                                 </tbody>
                             </table>

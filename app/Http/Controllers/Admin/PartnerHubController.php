@@ -39,89 +39,16 @@ class PartnerHubController extends Controller
 
     public function index()
     {
-        $partners = Partner::with('user')->get();
-        
-        // Calculate Net Profit
-        $totalIncome = \App\Models\Transaction::where('status', 'approved')->where('type', 'income')->sum('amount');
-        $totalExpense = \App\Models\Transaction::where('status', 'approved')
-            ->where('type', 'expense')
-            ->where('category', '!=', 'Divident')
-            ->where('category', '!=', 'Partner Advance')
-            ->sum('amount');
-            
-        $netProfit = $totalIncome - $totalExpense;
-        $totalInvested = $partners->sum('total_invested');
-        
-        // Hardcode company net worth to 0 as requested by the user
-        $companyNetWorth = 0;
-        
-        // Get total UZS across cash registers
-        $dynamicUZS = \App\Models\CashRegister::whereNull('parent_id')->get()->sum('balance_uzs');
-
-        foreach ($partners as $partner) {
-            $registerIds = $this->getPartnerRegisterIds($partner);
-
-            $isPartnerPayoutQ = function($q) use ($partner) {
-                $q->where(function($sq) use ($partner) {
-                    $sq->where('target_type', 'partner')
-                       ->where('target_id', $partner->id);
-                })
-                ->orWhereIn('category', ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi'])
-                ->orWhere(function($sq) use ($partner) {
-                    $sq->where('partner_id', $partner->id)
-                       ->where(function($catQ) {
-                           $catQ->whereNull('category')
-                                ->orWhereNotIn('category', ['Qurilish', 'Material', 'Ish haqi', 'Ovqatlanish', 'Texnika', 'Boshqa xarajat']);
-                       });
-                });
-            };
-
-            // Jami olingan so'mma: all expenses paid to or withdrawn by the partner
-            $partner->total_olingan = \App\Models\Transaction::where('status', 'approved')
-                ->where(function($q) use ($partner, $registerIds) {
-                    $q->where('partner_id', $partner->id)
-                      ->orWhere(function($sq) use ($partner) {
-                          $sq->where('target_type', 'partner')->where('target_id', $partner->id);
-                      });
-                    if (!empty($registerIds)) {
-                        $q->orWhereIn('account_id', $registerIds);
-                    }
-                })
-                ->where('type', 'expense')
-                ->where($isPartnerPayoutQ)
-                ->sum('amount');
-
-            // Jami qilingan sarmoya: initial investment + reported expenses on behalf of the company (not payouts/advances) + any incomes
-            $dynamicSarmoya = \App\Models\Transaction::where('status', 'approved')
-                ->where(function($q) use ($partner, $registerIds) {
-                    $q->where('partner_id', $partner->id);
-                    if (!empty($registerIds)) {
-                        $q->orWhereIn('account_id', $registerIds);
-                    }
-                })
-                ->where(function($q) use ($isPartnerPayoutQ) {
-                    $q->where(function($sq) use ($isPartnerPayoutQ) {
-                        $sq->where('type', 'expense')
-                           ->whereNot($isPartnerPayoutQ);
-                    })->orWhere('type', 'income');
-                })
-                ->sum('amount');
-
-            $partner->dynamic_sarmoya = $dynamicSarmoya;
-            $partner->total_sarmoya = $partner->total_invested + $dynamicSarmoya;
-
-            // Hisoblangan ulush: 50% (or share %) of the total cash balance / net profit
-            $umumiySumma = $dynamicUZS > 0 ? $dynamicUZS : ($netProfit > 0 ? $netProfit : 0);
-            $partner->calculated_share = ($umumiySumma * $partner->investment_share_percentage) / 100;
-        }
-
+        $financials = Partner::getAllWithFinancials();
         $users = \App\Models\User::all(); // Assuming admin can add any user as partner
 
         return Inertia::render('Admin/Partners/Index', [
-            'partners' => $partners,
+            'partners' => $financials['partners'],
             'users' => $users,
-            'companyNetWorth' => $companyNetWorth,
-            'netProfit' => $netProfit
+            'companyNetWorth' => $financials['companyNetWorth'],
+            'totalIncome' => $financials['totalIncome'],
+            'totalExpense' => $financials['totalExpense'],
+            'netProfit' => $financials['netProfit']
         ]);
     }
 
@@ -258,7 +185,15 @@ class PartnerHubController extends Controller
             $query->where(\DB::raw('COALESCE(transaction_date, DATE(created_at))'), '<=', $request->to_date);
         }
 
-        $transactions = $query->orderByRaw('COALESCE(transaction_date, created_at) desc')->get();
+        $transactions = $query->with(['category', 'cashRegister', 'counterparty'])
+            ->orderByRaw('COALESCE(transaction_date, created_at) desc')
+            ->get();
+
+        $transactions->transform(function($t) {
+            $t->category_display = $t->category?->name ?? (is_string($t->category) ? $t->category : '');
+            return $t;
+        });
+
         return response()->json($transactions);
     }
 

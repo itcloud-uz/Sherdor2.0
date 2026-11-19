@@ -132,7 +132,8 @@ class FinanceController extends Controller
 
         $workers = Worker::latest()->get();
         $suppliers = Supplier::latest()->get();
-        $partners = Partner::with('user')->latest()->get();
+        $partnerFinancials = Partner::getAllWithFinancials();
+        $partners = $partnerFinancials['partners'];
         $brigades = Brigade::latest()->get();
         $machineOwners = MachineOwner::latest()->get();
 

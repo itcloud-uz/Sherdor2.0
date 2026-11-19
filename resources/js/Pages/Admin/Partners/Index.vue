@@ -11,6 +11,8 @@ const props = defineProps({
     partners: Array,
     users: Array,
     companyNetWorth: Number,
+    totalIncome: Number,
+    totalExpense: Number,
     netProfit: Number
 });
 
@@ -516,37 +518,54 @@ function formatDate(dateString) {
             </div>
 
             <!-- Dashboard Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div class="relative overflow-hidden bg-white/60 backdrop-blur-xl border border-gray-100 shadow-sm rounded-2xl p-6 hover:shadow-md transition-shadow duration-300">
-                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-blue-100/50 rounded-full blur-2xl"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <!-- Kompaniya balansi -->
+                <div class="relative overflow-hidden bg-white/80 backdrop-blur-xl border border-slate-200/80 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-blue-100/50 rounded-full blur-2xl"></div>
                     <div class="relative z-10">
-                        <p class="text-[10px] font-medium text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                            Kompaniyaning jami qiymati
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            Kompaniya Balansi (Kassalar)
                         </p>
-                        <p class="text-4xl font-display font-bold text-slate-800 tracking-tight">{{ formatCurrency(companyNetWorth) }} <span class="text-sm font-medium text-slate-400">UZS</span></p>
+                        <p class="text-2xl font-display font-black text-slate-800 tracking-tight">{{ formatCurrency(companyNetWorth) }} <span class="text-xs font-medium text-slate-400">UZS</span></p>
+                    </div>
+                </div>
+
+                <!-- Jami Kirim & Chiqim -->
+                <div class="relative overflow-hidden bg-white/80 backdrop-blur-xl border border-slate-200/80 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
+                    <div class="relative z-10 space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-slate-500 uppercase tracking-wider text-[10px] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Kirim:</span>
+                            <span class="font-black text-emerald-600 font-mono">+{{ formatCurrency(totalIncome || 0) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs border-t border-slate-100 pt-1.5">
+                            <span class="font-bold text-slate-500 uppercase tracking-wider text-[10px] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Chiqim:</span>
+                            <span class="font-black text-rose-600 font-mono">-{{ formatCurrency(totalExpense || 0) }}</span>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="relative overflow-hidden bg-emerald-50/30 backdrop-blur-xl border border-emerald-100 shadow-sm rounded-2xl p-6 hover:shadow-md transition-shadow duration-300">
-                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-emerald-200/40 rounded-full blur-2xl"></div>
+                <!-- Sof Foyda -->
+                <div class="relative overflow-hidden bg-emerald-50/40 backdrop-blur-xl border border-emerald-100 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-200/40 rounded-full blur-2xl"></div>
                     <div class="relative z-10">
-                        <p class="text-[10px] font-medium text-emerald-600/80 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <p class="text-[10px] font-bold text-emerald-600/90 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                             Sof Foyda (Net Profit)
                         </p>
-                        <p class="text-4xl font-display font-bold text-emerald-700 tracking-tight">{{ formatCurrency(netProfit) }} <span class="text-sm font-medium text-emerald-500/70">UZS</span></p>
+                        <p class="text-2xl font-display font-black text-emerald-700 tracking-tight">{{ formatCurrency(netProfit) }} <span class="text-xs font-medium text-emerald-500/70">UZS</span></p>
                     </div>
                 </div>
                 
-                <div class="relative overflow-hidden bg-rose-50/30 backdrop-blur-xl border border-rose-100 shadow-sm rounded-2xl p-6 hover:shadow-md transition-shadow duration-300">
-                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-rose-200/40 rounded-full blur-2xl"></div>
+                <!-- Jami Hisobdorlik -->
+                <div class="relative overflow-hidden bg-rose-50/40 backdrop-blur-xl border border-rose-100 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-rose-200/40 rounded-full blur-2xl"></div>
                     <div class="relative z-10">
-                        <p class="text-[10px] font-medium text-rose-600/80 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                        <p class="text-[10px] font-bold text-rose-600/90 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
                             Jami Hisobdorlik (Qarz)
                         </p>
-                        <p class="text-4xl font-display font-bold text-rose-700 tracking-tight">{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0)) }} <span class="text-sm font-medium text-rose-500/70">UZS</span></p>
+                        <p class="text-2xl font-display font-black text-rose-700 tracking-tight">{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0)) }} <span class="text-xs font-medium text-rose-500/70">UZS</span></p>
                     </div>
                 </div>
             </div>
@@ -561,7 +580,14 @@ function formatDate(dateString) {
                             <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#fce205] font-black text-sm">
                                 {{ partner.user?.name ? partner.user.name.charAt(0) : 'P' }}
                             </div>
-                            <span class="font-display font-black text-base tracking-wide uppercase">{{ partner.user?.name || 'TA\'SISCHI' }}</span>
+                            <div>
+                                <span class="font-display font-black text-base tracking-wide uppercase">{{ partner.user?.name || 'TA\'SISCHI' }}</span>
+                                <div class="mt-0.5">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" :class="Number(partner.accountable_balance) < 0 ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'">
+                                        Hisob/Qarz: {{ formatCurrency(partner.accountable_balance) }} UZS
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex gap-2 z-10">
                             <button @click="openEditPartnerModal(partner)" class="p-1.5 bg-white/10 hover:bg-amber-500 text-white hover:text-black rounded-lg transition-all" title="Tahrirlash">

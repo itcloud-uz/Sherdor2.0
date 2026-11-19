@@ -3377,19 +3377,71 @@ const flatGroupedContracts = computed(() => {
     return Object.values(groupedContracts.value).flat();
 });
 
+const selectedCanceledBuildingFilter = ref('');
+
+function calculateRefundableAmount(contract) {
+    if (!contract) return 0;
+    const paid = calculatePaidAmount(contract);
+    const refunded = Number(contract.refunded_amount || 0);
+    return Math.max(0, paid - refunded);
+}
+
+function goToClientDebt(contract) {
+    activeTab.value = 'client_payments';
+    paymentsSubTab.value = 'debts';
+    clientDebtsSearch.value = contract.client?.phone || contract.client?.first_name || '';
+}
+
 const canceledContracts = computed(() => {
     let list = (props.contracts || []).filter(c => c.status === 'canceled' || c.status === 'cancelled');
+    
+    // Also include client contracts from props.clients if marked cancelled and not yet in list
+    (props.clients || []).forEach(cl => {
+        (cl.contracts || []).forEach(ct => {
+            if ((ct.status === 'canceled' || ct.status === 'cancelled') && !list.some(item => item.id === ct.id)) {
+                list.push({
+                    ...ct,
+                    client: ct.client || cl
+                });
+            }
+        });
+    });
+
     if (canceledSearchQuery.value) {
         const q = canceledSearchQuery.value.toLowerCase().trim();
         list = list.filter(c => {
-            const clientName = `${c.client?.first_name || ''} ${c.client?.last_name || ''}`.toLowerCase();
+            const clientName = `${c.client?.first_name || ''} ${c.client?.last_name || ''} ${c.client?.middle_name || ''}`.toLowerCase();
             const clientPhone = (c.client?.phone || '').toLowerCase();
             const contractNo = (c.contract_number || '').toLowerCase();
-            const bino = (c.unit?.floor?.building?.name || '').toLowerCase();
-            return clientName.includes(q) || clientPhone.includes(q) || contractNo.includes(q) || bino.includes(q);
+            const bino = (c.unit?.floor?.building?.name || c.building?.name || '').toLowerCase();
+            const unitNo = (c.unit?.unit_number || '').toString().toLowerCase();
+            return clientName.includes(q) || clientPhone.includes(q) || contractNo.includes(q) || bino.includes(q) || unitNo.includes(q);
         });
     }
+
+    if (selectedCanceledBuildingFilter.value) {
+        list = list.filter(c => (c.unit?.floor?.building?.name || c.building?.name) === selectedCanceledBuildingFilter.value);
+    }
+
     return list;
+});
+
+const groupedCanceledContracts = computed(() => {
+    const groups = {};
+    canceledContracts.value.forEach(c => {
+        const blockName = c.unit?.floor?.building?.block_name || c.unit?.floor?.building?.corpus_name || c.unit?.floor?.building?.name || "Boshqa (Biriktirilmagan)";
+        if (!groups[blockName]) {
+            groups[blockName] = [];
+        }
+        groups[blockName].push(c);
+    });
+
+    const sortedGroups = {};
+    Object.keys(groups).sort().forEach(key => {
+        sortedGroups[key] = groups[key];
+    });
+
+    return sortedGroups;
 });
 
 function calculatePaidAmount(contract) {
@@ -4767,10 +4819,26 @@ const filteredClientDebts = computed(() => {
             if (cp.customable_id) processedClientIds.add(cp.customable_id);
             
             const clientContracts = cp.customable?.contracts || [];
-            const agreed = clientContracts.reduce((sum, ct) => sum + Number(ct.total_amount || 0), 0);
-            const paid = (cp.transactions || [])
+            const activeContracts = clientContracts.filter(ct => ct.status !== 'cancelled' && ct.status !== 'canceled');
+            const cancelledContracts = clientContracts.filter(ct => ct.status === 'cancelled' || ct.status === 'canceled');
+            
+            const agreed = activeContracts.reduce((sum, ct) => sum + Number(ct.total_amount || 0), 0);
+            
+            // Calculate total paid across transactions
+            let paid = (cp.transactions || [])
                 .filter(t => t.type === 'income' && (t.status === 'approved' || !t.status))
                 .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+            if (!paid && clientContracts.length > 0) {
+                clientContracts.forEach(ct => {
+                    const schedPaid = (ct.payment_schedules || ct.paymentSchedules || []).reduce((s, p) => s + Number(p.paid_amount || 0), 0);
+                    const txPaid = (ct.transactions || []).filter(t => t.type === 'income' && (t.status === 'approved' || !t.status)).reduce((s, t) => s + Number(t.amount || 0), 0);
+                    paid += Math.max(schedPaid, txPaid);
+                });
+            }
+
+            const bal = Number(cp.balance || 0);
+            const isCancelled = cancelledContracts.length > 0 && (activeContracts.length === 0 || bal > 0);
 
             list.push({
                 ...cp,
@@ -4779,40 +4847,35 @@ const filteredClientDebts = computed(() => {
                 client_id: cp.customable_id,
                 name: cp.name,
                 phone: cp.phone,
-                agreed_amount: agreed,
-                paid_amount: paid,
-                balance: Number(cp.balance),
-                debt_amount: Math.abs(Number(cp.balance)),
-                is_cancelled_contract: clientContracts.some(ct => ct.status === 'cancelled' || ct.status === 'canceled'),
+                contract_number: cancelledContracts[0]?.contract_number || clientContracts[0]?.contract_number || null,
+                agreed_amount: agreed > 0 ? agreed : (cancelledContracts.reduce((s, ct) => s + Number(ct.total_amount || 0), 0)),
+                paid_amount: paid > 0 ? paid : Math.abs(bal),
+                balance: bal,
+                debt_amount: Math.abs(bal),
+                is_cancelled_contract: isCancelled,
                 customable: cp.customable || cp
             });
         }
     });
 
-    // 2. Clients with Cancelled Contracts where client paid money
+    // 2. Clients with Cancelled Contracts where client paid money (in case CP is missing or not yet synced)
     (props.clients || []).forEach(client => {
         if (processedClientIds.has(client.id)) return;
 
-        const clientName = `${client.last_name || ''} ${client.first_name || ''} ${client.middle_name || ''}`.trim() || client.phone || `Mijoz #${client.id}`;
         const cancelledContracts = (client.contracts || []).filter(ct => ct.status === 'cancelled' || ct.status === 'canceled');
-        
-        cancelledContracts.forEach(contract => {
-            let contractPaid = 0;
-            if (contract.payment_schedules) {
-                contractPaid += contract.payment_schedules.reduce((sum, ps) => sum + Number(ps.paid_amount || 0), 0);
-            }
-            if (contract.transactions) {
-                const txPaid = contract.transactions
-                    .filter(t => t.type === 'income' && (t.status === 'approved' || !t.status))
-                    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
-                contractPaid = Math.max(contractPaid, txPaid);
-            }
-            if (!contractPaid && contract.down_payment && Number(contract.down_payment) > 0) {
-                contractPaid = Number(contract.down_payment);
-            }
+        if (cancelledContracts.length === 0) return;
 
-            if (contractPaid > 0) {
+        cancelledContracts.forEach(contract => {
+            const contractPaid = calculatePaidAmount(contract);
+            const refunds = (contract.transactions || [])
+                .filter(t => t.type === 'expense' && (t.status === 'approved' || !t.status))
+                .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+            const refundedAmount = Math.max(Number(contract.refunded_amount || 0), refunds);
+            const remainingRefund = Math.max(0, contractPaid - refundedAmount);
+
+            if (remainingRefund > 0) {
                 processedClientIds.add(client.id);
+                const clientName = `${client.last_name || ''} ${client.first_name || ''} ${client.middle_name || ''}`.trim() || client.phone || `Mijoz #${client.id}`;
                 list.push({
                     id: `client-cancelled-${client.id}-${contract.id}`,
                     client_id: client.id,
@@ -4822,8 +4885,8 @@ const filteredClientDebts = computed(() => {
                     phone: client.phone,
                     agreed_amount: Number(contract.total_amount || 0),
                     paid_amount: contractPaid,
-                    balance: contractPaid, // Company owes refund to client
-                    debt_amount: contractPaid,
+                    balance: remainingRefund, // Positive balance = Company owes refund to client
+                    debt_amount: remainingRefund,
                     is_cancelled_contract: true,
                     customable: client
                 });
@@ -5885,8 +5948,190 @@ const ledgerReportData = computed(() => {
                 </div>
             </div>
 
+            <!-- CANCELED CONTRACTS VIEW -->
+            <div v-else-if="activeTab === 'canceled'" class="space-y-6">
+                <!-- Control bar matching user design -->
+                <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6 bg-white px-6 py-4 rounded-2xl border border-red-150 shadow-sm">
+                    <!-- Left side: Back Button + Title -->
+                    <div class="flex items-center gap-3">
+                        <button @click="activeTab = 'dashboard'" class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors shadow-sm" title="Orqaga">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                        </button>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-xl font-bold text-gray-900 tracking-tight">Bekor Qilingan Shartnomalar</h2>
+                                <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-red-100 text-red-700 border border-red-200">
+                                    {{ canceledContracts.length }} ta
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 font-medium">Bekor qilingan shartnomalar va mijozlarga qaytarilishi kerak bo'lgan summalar nazorati</p>
+                        </div>
+                    </div>
+
+                    <!-- Right side: Filters & Actions -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Search Box -->
+                        <div class="relative flex items-center">
+                            <span class="absolute left-3.5 text-gray-400">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </span>
+                            <input 
+                                v-model="canceledSearchQuery" 
+                                type="text" 
+                                placeholder="Qidirish (Mijoz, shartnoma, bino)..." 
+                                class="bg-white border border-gray-300 text-gray-800 text-xs rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 w-64 transition-all"
+                            />
+                        </div>
+
+                        <!-- Obyekt bo'yicha filter -->
+                        <div class="relative">
+                            <select v-model="selectedCanceledBuildingFilter" class="bg-white border border-gray-300 text-gray-700 text-xs rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 appearance-none cursor-pointer">
+                                <option value="">Barcha obyektlar</option>
+                                <option v-for="b in availableBuildings" :key="b" :value="b">{{ b }}</option>
+                            </select>
+                            <span class="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </span>
+                        </div>
+
+                        <!-- Mijozdan qarzdorlik bo'limiga o'tish tugmasi -->
+                        <button 
+                            @click="activeTab = 'client_payments'; paymentsSubTab = 'debts'" 
+                            class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                            title="Mijozdan qarzdorlik va qaytariladigan summalar bo'limi"
+                        >
+                            <span>💳</span> Mijozdan qarzdorlik bo'limi
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canceled Contracts Table grouped by block/building -->
+                <div v-for="(contractsGroup, blockName) in groupedCanceledContracts" :key="blockName" class="mb-8">
+                    <h3 class="text-lg font-bold text-red-600 mb-4 uppercase tracking-widest flex items-center gap-2">
+                        <span>🏢</span> {{ blockName }}
+                        <span class="text-xs font-normal text-gray-500 lowercase">({{ contractsGroup.length }} ta bekor qilingan)</span>
+                    </h3>
+                    <div class="overflow-x-auto rounded-xl border border-red-100 bg-white shadow-sm">
+                        <table class="w-full text-left border-collapse text-xs font-sans min-w-[1100px]">
+                            <thead class="bg-red-50/50 border-b border-red-100 text-gray-600 font-bold uppercase text-[9px] tracking-wider">
+                                <tr>
+                                    <th class="p-4 py-3.5">Shartnoma kodi</th>
+                                    <th class="p-4 py-3.5">Sana</th>
+                                    <th class="p-4 py-3.5">Mijoz (Xaridor)</th>
+                                    <th class="p-4 py-3.5">Obyekt / Xonadon</th>
+                                    <th class="p-4 py-3.5 text-right">Shartnoma qiymati</th>
+                                    <th class="p-4 py-3.5 text-right">Mijoz to'lagan summa</th>
+                                    <th class="p-4 py-3.5 text-right">Qaytariladigan summa</th>
+                                    <th class="p-4 py-3.5 text-center">Holat</th>
+                                    <th class="p-4 py-3.5 text-right w-44">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr 
+                                    v-for="contract in contractsGroup" 
+                                    :key="contract.id"
+                                    @click="openScheduleModal(contract)"
+                                    class="hover:bg-red-50/20 transition-colors cursor-pointer group bg-white"
+                                >
+                                    <td class="p-4 py-4">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-2 h-2 rounded-full bg-red-500 shrink-0"></span>
+                                            <h3 class="text-xs font-bold text-gray-900 group-hover:text-red-600 transition-colors">
+                                                {{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}
+                                            </h3>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 py-4 text-gray-600 font-mono whitespace-nowrap">
+                                        {{ new Date(contract.created_at).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' }) }}
+                                    </td>
+                                    <td class="p-4 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-display font-bold text-xs shadow-sm shrink-0 bg-red-100 text-red-700 border border-red-200">
+                                                <img v-if="contract.client?.profile_photo" :src="'/storage/' + contract.client.profile_photo" class="w-full h-full object-cover" alt="Profile" />
+                                                <template v-else>
+                                                    {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
+                                                </template>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs text-gray-900 font-bold leading-tight">{{ contract.client?.last_name }} {{ contract.client?.first_name }}</p>
+                                                <span class="text-[10px] text-gray-500 font-mono">{{ contract.client?.phone || '-' }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 py-4">
+                                        <h4 class="text-xs font-bold text-gray-900">
+                                            {{ contract.unit?.unit_number || 'N/A' }}
+                                        </h4>
+                                        <p class="text-[10px] text-gray-500 font-medium mt-0.5">
+                                            {{ contract.unit?.floor?.building?.name || contract.building?.name || 'Bino' }} • {{ contract.unit?.floor?.floor_number || contract.floor || '1' }}-qavat
+                                        </p>
+                                    </td>
+                                    <td class="p-4 py-4 text-right text-xs font-mono font-bold text-gray-700 whitespace-nowrap">
+                                        {{ $currency(contract.total_amount) }}
+                                    </td>
+                                    <td class="p-4 py-4 text-right whitespace-nowrap">
+                                        <div class="text-xs font-mono font-bold text-emerald-600">
+                                            {{ $currency(calculatePaidAmount(contract)) }}
+                                        </div>
+                                        <div v-if="calculatePaidAmount(contract) > 0" class="text-[9px] text-emerald-700 font-medium">
+                                            to'langan mablag'
+                                        </div>
+                                        <div v-else class="text-[9px] text-gray-400 font-mono">
+                                            to'lov qilinmagan
+                                        </div>
+                                    </td>
+                                    <td class="p-4 py-4 text-right whitespace-nowrap">
+                                        <div v-if="calculateRefundableAmount(contract) > 0" class="flex flex-col items-end">
+                                            <span class="text-xs font-mono font-bold text-red-600">
+                                                {{ $currency(calculateRefundableAmount(contract)) }}
+                                            </span>
+                                            <span class="text-[9px] text-red-500 font-bold uppercase tracking-wider">Mijozga qaytariladi</span>
+                                        </div>
+                                        <div v-else-if="calculatePaidAmount(contract) > 0" class="text-[10px] text-emerald-600 font-bold">
+                                            Qaytarilgan
+                                        </div>
+                                        <div v-else class="text-gray-400 font-mono text-xs">
+                                            0 so'm
+                                        </div>
+                                    </td>
+                                    <td class="p-4 py-4 text-center">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200 shadow-xs">
+                                            Bekor qilingan
+                                        </span>
+                                    </td>
+                                    <td class="p-4 py-4 text-right" @click.stop>
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            <button 
+                                                v-if="calculateRefundableAmount(contract) > 0"
+                                                @click="goToClientDebt(contract)" 
+                                                class="px-2.5 py-1 text-xs bg-red-50 hover:bg-red-600 hover:text-white text-red-700 border border-red-200 rounded-lg font-bold transition-all shadow-xs flex items-center gap-1"
+                                                title="Mijozdan qarzdorlik bo'limida ko'rish va qaytarish"
+                                            >
+                                                <span>💸</span> Qaytarish
+                                            </button>
+                                            <button @click="openScheduleModal(contract)" class="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-200 transition-colors shadow-xs" title="Tafsilotlar va to'lovlar">
+                                                👁️
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div v-if="Object.keys(groupedCanceledContracts).length === 0" class="text-center py-20 text-gray-500 font-mono text-sm border border-dashed border-red-200 rounded-2xl bg-white">
+                    Bekor qilingan shartnomalar topilmadi
+                </div>
+            </div>
+
             <!-- Clients view when activeTab is not contracts -->
-            <div v-else>
+            <div v-else class="space-y-6">
                 <!-- Control bar matching user design -->
                 <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6 bg-white px-6 py-4 rounded-2xl border border-gray-150 shadow-sm">
                     <!-- Left side: Back Button + Title -->
@@ -6959,69 +7204,6 @@ const ledgerReportData = computed(() => {
                 </div>
             </div>
         </div>
-        </div>
-
-
-
-        <!-- TAB CANCELED: BEKOR QILINGAN SHARTNOMALAR -->
-        <div v-if="activeTab === 'canceled'" class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 rounded-2xl min-h-[500px] border border-red-200">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 class="text-xl font-display font-bold text-red-600 flex items-center gap-3">
-                    <span class="w-3 h-3 rounded-full bg-red-600 shadow-sm"></span>
-                    Bekor Qilingan Shartnomalar
-                </h2>
-                <div class="relative w-full sm:w-64">
-                    <span class="absolute left-3 top-2.5 text-gray-400 text-xs">🔍</span>
-                    <input v-model="canceledSearchQuery" type="text" placeholder="Mijoz yoki shartnomani qidirish..." class="bg-white border border-gray-300 text-gray-900 rounded-xl pl-8 pr-3 py-2 text-xs w-full focus:ring-2 focus:ring-red-500 focus:border-red-500">
-                </div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div 
-                        v-for="contract in canceledContracts" 
-                        :key="contract.id"
-                        @click="openScheduleModal(contract)"
-                        class="bg-white border border-gray-200 shadow-sm rounded-xl p-6 border border-red-200 hover:border-red-200 cursor-pointer transition-all hover:shadow-sm group relative overflow-hidden flex flex-col h-full justify-between opacity-80"
-                    >
-                        <div class="absolute -inset-x-20 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent transform -rotate-45 -translate-y-10 group-hover:translate-y-[200px] transition-transform duration-1000 opacity-50"></div>
-                        
-                        <div>
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center font-display font-bold text-sm shadow-sm bg-gradient-to-br from-neon-red/20 to-black border border-red-200 text-red-600">
-                                         <img v-if="contract.client?.profile_photo" :src="'/storage/' + contract.client.profile_photo" class="w-full h-full object-cover" alt="Profile" />
-                                         <template v-else>
-                                             {{ getInitials(contract.client?.first_name, contract.client?.last_name) }}
-                                         </template>
-                                     </div>
-                                    <div>
-                                        <h3 class="text-sm font-bold text-gray-900 group-hover:text-red-600 transition-colors">{{ contract.client?.first_name }} {{ contract.client?.last_name }}</h3>
-                                        <p class="text-[10px] font-mono text-red-600 mt-0.5">
-                                            <span class="text-gray-900/70">{{ contract.contract_number || 'Contract #' + contract.id.toString().padStart(5, '0') }}</span>
-                                            | Unit: {{ contract.unit?.unit_number || 'N/A' }} | {{ contract.unit?.floor?.building?.name || 'Bino' }}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="text-right flex flex-col items-end gap-1">
-                                    <span class="bg-red-50 text-red-700 border border-red-200 rounded-md px-2 py-1 text-xs font-medium">Bekor qilingan</span>
-                                </div>
-                            </div>
-    
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 p-3 rounded-lg bg-gray-500/50 border border-red-200">
-                                <div>
-                                    <p class="text-[10px] uppercase font-mono text-gray-500">Jami To'langan</p>
-                                    <p class="text-xs font-mono text-gray-900/80 mt-0.5">{{ $currency(calculatePaidAmount(contract)) }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] uppercase font-mono text-gray-500">Qaytarilgan</p>
-                                    <p class="text-xs font-mono text-red-600 mt-0.5">{{ $currency(contract.refunded_amount || 0) }}</p>
-                                </div>
-                            </div>
-                                            </div>
-                </div>
-            </div>
-            <div v-if="canceledContracts.length === 0" class="text-center py-20 text-red-600 font-mono text-sm border border-dashed border-red-200 rounded-2xl">
-                Bekor qilingan shartnomalar topilmadi
-            </div>
         </div>
 
         <!-- TAB: SOTUV XODIMLARI (SALES AGENTS PERFORMANCE & STATS) -->

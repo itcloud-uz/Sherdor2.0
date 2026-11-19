@@ -318,15 +318,9 @@ class Contract extends Model
             // Generate Payment Schedules
             $this->generatePaymentSchedules();
 
-            // Deduct purchase price from client counterparty balance
+            // Sync client counterparty balance
             if ($this->client_id) {
-                $counterparty = \App\Models\Counterparty::where([
-                    'customable_type' => 'App\Models\Client',
-                    'customable_id' => $this->client_id,
-                ])->first();
-                if ($counterparty) {
-                    $counterparty->decrement('balance', $this->total_amount);
-                }
+                static::recalculateClientBalance($this->client_id);
             }
         }
     }
@@ -354,16 +348,70 @@ class Contract extends Model
         }
 
         if ($this->client_id) {
-            $counterparty = \App\Models\Counterparty::where([
-                'customable_type' => 'App\Models\Client',
-                'customable_id' => $this->client_id,
-            ])->first();
-
-            if ($counterparty) {
-                // Revert the purchase price debt
-                $counterparty->increment('balance', $this->total_amount);
-            }
+            static::recalculateClientBalance($this->client_id);
         }
+    }
+
+    public static function recalculateClientBalance($clientId)
+    {
+        if (!$clientId) return;
+
+        $client = \App\Models\Client::find($clientId);
+        if (!$client) return;
+
+        $counterparty = \App\Models\Counterparty::firstOrCreate(
+            [
+                'customable_type' => 'App\Models\Client',
+                'customable_id' => $clientId,
+            ],
+            [
+                'name' => trim("{$client->first_name} {$client->last_name}"),
+                'phone' => $client->phone,
+                'type' => 'client',
+                'balance' => 0,
+                'is_active' => true,
+            ]
+        );
+
+        $clientContracts = \App\Models\Contract::where('client_id', $clientId)->get();
+        $contractIds = $clientContracts->pluck('id')->toArray();
+
+        // 1. Total active contracts agreed sum (what client owes to company)
+        $activeAgreed = $clientContracts->whereNotIn('status', ['cancelled', 'canceled'])->sum('total_amount');
+
+        // 2. Total approved payments made by client
+        $txIncome = \App\Models\Transaction::where(function($q) use ($clientId, $contractIds, $counterparty) {
+            $q->where('client_id', $clientId)
+              ->orWhere('counterparty_id', $counterparty->id)
+              ->orWhereIn('contract_id', $contractIds);
+        })
+        ->where('type', 'income')
+        ->where(function($q) {
+            $q->where('status', 'approved')->orWhereNull('status');
+        })
+        ->sum('amount');
+
+        $schedulePaid = \App\Models\PaymentSchedule::whereIn('contract_id', $contractIds)->sum('paid_amount');
+        $totalPaid = max((float)$txIncome, (float)$schedulePaid);
+
+        // 3. Total refunds already returned to client (expense)
+        $totalRefunded = \App\Models\Transaction::where(function($q) use ($clientId, $contractIds, $counterparty) {
+            $q->where('client_id', $clientId)
+              ->orWhere('counterparty_id', $counterparty->id)
+              ->orWhereIn('contract_id', $contractIds);
+        })
+        ->where('type', 'expense')
+        ->where(function($q) {
+            $q->where('status', 'approved')->orWhereNull('status');
+        })
+        ->sum('amount');
+
+        // Balance formula for client: (Paid - Refunded) - ActiveAgreed
+        // Positive balance = Company owes client (refund needed)
+        // Negative balance = Client owes company (debt)
+        $finalBalance = ($totalPaid - $totalRefunded) - $activeAgreed;
+
+        $counterparty->update(['balance' => $finalBalance]);
     }
 
     public function refundSchedules()

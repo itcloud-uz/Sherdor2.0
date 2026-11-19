@@ -50,23 +50,23 @@ class CrmController extends Controller
             $leadSources = \App\Models\LeadSource::orderBy('name', 'asc')->get();
         }
 
-        if (in_array($tab, ['dashboard', 'client_payments', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'leads'])) {
+        if (in_array($tab, ['dashboard', 'client_payments', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'leads', 'canceled'])) {
             $cashRegisters = \App\Models\CashRegister::where('is_active', true)->get();
         }
 
-        if (in_array($tab, ['client_payments', 'dashboard'])) {
+        if (in_array($tab, ['client_payments', 'dashboard', 'canceled'])) {
             $categories = \App\Models\TransactionCategory::all();
         }
 
-        if (in_array($tab, ['dashboard', 'leads', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports'])) {
+        if (in_array($tab, ['dashboard', 'leads', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'client_payments', 'client_payment_reports', 'canceled'])) {
             $buildings = \App\Models\Building::latest()->get();
         }
 
-        if (in_array($tab, ['leads', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'])) {
+        if (in_array($tab, ['leads', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'canceled'])) {
             $contractTemplates = \App\Models\ContractTemplate::with('variantGroups.variants')->latest()->get();
         }
 
-        if (in_array($tab, ['dashboard', 'leads', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts'])) {
+        if (in_array($tab, ['dashboard', 'leads', 'clients', 'clients_new', 'clients_active', 'clients_debtors', 'clients_blacklist', 'contracts', 'canceled'])) {
             $partners = \App\Models\Partner::with('user:id,name')->get();
             $units = \App\Models\Unit::with([
                 'floor' => function($q) {
@@ -105,9 +105,22 @@ class CrmController extends Controller
             $users = User::with('roles')->orderBy('name', 'asc')->get();
         }
 
-        // 5. Contracts Tab
-        if ($tab === 'contracts') {
-            $contracts = Contract::with(['client', 'partner.user', 'unit.floor.building', 'paymentSchedules', 'transactions.category', 'refundSchedules'])->latest()->limit(500)->get();
+        // 5. Contracts & Canceled Tab
+        if (in_array($tab, ['contracts', 'canceled', 'client_payments', 'client_payment_reports'])) {
+            $contractsQuery = Contract::with([
+                'client', 
+                'partner.user', 
+                'unit.floor.building', 
+                'paymentSchedules', 
+                'transactions.category', 
+                'refundSchedules'
+            ])->latest();
+
+            if ($tab === 'canceled') {
+                $contractsQuery->whereIn('status', ['cancelled', 'canceled']);
+            }
+
+            $contracts = $contractsQuery->limit(1000)->get();
             $users = User::with('roles')->orderBy('name', 'asc')->get();
         }
 
@@ -170,7 +183,7 @@ class CrmController extends Controller
         }
 
         // 9. Client Payments Tab
-        if (in_array($tab, ['client_payments', 'dashboard', 'clients', 'contracts']) || empty($tab)) {
+        if (in_array($tab, ['client_payments', 'dashboard', 'clients', 'contracts', 'canceled']) || empty($tab)) {
             $transactions = \App\Models\Transaction::with([
                 'creator', 
                 'approver', 

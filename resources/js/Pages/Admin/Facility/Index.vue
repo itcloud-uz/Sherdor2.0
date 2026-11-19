@@ -2887,19 +2887,36 @@ function printCalculatorDetails() {
     const building = selectedBuilding.value;
     
     const cleanText = (txt) => (txt || '').replace(/sher-?dor(\s*tjm)?/gi, '').trim();
-    const cleanedBuildingName = cleanText(building?.name) || 'Turar joy majmuasi';
-    const rawBlock = unit.block_name || unit.corpus_name || building?.block_name || building?.corpus_name || 'Asosiy Blok';
-    const cleanedBlockName = cleanText(rawBlock) || 'Asosiy Blok';
+    const rawBlock = unit.block_name || unit.corpus_name || building?.block_name || building?.corpus_name || '1 BLOK';
+    const cleanedBlockName = cleanText(rawBlock).toUpperCase() || '1 BLOK';
     
-    const logoSrc = page.props.branding?.logo_path ? `/storage/${page.props.branding.logo_path}` : '';
+    const unitFloor = building?.floors?.find(f => f.id === unit.floor_id) || selectedFloor.value;
+    const floorNum = unitFloor?.floor_number ?? selectedFloor.value?.floor_number;
+    const floorDisplay = (floorNum !== undefined && floorNum !== null)
+        ? (Number(floorNum) < 0 ? `${floorNum} yerto'la` : `${floorNum}-qavat`)
+        : '1-qavat';
+
+    const unitLayoutSrc = unit.model_3d_path 
+        ? `/storage/${unit.model_3d_path}` 
+        : (unit.blueprint_path ? `/storage/${unit.blueprint_path}` : '/modern_apartment_render.png');
+
+    const floorBlueprintSrc = unitFloor?.blueprint_path 
+        ? `/storage/${unitFloor.blueprint_path}` 
+        : (selectedFloor.value?.blueprint_path 
+            ? `/storage/${selectedFloor.value.blueprint_path}` 
+            : (unit.blueprint_path ? `/storage/${unit.blueprint_path}` : '/modern_apartment_render.png'));
+
     const buildingPhoto = building?.photo_path ? `/storage/${building.photo_path}` : '/modern_apartment_render.png';
-    const showDiscountBadge = (Number(calcDiscount.value) || 0) > 0;
-    const discountPercentage = calcPrice.value > 0 ? Math.round((calcDiscount.value / calcPrice.value) * 100) : 0;
-    const monthlyPayment = (calcTermMonths.value && calcTermMonths.value > 0) ? (calculatedRemainingBalance.value / calcTermMonths.value) : 0;
-    
-    const currentDomain = window.location.origin;
-    const qrUrl = encodeURIComponent(currentDomain + '/promo/offers');
-    const qrImageSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + qrUrl;
+
+    const discountVal = Number(calcDiscount.value) || 0;
+    const hasDiscount = discountVal > 0;
+    let downPaymentPercent = calcDownPaymentPercent.value;
+    if (!downPaymentPercent && Number(calcPrice.value) > 0) {
+        downPaymentPercent = ((Number(calcDownPayment.value) / Number(calcPrice.value)) * 100).toFixed(1);
+    }
+    const monthlyPayment = (calcTermMonths.value && Number(calcTermMonths.value) > 0) 
+        ? Math.round(Number(calculatedRemainingBalance.value) / Number(calcTermMonths.value)) 
+        : 0;
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -2909,351 +2926,309 @@ function printCalculatorDetails() {
     
     printWindow.document.open();
     printWindow.document.write(`
-        <html>
+        <!DOCTYPE html>
+        <html lang="uz">
         <head>
-            <title>MA'LUMOTNOMA</title>
+            <meta charset="UTF-8">
+            <title>XONADON MA'LUMOTLARI - № ${unit.unit_number || ''}</title>
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
 
                 @page {
                     size: A4 landscape;
-                    margin: 0;
+                    margin: 8mm 12mm 6mm 12mm;
                 }
 
                 * {
                     box-sizing: border-box;
-                }
-
-                body {
-                    font-family: 'Inter', sans-serif;
-                    color: #333;
                     margin: 0;
                     padding: 0;
-                    background-color: #fff;
+                }
+
+                html, body {
+                    background-color: #ffffff;
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    color: #1e293b;
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                 }
 
-                .page {
-                    width: 297mm;
-                    height: 210mm;
-                    position: relative;
-                    page-break-after: always;
+                .page-container {
+                    width: 273mm;
+                    height: 194mm;
+                    max-height: 194mm;
+                    margin: 0 auto;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
                     overflow: hidden;
-                    background: #fff;
-                }
-                
-                .page:last-child {
-                    page-break-after: auto;
+                    page-break-after: avoid;
+                    page-break-inside: avoid;
                 }
 
-                /* --- Page 1: Cover --- */
-                .cover-page .cover-bg {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    z-index: 1;
-                }
-                .cover-page .cover-overlay {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(to right, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%);
-                    z-index: 2;
-                }
-                .cover-rooms {
-                    position: absolute;
-                    top: 20mm;
-                    left: 0;
-                    z-index: 3;
-                    background: #ea580c;
-                    color: #fff;
-                    padding: 10mm 15mm 10mm 10mm;
-                    display: flex;
-                    align-items: baseline;
-                    gap: 10px;
-                    border-top-right-radius: 5px;
-                    border-bottom-right-radius: 5px;
-                }
-                .cover-rooms .rooms-num {
+                /* Header */
+                .header-title {
                     font-family: 'Montserrat', sans-serif;
-                    font-size: 80px;
-                    font-weight: 900;
-                    line-height: 0.8;
-                }
-                .cover-rooms .rooms-text {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 40px;
+                    font-size: 21px;
                     font-weight: 800;
-                    letter-spacing: 2px;
-                }
-                .cover-building-name {
-                    position: absolute;
-                    bottom: 20mm;
-                    left: 20mm;
-                    z-index: 3;
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 100px;
-                    font-weight: 900;
-                    color: #fff;
-                    text-transform: uppercase;
-                    text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
-                }
-                .cover-blueprint-inset {
-                    position: absolute;
-                    bottom: 20mm;
-                    right: 20mm;
-                    z-index: 3;
-                    width: 60mm;
-                    height: 45mm;
-                    background: #fff;
-                    padding: 5mm;
-                    border-radius: 5px;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                }
-                .cover-blueprint-inset img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: contain;
-                }
-
-                /* --- Page 2: Content --- */
-                .content-page {
-                    display: flex;
-                    padding: 15mm 20mm;
-                    gap: 15mm;
-                }
-                .left-col {
-                    width: 50%;
-                    display: flex;
-                    flex-direction: column;
-                }
-                .right-col {
-                    width: 50%;
-                    display: flex;
-                    flex-direction: column;
-                    position: relative;
-                }
-                .unit-image {
-                    width: 100%;
-                    height: auto;
-                    max-height: 120mm;
-                    object-fit: contain;
-                    margin-bottom: 5mm;
-                }
-                .blueprint-image-large {
-                    width: 100%;
-                    height: auto;
-                    max-height: 60mm;
-                    object-fit: contain;
-                }
-                
-                .section-title {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 18px;
-                    font-weight: 800;
-                    color: #ea580c;
-                    margin-bottom: 15px;
+                    color: #cc0000;
+                    text-align: center;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                }
-                .bullet-list {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                    margin-bottom: 10mm;
-                }
-                .bullet-item {
-                    position: relative;
-                    padding-left: 14px;
-                    margin-bottom: 8px;
-                    font-size: 14px;
-                    color: #475569;
-                    line-height: 1.4;
-                    display: flex;
-                    justify-content: space-between;
-                }
-                .bullet-item::before {
-                    content: '•';
-                    position: absolute;
-                    left: 0;
-                    color: #ea580c;
-                    font-weight: bold;
-                }
-                .bullet-item strong {
-                    color: #0f172a;
-                    font-weight: 700;
-                }
-                
-                .contact-card {
-                    margin-top: auto;
-                    display: flex;
-                    align-items: center;
-                    background: linear-gradient(135deg, #fde047 0%, #fbbf24 100%);
-                    padding: 10px;
-                    border-radius: 10px;
-                    gap: 15px;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-                }
-                .qr-code {
-                    width: 30mm;
-                    height: 30mm;
-                    border-radius: 5px;
-                    background: #fff;
-                    padding: 2px;
-                }
-                .contact-info {
-                    display: flex;
-                    flex-direction: column;
-                }
-                .contact-title {
-                    font-family: 'Montserrat', sans-serif;
-                    font-size: 16px;
-                    font-weight: 900;
-                    color: #333;
-                    margin-bottom: 5px;
-                }
-                .phone-row {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    margin-bottom: 4px;
-                }
-                .phone-icon-circle {
-                    width: 24px;
-                    height: 24px;
-                    background: #333;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #fde047;
-                }
-                .phone-icon-svg {
-                    width: 12px;
-                    height: 12px;
-                    fill: currentColor;
-                }
-                .phone-number {
-                    font-family: 'Inter', sans-serif;
-                    font-size: 14px;
-                    font-weight: 800;
-                    color: #333;
+                    margin-bottom: 2mm;
                 }
 
-                /* Burger Icon Top Right */
-                .burger-icon {
-                    position: absolute;
-                    top: 15mm;
-                    right: 20mm;
-                    width: 30px;
-                    height: 20px;
+                /* Main 2-column layout */
+                .main-content {
+                    flex: 1;
+                    display: grid;
+                    grid-template-columns: 1fr 1.15fr;
+                    gap: 12mm;
+                    align-items: stretch;
+                    min-height: 0;
+                }
+
+                /* Left column */
+                .left-column {
                     display: flex;
                     flex-direction: column;
                     justify-content: space-between;
+                    height: 100%;
+                    min-height: 0;
                 }
-                .burger-icon span {
-                    display: block;
+
+                /* Right column */
+                .right-column {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    align-items: center;
+                    height: 100%;
+                    min-height: 0;
+                }
+
+                /* Key-Value Lists */
+                .spec-list, .fin-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 3px;
+                }
+
+                .row-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: baseline;
+                    font-size: 13.5px;
+                    line-height: 1.35;
+                }
+
+                .row-label {
+                    color: #334155;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .row-bullet {
+                    font-size: 14px;
+                    line-height: 1;
+                    color: #1e293b;
+                }
+
+                .row-value {
+                    font-weight: 700;
+                    color: #0f172a;
+                    text-align: right;
+                    white-space: nowrap;
+                    font-feature-settings: "tnum";
+                }
+
+                .sub-title {
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 14.5px;
+                    font-weight: 800;
+                    color: #cc0000;
+                    text-align: center;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin: 3mm 0 2mm 0;
+                }
+
+                .red-value {
+                    color: #cc0000 !important;
+                }
+
+                .oylik-row {
+                    margin-top: 1.5mm;
+                }
+
+                .oylik-label {
+                    color: #cc0000 !important;
+                    font-weight: 800 !important;
+                    font-size: 14px !important;
+                }
+
+                .oylik-value {
+                    color: #cc0000 !important;
+                    font-weight: 800 !important;
+                    font-size: 15.5px !important;
+                }
+
+                /* Images */
+                .unit-plan-img {
                     width: 100%;
-                    height: 4px;
-                    background-color: #ea580c;
-                    border-radius: 2px;
+                    height: 68mm;
+                    max-height: 68mm;
+                    object-fit: contain;
+                    display: block;
+                    margin: 1mm auto;
+                }
+
+                .building-img {
+                    width: 100%;
+                    height: ${hasDiscount ? '72mm' : '82mm'};
+                    max-height: ${hasDiscount ? '72mm' : '82mm'};
+                    object-fit: contain;
+                    display: block;
+                }
+
+                .floor-blueprint-img {
+                    width: 100%;
+                    height: ${hasDiscount ? '72mm' : '82mm'};
+                    max-height: ${hasDiscount ? '72mm' : '82mm'};
+                    object-fit: contain;
+                    display: block;
+                }
+
+                /* Ribbon */
+                .ribbon-wrap {
+                    width: 100%;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    margin: 1mm 0;
+                }
+
+                .ribbon-svg {
+                    width: 290px;
+                    height: 44px;
+                    display: block;
                 }
 
                 @media print {
-                    body {
-                        background: #ffffff;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
+                    @page {
+                        size: A4 landscape;
+                        margin: 8mm 12mm 6mm 12mm;
                     }
-                    .page {
+                    html, body {
                         width: 297mm;
                         height: 210mm;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: #ffffff;
+                    }
+                    .page-container {
+                        width: 273mm;
+                        height: 194mm;
+                        max-height: 194mm;
+                        overflow: hidden;
+                        page-break-after: avoid;
+                        page-break-inside: avoid;
                     }
                 }
             </style>
         </head>
         <body>
-            <!-- PAGE 1: COVER -->
-            <div class="page cover-page">
-                <img src="${buildingPhoto}" class="cover-bg" />
-                <div class="cover-overlay"></div>
-                <div class="cover-rooms">
-                    <span class="rooms-num">${unit.rooms_count || 1}</span>
-                    <span class="rooms-text">XONA</span>
-                </div>
-                <div class="cover-building-name">${cleanedBuildingName}</div>
-                <div class="cover-blueprint-inset">
-                    <img src="${selectedUnitBlueprint.value}" />
-                </div>
-            </div>
+            <div class="page-container">
+                <!-- TOP HEADER -->
+                <div class="header-title">XONADON MA'LUMOTLARI</div>
 
-            <!-- PAGE 2: CONTENT -->
-            <div class="page content-page">
-                <div class="burger-icon">
-                    <span></span><span></span><span></span>
-                </div>
-                
-                <!-- LEFT COLUMN -->
-                <div class="left-col">
-                    <img src="${selectedUnitDisplayImage.value}" alt="Unit Layout" class="unit-image" />
-                    <img src="${selectedUnitBlueprint.value}" alt="2D Blueprint" class="blueprint-image-large" />
-                </div>
-
-                <!-- RIGHT COLUMN -->
-                <div class="right-col">
-                    <div class="section-title">YAKUNIY SHARTNOMA QIYMATI</div>
-                    <ul class="bullet-list">
-                        <li class="bullet-item"><span>Boshlang'ich to'lov (${calcDownPaymentPercent.value}%)</span> <strong>${formatSoM(calcDownPayment.value)}</strong></li>
-                        <li class="bullet-item"><span>Muddatli to'lovga qoldiq summa</span> <strong>${formatSoM(calculatedRemainingBalance.value)}</strong></li>
-                        <li class="bullet-item"><span>Bo'lib to'lash muddati</span> <strong>${calcTermMonths.value || 12} oy</strong></li>
-                        <li class="bullet-item"><span>Umumiy summa</span> <strong>${formatSoM(calcPrice.value)}</strong></li>
-                        <li class="bullet-item"><span>Jami chegirma</span> <strong style="color:#ea580c;">${formatSoM(calcDiscount.value)}</strong></li>
-                        <li class="bullet-item"><span>Jami to'lanadigan summa</span> <strong style="color:#2563eb;">${formatSoM(calculatedGrandTotal.value)}</strong></li>
-                        <li class="bullet-item" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
-                            <span style="font-size: 16px; font-weight: 800; color: #ea580c; text-transform: uppercase;">OYLIK TO'LOV:</span>
-                            <span style="font-size: 20px; font-weight: 900; color: #2563eb;">${formatSoM(monthlyPayment)}</span>
-                        </li>
-                    </ul>
-
-                    <div class="section-title">XONADON MA'LUMOTLARI</div>
-                    <ul class="bullet-list">
-                        <li class="bullet-item"><span>Blok / Korpus:</span> <strong>${cleanedBlockName}</strong></li>
-                        <li class="bullet-item"><span>Qavat:</span> <strong>${selectedFloor.value?.floor_number < 0 ? selectedFloor.value?.floor_number + ' yerto\'la' : selectedFloor.value?.floor_number + '-qavat'}</strong></li>
-                        <li class="bullet-item"><span>${unit.type === 'commercial' ? "Do'kon" : "Xonadon"} raqami:</span> <strong>№ ${(unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number}</strong></li>
-                        <li class="bullet-item"><span>Umumiy maydoni:</span> <strong>${unit.area_sqm} kv.m</strong></li>
-                        <li class="bullet-item"><span>Xonalar soni:</span> <strong>${unit.rooms_count || 1} xonali</strong></li>
-                        <li class="bullet-item"><span>1 kv.m narxi:</span> <strong>${formatSoM(calcPricePerSqm.value)}</strong></li>
-                    </ul>
-
-                    <div class="contact-card">
-                        <img src="${qrImageSrc}" alt="QR Code" class="qr-code" />
-                        <div class="contact-info">
-                            <div class="contact-title">${cleanedBuildingName}</div>
-                            <div class="phone-row">
-                                <span class="phone-icon-circle">
-                                    <svg class="phone-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                    </svg>
-                                </span>
-                                <span class="phone-number">+998 90 450 54 55</span>
+                <div class="main-content">
+                    <!-- LEFT COLUMN -->
+                    <div class="left-column">
+                        <!-- Top Unit Specs -->
+                        <div class="spec-list">
+                            <div class="row-item">
+                                <span class="row-label"><span class="row-bullet">•</span> Blok / Korpus:</span>
+                                <span class="row-value">${cleanedBlockName}</span>
                             </div>
-                            <div class="phone-row">
-                                <span class="phone-icon-circle">
-                                    <svg class="phone-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                    </svg>
-                                </span>
-                                <span class="phone-number">+998 93 573 29 29</span>
+                            <div class="row-item">
+                                <span class="row-label"><span class="row-bullet">•</span> Qavat:</span>
+                                <span class="row-value">${floorDisplay}</span>
+                            </div>
+                            ${unit.unit_number ? `
+                            <div class="row-item">
+                                <span class="row-label"><span class="row-bullet">•</span> ${unit.type === 'commercial' ? "Do'kon" : "Xonadon"} raqami:</span>
+                                <span class="row-value">№ ${(unit.type === 'commercial' && /^\d+$/.test(String(unit.unit_number).trim()) ? 'D-' : '') + unit.unit_number}</span>
+                            </div>` : ''}
+                            <div class="row-item">
+                                <span class="row-label"><span class="row-bullet">•</span> Umumiy maydoni:</span>
+                                <span class="row-value">${unit.area_sqm} kv.m</span>
+                            </div>
+                            <div class="row-item">
+                                <span class="row-label"><span class="row-bullet">•</span> Xonalar soni:</span>
+                                <span class="row-value">${unit.rooms_count || 1} xonali</span>
                             </div>
                         </div>
+
+                        <!-- Apartment 3D / 2D Layout Plan -->
+                        <img src="${unitLayoutSrc}" alt="Xonadon chizmasi" class="unit-plan-img" />
+
+                        <!-- Financial Summary -->
+                        <div>
+                            <div class="sub-title">YAKUNIY SHARTNOMA QIYMATI</div>
+                            <div class="fin-list">
+                                <div class="row-item">
+                                    <span class="row-label"><span class="row-bullet">•</span> Boshlang'ich to'lov (${downPaymentPercent}%):</span>
+                                    <span class="row-value">${formatSoM(calcDownPayment.value)}</span>
+                                </div>
+                                <div class="row-item">
+                                    <span class="row-label"><span class="row-bullet">•</span> Muddatli to'lovga qoldiq summa:</span>
+                                    <span class="row-value">${formatSoM(calculatedRemainingBalance.value)}</span>
+                                </div>
+                                <div class="row-item">
+                                    <span class="row-label"><span class="row-bullet">•</span> Bo'lib to'lash muddati:</span>
+                                    <span class="row-value">${calcTermMonths.value || 12} oy</span>
+                                </div>
+                                <div class="row-item">
+                                    <span class="row-label"><span class="row-bullet">•</span> Umumiy summa:</span>
+                                    <span class="row-value">${formatSoM(calcPrice.value)}</span>
+                                </div>
+                                ${hasDiscount ? `
+                                <div class="row-item">
+                                    <span class="row-label"><span class="row-bullet">•</span> Chegirma so\`mmasi:</span>
+                                    <span class="row-value red-value">-${formatSoM(calcDiscount.value)}</span>
+                                </div>` : ''}
+                                <div class="row-item">
+                                    <span class="row-label"><span class="row-bullet">•</span> Jami to'lanadigan summa:</span>
+                                    <span class="row-value">${formatSoM(calculatedGrandTotal.value)}</span>
+                                </div>
+                                <div class="row-item oylik-row">
+                                    <span class="row-label oylik-label"><span class="row-bullet" style="color: #cc0000">•</span> OYLIK TO'LOV:</span>
+                                    <span class="row-value oylik-value">${formatSoM(monthlyPayment)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN -->
+                    <div class="right-column">
+                        <!-- Top: Building Render -->
+                        <img src="${buildingPhoto}" alt="Bino ko'rinishi" class="building-img" />
+
+                        <!-- Middle: Discount Ribbon (if discount > 0) -->
+                        ${hasDiscount ? `
+                        <div class="ribbon-wrap">
+                            <svg viewBox="0 0 320 50" class="ribbon-svg">
+                                <polygon points="25,2 295,2 275,25 295,48 25,48 45,25" fill="#cc0000" stroke="#111111" stroke-width="1.2" stroke-linejoin="round" />
+                                <text x="160" y="20" text-anchor="middle" fill="#ffffff" font-family="'Montserrat', sans-serif" font-weight="900" font-size="13" letter-spacing="1">CHEGIRMA</text>
+                                <text x="160" y="39" text-anchor="middle" fill="#ffffff" font-family="'Montserrat', sans-serif" font-weight="800" font-size="14.5">-${formatSoM(calcDiscount.value)}</text>
+                            </svg>
+                        </div>` : ''}
+
+                        <!-- Bottom: Floor Blueprint -->
+                        <img src="${floorBlueprintSrc}" alt="Qavat chizmasi" class="floor-blueprint-img" />
                     </div>
                 </div>
             </div>
@@ -3263,7 +3238,7 @@ function printCalculatorDetails() {
                     setTimeout(function() {
                         window.print();
                     }, 500);
-                }
+                };
             <" + "/script>
         </body>
         </html>

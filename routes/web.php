@@ -31,31 +31,58 @@ Route::post('/miniapp/api/approve', [\App\Http\Controllers\TelegramMiniAppContro
 Route::get('/promo/offers', function () {
     $settings = \App\Models\SystemSetting::first();
     
+    $isImage = function($path) {
+        if (!$path) return false;
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        return in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'svg']);
+    };
+
     $availableUnits = \App\Models\Unit::with(['floor.building'])
         ->where('status', 'available')
-        ->where('type', 'residential')
-        ->orderBy('id', 'desc')
-        ->limit(60)
+        ->orderBy('id', 'asc')
         ->get()
-        ->map(function ($unit) {
+        ->map(function ($unit) use ($isImage) {
+            $building = $unit->floor->building ?? null;
+            $area = (float)($unit->area_sqm ?? 0);
+            $rawPrice = (float)($unit->price ?? 0);
+            
+            // Standard square meter price if not explicitly set (e.g. 4,200,000 so'm/m² for residential, 7,000,000 so'm/m² for commercial)
+            $defaultRate = ($unit->type === 'commercial') ? 7000000 : 4200000;
+            $pricePerSqm = ($rawPrice > 0 && $area > 0) ? round($rawPrice / $area) : $defaultRate;
+            $calculatedPrice = $rawPrice > 0 ? $rawPrice : ($area > 0 ? round($area * $pricePerSqm) : 0);
+            
             return [
                 'id' => $unit->id,
-                'building_name' => $unit->floor->building->name ?? ($unit->floor->building->corpus_name ?? 'Majmua'),
-                'block_name' => $unit->floor->building->block_name ?? ($unit->floor->building->corpus_name ?? 'A'),
+                'building_name' => $building->name ?? 'SHER-DOR TJM',
+                'block_name' => $building->block_name ?? ($building->corpus_name ? $building->corpus_name . ' BLOK' : '1 BLOK'),
+                'building_id' => $building->id ?? null,
                 'floor_level' => $unit->floor->floor_number ?? '1',
                 'unit_number' => $unit->unit_number,
-                'rooms' => $unit->rooms_count ?? 2,
-                'area' => $unit->area_sqm ?? 65.0,
-                'price' => $unit->price ?? 0,
-                'kitchens_count' => $unit->kitchens_count ?? 1,
-                'bathrooms_count' => $unit->bathrooms_count ?? 1,
+                'type' => $unit->type ?? 'residential',
+                'rooms' => (int)($unit->rooms_count ?? 1),
+                'area' => $area,
+                'price' => $calculatedPrice,
+                'price_per_sqm' => $pricePerSqm,
+                'has_explicit_price' => $rawPrice > 0,
+                'kitchens_count' => (int)($unit->kitchens_count ?? 1),
+                'bathrooms_count' => (int)($unit->bathrooms_count ?? 1),
                 'has_balcony' => (bool)($unit->has_balcony ?? true),
-                'orientation' => $unit->orientation ?? 'Janub-Sharq',
+                'orientation' => $unit->orientation ?? 'Ko\'chaga qaragan',
                 'podyezd' => $unit->podyezd ?? 1,
-                'blueprint_path' => $unit->blueprint_path ? '/storage/' . $unit->blueprint_path : null,
-                'model_3d_path' => $unit->model_3d_path ? '/storage/' . $unit->model_3d_path : null,
+                'blueprint_path' => ($unit->blueprint_path && $isImage($unit->blueprint_path)) ? '/storage/' . $unit->blueprint_path : null,
+                'model_3d_path' => ($unit->model_3d_path && $isImage($unit->model_3d_path)) ? '/storage/' . $unit->model_3d_path : null,
             ];
         });
+
+    $buildings = \App\Models\Building::orderBy('id')->get()->map(function($b) {
+        return [
+            'id' => $b->id,
+            'name' => $b->name,
+            'block_name' => $b->block_name ?? ($b->corpus_name ? $b->corpus_name . ' BLOK' : 'BLOK ' . $b->id),
+            'model_3d_path' => $b->model_3d_path ? '/storage/' . $b->model_3d_path : null,
+            'photo_path' => $b->photo_path ? '/storage/' . $b->photo_path : null,
+        ];
+    });
 
     return Inertia::render('Public/LeadForm', [
         'promoSettings' => $settings ? [
@@ -68,8 +95,10 @@ Route::get('/promo/offers', function () {
             'promo_button_text' => $settings->promo_button_text,
             'promo_success_message' => $settings->promo_success_message,
             'fb_pixel_id' => $settings->fb_pixel_id,
+            'company_phone' => $settings->phone ?? null,
         ] : null,
         'availableUnits' => $availableUnits,
+        'buildings' => $buildings,
     ]);
 })->name('promo.offers');
 

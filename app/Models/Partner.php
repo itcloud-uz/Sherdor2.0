@@ -130,6 +130,8 @@ class Partner extends Model
             $partner->calculated_share = $netProfit > 0 ? (($netProfit * $sharePercentage) / 100) : 0;
         }
 
+        $companyNetWorth = $partners->sum('total_sarmoya');
+
         return [
             'partners' => $partners,
             'totalIncome' => $totalIncome,

@@ -518,7 +518,7 @@ function formatDate(dateString) {
             </div>
 
             <!-- Dashboard Stats -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <!-- Jami Kirim (Tushumlar) -->
                 <div class="relative overflow-hidden bg-emerald-50/50 backdrop-blur-xl border border-emerald-200/80 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
                     <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-200/40 rounded-full blur-2xl"></div>
@@ -560,7 +560,7 @@ function formatDate(dateString) {
                     </div>
                 </div>
 
-                <!-- Kompaniya balansi (Kassalar) -->
+                <!-- Kompaniyaning Jami Qiymati (Ta'sischilar jami sarmoyasi) -->
                 <div class="relative overflow-hidden bg-indigo-50/40 backdrop-blur-xl border border-indigo-100 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
                     <div class="absolute -right-6 -top-6 w-24 h-24 bg-indigo-200/30 rounded-full blur-2xl"></div>
                     <div class="relative z-10">
@@ -568,23 +568,8 @@ function formatDate(dateString) {
                             <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
                             Kompaniyaning Jami Qiymati
                         </p>
-                        <p class="text-2xl font-display font-black text-indigo-900 tracking-tight">{{ formatCurrency(companyNetWorth || 0) }} <span class="text-xs font-medium text-indigo-500/70">UZS</span></p>
-                        <p class="text-[10px] text-indigo-500/70 font-mono mt-1">Kassalardagi mavjud qoldiq</p>
-                    </div>
-                </div>
-                
-                <!-- Jami Hisobdorlik -->
-                <div class="relative overflow-hidden bg-amber-50/40 backdrop-blur-xl border border-amber-200/80 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
-                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-amber-200/40 rounded-full blur-2xl"></div>
-                    <div class="relative z-10">
-                        <p class="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                            Jami Hisobdorlik (Qarz)
-                        </p>
-                        <p class="text-2xl font-display font-black tracking-tight" :class="partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0) < 0 ? 'text-rose-700' : 'text-emerald-700'">
-                            {{ partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0) > 0 ? '+' : '' }}{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0)) }} <span class="text-xs font-medium text-amber-600/70">UZS</span>
-                        </p>
-                        <p class="text-[10px] text-amber-600/70 font-mono mt-1">Ta'sischilar qarzdorligi</p>
+                        <p class="text-2xl font-display font-black text-indigo-900 tracking-tight">{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.total_sarmoya), 0)) }} <span class="text-xs font-medium text-indigo-500/70">UZS</span></p>
+                        <p class="text-[10px] text-indigo-500/70 font-mono mt-1">Ta'sischilarning jami sarmoyasi</p>
                     </div>
                 </div>
             </div>

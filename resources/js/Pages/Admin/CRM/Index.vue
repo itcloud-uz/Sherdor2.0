@@ -1,6 +1,7 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import SellerLayout from '@/Layouts/SellerLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import QuickSmsModal from '@/Components/QuickSmsModal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import VueApexCharts from 'vue3-apexcharts';
@@ -1176,6 +1177,30 @@ function cleanExcelNumber(val) {
     return isNaN(num) ? 0 : num;
 }
 
+function addEmptyPaymentRow() {
+    const today = getLocalDateString ? getLocalDateString() : new Date().toISOString().split('T')[0];
+    const newIdx = paymentImportParsedRows.value.length + 1;
+    paymentImportParsedRows.value.push({
+        idx: newIdx,
+        original_no: newIdx,
+        date: today,
+        display_date: today,
+        cash_amount: 0,
+        card_amount: 0,
+        bank_amount: 0,
+        total_row_amount: 0,
+        notes: "To'lov"
+    });
+}
+
+function removePaymentRow(idx) {
+    paymentImportParsedRows.value.splice(idx, 1);
+}
+
+function updateRowTotal(row) {
+    row.total_row_amount = (Number(row.cash_amount) || 0) + (Number(row.card_amount) || 0) + (Number(row.bank_amount) || 0);
+}
+
 function handlePaymentImportFileUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1197,41 +1222,95 @@ function handlePaymentImportFileUpload(event) {
                 return;
             }
 
-            const rows = [];
-            for (let i = 1; i < json.length; i++) {
+            // Intelligent Header & Column Mapping Scanner (scans first 10 rows)
+            let headerRowIdx = -1;
+            let colMap = { date: -1, cash: -1, card: -1, bank: -1, amount: -1, notes: -1, no: -1 };
+
+            for (let i = 0; i < Math.min(json.length, 10); i++) {
                 const r = json[i];
-                if (!r || r.length === 0) continue;
+                if (!Array.isArray(r)) continue;
+                for (let c = 0; c < r.length; c++) {
+                    const cell = String(r[c] || '').toLowerCase().trim();
+                    if (!cell) continue;
 
-                const colNo = String(r[0] || '').trim();
-                const colDateRaw = String(r[1] || '').trim();
-                const colCashRaw = r[2];
-                const colCardRaw = r[3];
-                const colBankRaw = r[4];
-                const colNotes = String(r[5] || '').trim();
+                    if (colMap.date === -1 && (cell.includes('sana') || cell.includes('date') || cell.includes('дата') || cell.includes("to'langan") || cell.includes("tulangan") || cell.includes("тўlangan") || cell.includes("тўланган"))) {
+                        colMap.date = c;
+                        headerRowIdx = i;
+                    }
+                    if (colMap.cash === -1 && (cell.includes('naqd') || cell.includes('naqt') || cell.includes('наличн') || cell.includes('нал'))) {
+                        colMap.cash = c;
+                        headerRowIdx = i;
+                    }
+                    if (colMap.card === -1 && (cell.includes('plastik') || cell.includes('karta') || cell.includes('terminal') || cell.includes('карта') || cell.includes('uzcard') || cell.includes('humo'))) {
+                        colMap.card = c;
+                        headerRowIdx = i;
+                    }
+                    if (colMap.bank === -1 && (cell.includes('bank') || cell.includes('hisob') || cell.includes('банк') || cell.includes('schet') || cell.includes('перечисл'))) {
+                        colMap.bank = c;
+                        headerRowIdx = i;
+                    }
+                    if (colMap.amount === -1 && (cell.includes('summa') || cell.includes('сумма') || cell.includes("to'lov") || cell.includes("tulov") || cell.includes('amount') || cell.includes("jami to'lov"))) {
+                        colMap.amount = c;
+                        headerRowIdx = i;
+                    }
+                    if (colMap.notes === -1 && (cell.includes('izoh') || cell.includes('note') || cell.includes('примеч') || cell.includes('коммент') || cell.includes('maqsad'))) {
+                        colMap.notes = c;
+                    }
+                    if (colMap.no === -1 && (cell === '№' || cell === 'no' || cell === 't/r' || cell.includes('номер'))) {
+                        colMap.no = c;
+                    }
+                }
+                if (headerRowIdx !== -1 && (colMap.date !== -1 || colMap.cash !== -1 || colMap.amount !== -1)) {
+                    break;
+                }
+            }
 
-                if (!colDateRaw || colNo.toLowerCase() === 'jami' || colNo.toLowerCase() === 'жами' || colDateRaw.toLowerCase() === 'jami' || colDateRaw.toLowerCase() === 'жами') {
+            // Fallback to standard template columns if not detected
+            if (headerRowIdx === -1) {
+                headerRowIdx = 0;
+                colMap = { no: 0, date: 1, cash: 2, card: 3, bank: 4, notes: 5, amount: -1 };
+            }
+
+            const rows = [];
+            for (let i = headerRowIdx + 1; i < json.length; i++) {
+                const r = json[i];
+                if (!r || !Array.isArray(r) || r.length === 0) continue;
+
+                const colNo = colMap.no !== -1 ? String(r[colMap.no] || '').trim() : String(i);
+                const colDateRaw = colMap.date !== -1 ? String(r[colMap.date] || '').trim() : '';
+
+                let cashAmt = colMap.cash !== -1 ? cleanExcelNumber(r[colMap.cash]) : 0;
+                let cardAmt = colMap.card !== -1 ? cleanExcelNumber(r[colMap.card]) : 0;
+                let bankAmt = colMap.bank !== -1 ? cleanExcelNumber(r[colMap.bank]) : 0;
+
+                // If only single total amount column exists
+                if (cashAmt <= 0 && cardAmt <= 0 && bankAmt <= 0 && colMap.amount !== -1) {
+                    cashAmt = cleanExcelNumber(r[colMap.amount]);
+                }
+
+                const colNotes = colMap.notes !== -1 ? String(r[colMap.notes] || '').trim() : '';
+
+                // Skip header duplicates or "Jami" summary row
+                const combinedCheck = (colNo + ' ' + colDateRaw).toLowerCase();
+                if (combinedCheck.includes('jami') || combinedCheck.includes('жами') || combinedCheck.includes('итого') || combinedCheck.includes('total')) {
                     continue;
                 }
 
-                const cashAmount = cleanExcelNumber(colCashRaw);
-                const cardAmount = cleanExcelNumber(colCardRaw);
-                const bankAmount = cleanExcelNumber(colBankRaw);
-
-                if (cashAmount <= 0 && cardAmount <= 0 && bankAmount <= 0) {
+                if (cashAmt <= 0 && cardAmt <= 0 && bankAmt <= 0) {
                     continue;
                 }
 
-                const parsedDate = parseExcelDate(colDateRaw);
+                const parsedDate = parseExcelDate(colDateRaw) || (getLocalDateString ? getLocalDateString() : new Date().toISOString().split('T')[0]);
 
                 rows.push({
                     idx: rows.length + 1,
                     original_no: colNo || (rows.length + 1),
                     date: parsedDate,
-                    display_date: colDateRaw,
-                    cash_amount: cashAmount,
-                    card_amount: cardAmount,
-                    bank_amount: bankAmount,
-                    total_row_amount: cashAmount + cardAmount + bankAmount,
+                    display_date: colDateRaw || parsedDate,
+                    cash_amount: cashAmt,
+                    card_amount: cardAmt,
+                    bank_amount: bankAmt,
+                    total_row_amount: cashAmt + cardAmt + bankAmt,
                     notes: colNotes
                 });
             }
@@ -11882,27 +11961,50 @@ const ledgerReportData = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Parsed Rows Preview Table -->
-                    <div class="overflow-x-auto border border-gray-200 rounded-2xl max-h-60 overflow-y-auto">
+                    <!-- Parsed Rows Preview Table with Inline Edit & Row Add -->
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-gray-700">Import qilinadigan to'lovlar ro'yxati (tahrirlash mumkin):</span>
+                        <button @click="addEmptyPaymentRow" type="button" class="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-xs">
+                            <span>+</span> Yangi qator qo'shish
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto border border-gray-200 rounded-2xl max-h-72 overflow-y-auto">
                         <table class="w-full text-xs text-left border-collapse">
-                            <thead class="bg-slate-100 text-gray-700 font-bold sticky top-0 border-b border-gray-200 shadow-sm">
+                            <thead class="bg-slate-100 text-gray-700 font-bold sticky top-0 border-b border-gray-200 shadow-sm z-10">
                                 <tr>
                                     <th class="p-2.5 text-center w-10">№</th>
-                                    <th class="p-2.5 text-center">To'langan sana</th>
-                                    <th class="p-2.5 text-right">Naqd to'lov</th>
-                                    <th class="p-2.5 text-right">Plastik to'lov</th>
-                                    <th class="p-2.5 text-right">Bank to'lov</th>
+                                    <th class="p-2.5 text-center w-36">To'langan sana</th>
+                                    <th class="p-2.5 text-right w-36">Naqd to'lov</th>
+                                    <th class="p-2.5 text-right w-36">Plastik to'lov</th>
+                                    <th class="p-2.5 text-right w-36">Bank to'lov</th>
                                     <th class="p-2.5">Izoh</th>
+                                    <th class="p-2.5 text-center w-12">O'chirish</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100 font-mono text-xs bg-white">
-                                <tr v-for="(row, idx) in paymentImportParsedRows" :key="idx" class="hover:bg-slate-50">
-                                    <td class="p-2.5 text-center text-gray-400">{{ idx + 1 }}</td>
-                                    <td class="p-2.5 text-center font-bold text-gray-800">{{ row.display_date || row.date }}</td>
-                                    <td class="p-2.5 text-right font-bold text-blue-600">{{ row.cash_amount > 0 ? Number(row.cash_amount).toLocaleString('uz-UZ') : '—' }}</td>
-                                    <td class="p-2.5 text-right font-bold text-amber-600">{{ row.card_amount > 0 ? Number(row.card_amount).toLocaleString('uz-UZ') : '—' }}</td>
-                                    <td class="p-2.5 text-right font-bold text-indigo-600">{{ row.bank_amount > 0 ? Number(row.bank_amount).toLocaleString('uz-UZ') : '—' }}</td>
-                                    <td class="p-2.5 text-gray-600 font-sans text-[11px]">{{ row.notes || '—' }}</td>
+                            <tbody class="divide-y divide-gray-100 text-xs bg-white">
+                                <tr v-for="(row, idx) in paymentImportParsedRows" :key="idx" class="hover:bg-slate-50 transition-colors">
+                                    <td class="p-2 text-center text-gray-400 font-mono">{{ idx + 1 }}</td>
+                                    <td class="p-1.5">
+                                        <input type="date" v-model="row.date" class="w-full bg-slate-50 border border-gray-200 rounded-lg px-2 py-1 text-xs font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-none" />
+                                    </td>
+                                    <td class="p-1.5">
+                                        <input type="number" v-model.number="row.cash_amount" @input="updateRowTotal(row)" placeholder="0" class="w-full bg-slate-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-right font-mono font-bold text-blue-700 focus:bg-white focus:border-emerald-500 focus:outline-none" />
+                                    </td>
+                                    <td class="p-1.5">
+                                        <input type="number" v-model.number="row.card_amount" @input="updateRowTotal(row)" placeholder="0" class="w-full bg-slate-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-right font-mono font-bold text-amber-700 focus:bg-white focus:border-emerald-500 focus:outline-none" />
+                                    </td>
+                                    <td class="p-1.5">
+                                        <input type="number" v-model.number="row.bank_amount" @input="updateRowTotal(row)" placeholder="0" class="w-full bg-slate-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-right font-mono font-bold text-indigo-700 focus:bg-white focus:border-emerald-500 focus:outline-none" />
+                                    </td>
+                                    <td class="p-1.5">
+                                        <input type="text" v-model="row.notes" placeholder="Izoh..." class="w-full bg-slate-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 focus:bg-white focus:border-emerald-500 focus:outline-none" />
+                                    </td>
+                                    <td class="p-1.5 text-center">
+                                        <button @click="removePaymentRow(idx)" type="button" class="w-7 h-7 rounded-lg bg-red-50 text-red-600 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center font-bold text-xs mx-auto" title="O'chirish">
+                                            ✕
+                                        </button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>

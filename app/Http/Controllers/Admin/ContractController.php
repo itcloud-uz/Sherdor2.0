@@ -877,33 +877,92 @@ class ContractController extends Controller
             $sheet = $spreadsheet->getActiveSheet();
             $data = $sheet->toArray(null, true, true, true);
 
-            $isFirst = true;
-            foreach ($data as $row) {
-                if ($isFirst) {
-                    $isFirst = false;
-                    continue;
+                        // Smart Header & Column Detection
+            $headerRowKey = null;
+            $colMap = ['date' => null, 'cash' => null, 'card' => null, 'bank' => null, 'amount' => null, 'notes' => null, 'no' => null];
+
+            $rowCount = 0;
+            foreach ($data as $rKey => $row) {
+                $rowCount++;
+                if ($rowCount > 10) break;
+
+                foreach ($row as $colKey => $cellVal) {
+                    $cell = mb_strtolower(trim((string)$cellVal));
+                    if (empty($cell)) continue;
+
+                    if (!$colMap['date'] && (str_contains($cell, 'sana') || str_contains($cell, 'date') || str_contains($cell, 'дата') || str_contains($cell, "to'langan") || str_contains($cell, 'тўlangan') || str_contains($cell, 'тўланган'))) {
+                        $colMap['date'] = $colKey;
+                        $headerRowKey = $rKey;
+                    }
+                    if (!$colMap['cash'] && (str_contains($cell, 'naqd') || str_contains($cell, 'naqt') || str_contains($cell, 'наличн') || str_contains($cell, 'нал'))) {
+                        $colMap['cash'] = $colKey;
+                        $headerRowKey = $rKey;
+                    }
+                    if (!$colMap['card'] && (str_contains($cell, 'plastik') || str_contains($cell, 'karta') || str_contains($cell, 'terminal') || str_contains($cell, 'карта') || str_contains($cell, 'uzcard') || str_contains($cell, 'humo'))) {
+                        $colMap['card'] = $colKey;
+                        $headerRowKey = $rKey;
+                    }
+                    if (!$colMap['bank'] && (str_contains($cell, 'bank') || str_contains($cell, 'hisob') || str_contains($cell, 'банк') || str_contains($cell, 'schet') || str_contains($cell, 'перечисл'))) {
+                        $colMap['bank'] = $colKey;
+                        $headerRowKey = $rKey;
+                    }
+                    if (!$colMap['amount'] && (str_contains($cell, 'summa') || str_contains($cell, 'сумма') || str_contains($cell, "to'lov") || str_contains($cell, 'amount') || str_contains($cell, "jami to'lov"))) {
+                        $colMap['amount'] = $colKey;
+                        $headerRowKey = $rKey;
+                    }
+                    if (!$colMap['notes'] && (str_contains($cell, 'izoh') || str_contains($cell, 'note') || str_contains($cell, 'примеч') || str_contains($cell, 'коммент') || str_contains($cell, 'maqsad'))) {
+                        $colMap['notes'] = $colKey;
+                    }
+                    if (!$colMap['no'] && ($cell === '№' || $cell === 'no' || $cell === 't/r' || str_contains($cell, 'номер'))) {
+                        $colMap['no'] = $colKey;
+                    }
                 }
 
-                $num = trim($row['A'] ?? '');
-                $dateRaw = trim($row['B'] ?? '');
-                $cashRaw = trim($row['C'] ?? '');
-                $cardRaw = trim($row['D'] ?? '');
-                $bankRaw = trim($row['E'] ?? '');
-                $notes = trim($row['F'] ?? '');
+                if ($headerRowKey && ($colMap['date'] || $colMap['cash'] || $colMap['amount'])) {
+                    break;
+                }
+            }
 
-                if (empty($dateRaw) || mb_strtolower($num) === 'jami' || mb_strtolower($num) === 'жами' || mb_strtolower($dateRaw) === 'jami' || mb_strtolower($dateRaw) === 'жами') {
+            // Fallback default column mapping: A: No, B: Date, C: Cash, D: Card, E: Bank, F: Notes
+            if (!$headerRowKey) {
+                $colMap = ['no' => 'A', 'date' => 'B', 'cash' => 'C', 'card' => 'D', 'bank' => 'E', 'notes' => 'F', 'amount' => null];
+                $headerRowKey = array_key_first($data);
+            }
+
+            $cleanNumber = function($val) {
+                if (empty($val)) return 0;
+                $cleaned = preg_replace('/[^\d.]/', '', str_replace([' ', ','], ['', '.'], (string)$val));
+                return is_numeric($cleaned) ? (float)$cleaned : 0;
+            };
+
+            $passedHeader = false;
+            foreach ($data as $rKey => $row) {
+                if ($rKey === $headerRowKey) {
+                    $passedHeader = true;
                     continue;
                 }
+                if (!$passedHeader) continue;
 
-                $cleanNumber = function($val) {
-                    if (empty($val)) return 0;
-                    $cleaned = preg_replace('/[^\d.]/', '', str_replace([' ', ','], ['', '.'], (string)$val));
-                    return is_numeric($cleaned) ? (float)$cleaned : 0;
-                };
+                $num = $colMap['no'] ? trim((string)($row[$colMap['no']] ?? '')) : '';
+                $dateRaw = $colMap['date'] ? trim((string)($row[$colMap['date']] ?? '')) : '';
+                $cashRaw = $colMap['cash'] ? ($row[$colMap['cash']] ?? '') : '';
+                $cardRaw = $colMap['card'] ? ($row[$colMap['card']] ?? '') : '';
+                $bankRaw = $colMap['bank'] ? ($row[$colMap['bank']] ?? '') : '';
+                $notes = $colMap['notes'] ? trim((string)($row[$colMap['notes']] ?? '')) : '';
+
+                $checkCombined = mb_strtolower($num . ' ' . $dateRaw);
+                if (str_contains($checkCombined, 'jami') || str_contains($checkCombined, 'жами') || str_contains($checkCombined, 'итого') || str_contains($checkCombined, 'total')) {
+                    continue;
+                }
 
                 $cashAmt = $cleanNumber($cashRaw);
                 $cardAmt = $cleanNumber($cardRaw);
                 $bankAmt = $cleanNumber($bankRaw);
+
+                // If only single amount column exists
+                if ($cashAmt <= 0 && $cardAmt <= 0 && $bankAmt <= 0 && $colMap['amount']) {
+                    $cashAmt = $cleanNumber($row[$colMap['amount']] ?? '');
+                }
 
                 if ($cashAmt <= 0 && $cardAmt <= 0 && $bankAmt <= 0) {
                     continue;
@@ -914,11 +973,11 @@ class ContractController extends Controller
                     $parsedDate = sprintf('%04d-%02d-%02d', $matches[3], $matches[2], $matches[1]);
                 } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateRaw)) {
                     $parsedDate = $dateRaw;
-                } elseif (is_numeric($dateRaw)) {
+                } elseif (is_numeric($dateRaw) && (int)$dateRaw > 20000) {
                     $parsedDate = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((int)$dateRaw)->format('Y-m-d');
                 } else {
                     try {
-                        $parsedDate = date('Y-m-d', strtotime($dateRaw));
+                        $parsedDate = !empty($dateRaw) ? date('Y-m-d', strtotime($dateRaw)) : now()->toDateString();
                     } catch (\Exception $e) {
                         $parsedDate = now()->toDateString();
                     }

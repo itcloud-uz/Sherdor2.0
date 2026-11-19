@@ -120,14 +120,14 @@ class Partner extends Model
             $partner->invested_amount = $partner->total_sarmoya;
             $partner->withdrawn_amount = $partner->total_olingan;
 
-            // Qarz / Hisobdorlik: Kiritilgan sarmoya - Korxonadan olingan pul
-            // Masalan: 588,482,404 sarmoya - 212,080,000 olingan = +376,402,404 UZS
-            $partner->accountable_balance = $partner->total_sarmoya - $partner->total_olingan;
-
             // Hisoblangan ulush: Sof foydadan (Net profit) ta'sischining ulush foizi (%) bo'yicha
             // Masalan: 440,836,596 * 50% = 220,418,298 UZS
             $sharePercentage = (float)$partner->investment_share_percentage;
             $partner->calculated_share = $netProfit > 0 ? (($netProfit * $sharePercentage) / 100) : 0;
+
+            // Hisob/Qarz (Ulush qoldig'i): Olingan pul foyda ulushidan minus qilinadi
+            // Masalan: 220,418,298 ulush - 212,080,000 olingan pul = +8,338,298 UZS
+            $partner->accountable_balance = $partner->calculated_share - $partner->total_olingan;
         }
 
         $companyNetWorth = $partners->sum('total_sarmoya');

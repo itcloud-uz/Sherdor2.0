@@ -75,23 +75,8 @@ class Partner extends Model
         foreach ($partners as $partner) {
             $registerIds = static::getPartnerRegisterIds($partner);
 
-            $isPartnerPayoutQ = function($q) use ($partner) {
-                $q->where(function($sq) use ($partner) {
-                    $sq->where('target_type', 'partner')
-                       ->where('target_id', $partner->id);
-                })
-                ->orWhereIn('category', ['Partner Advance', 'Divident', "Hamkorga to'lov", "Hamkor to'lovi", "Ta'sischi to'lovi"])
-                ->orWhere(function($sq) use ($partner) {
-                    $sq->where('partner_id', $partner->id)
-                       ->where(function($catQ) {
-                           $catQ->whereNull('category')
-                                ->orWhereNotIn('category', ['Qurilish', 'Material', 'Ish haqi', 'Ovqatlanish', 'Texnika', 'Boshqa xarajat']);
-                       });
-                });
-            };
-
-            // Jami olingan summa: all expenses paid to or withdrawn by the partner
-            $partner->total_olingan = (float)\App\Models\Transaction::where('status', 'approved')
+            // Barcha tasdiqlangan ta'sischi yoki uning kassasiga bog'langan tranzaksiyalar
+            $partnerTxs = \App\Models\Transaction::where('status', 'approved')
                 ->where(function($q) use ($partner, $registerIds) {
                     $q->where('partner_id', $partner->id)
                       ->orWhere(function($sq) use ($partner) {
@@ -101,36 +86,43 @@ class Partner extends Model
                         $q->orWhereIn('account_id', $registerIds);
                     }
                 })
-                ->where('type', 'expense')
-                ->where($isPartnerPayoutQ)
-                ->sum('amount');
+                ->get();
 
-            // Jami qilingan sarmoya: initial investment + reported expenses on behalf of the company (not payouts/advances) + any incomes
-            $dynamicSarmoya = (float)\App\Models\Transaction::where('status', 'approved')
-                ->where(function($q) use ($partner, $registerIds) {
-                    $q->where('partner_id', $partner->id);
-                    if (!empty($registerIds)) {
-                        $q->orWhereIn('account_id', $registerIds);
-                    }
-                })
-                ->where(function($q) use ($isPartnerPayoutQ) {
-                    $q->where(function($sq) use ($isPartnerPayoutQ) {
-                        $sq->where('type', 'expense')
-                           ->whereNot($isPartnerPayoutQ);
-                    })->orWhere('type', 'income');
-                })
-                ->sum('amount');
+            // Olingan pul: korxonadan ta'sischiga berilgan mablag'lar (Avans, Divident, Payout)
+            $olinganTxs = $partnerTxs->filter(function($t) use ($partner) {
+                $cat = is_object($t->category) ? ($t->category->name ?? '') : ($t->category ?? '');
+                $isPartnerPayout = ($t->target_type === 'partner' && $t->target_id == $partner->id) 
+                    || $t->transaction_subtype === 'partner_payout' 
+                    || in_array($cat, ['Partner Advance', 'Divident', "Hamkorga to'lov", "Hamkor to'lovi", "Ta'sischi to'lovi"]);
+                return $t->type === 'expense' && ($isPartnerPayout || (!$cat && $t->partner_id == $partner->id));
+            });
 
+            // Sarmoya: ta'sischi kiritgan sarmoyalar va korxona/obyekt nomidan qilingan barcha xarajatlar
+            $sarmoyaTxs = $partnerTxs->filter(function($t) use ($partner) {
+                $cat = is_object($t->category) ? ($t->category->name ?? '') : ($t->category ?? '');
+                $isPartnerPayout = ($t->target_type === 'partner' && $t->target_id == $partner->id) 
+                    || $t->transaction_subtype === 'partner_payout' 
+                    || in_array($cat, ['Partner Advance', 'Divident', "Hamkorga to'lov", "Hamkor to'lovi", "Ta'sischi to'lovi"]);
+                return $t->type === 'income' || ($t->type === 'expense' && !$isPartnerPayout);
+            });
+
+            $totalOlingan = (float)$olinganTxs->sum('amount');
+            $dynamicSarmoya = (float)$sarmoyaTxs->sum('amount');
+            $totalSarmoya = (float)$partner->total_invested + $dynamicSarmoya;
+
+            $partner->total_olingan = $totalOlingan;
             $partner->dynamic_sarmoya = $dynamicSarmoya;
-            $partner->total_sarmoya = (float)$partner->total_invested + $dynamicSarmoya;
+            $partner->total_sarmoya = $totalSarmoya;
+            $partner->sarmoya_count = $sarmoyaTxs->count();
+            $partner->olingan_count = $olinganTxs->count();
             
             // Aliases for finance
             $partner->invested_amount = $partner->total_sarmoya;
             $partner->withdrawn_amount = $partner->total_olingan;
 
             // Qarz / Hisobdorlik: Kiritilgan sarmoya - Korxonadan olingan pul
-            // Masalan: 10,000,000 sarmoya - 212,080,000 olingan = -202,080,000 UZS qarz
-            $partner->accountable_balance = (float)$partner->total_sarmoya - (float)$partner->total_olingan;
+            // Masalan: 588,482,404 sarmoya - 212,080,000 olingan = +376,402,404 UZS
+            $partner->accountable_balance = $partner->total_sarmoya - $partner->total_olingan;
 
             // Hisoblangan ulush: Sof foydadan (Net profit) ta'sischining ulush foizi (%) bo'yicha
             // Masalan: 440,836,596 * 50% = 220,418,298 UZS

@@ -230,7 +230,7 @@ const expandedExpenses = computed(() => {
     const sarmoyalar = transactions.value.filter(t => {
         const catName = t.category_display || t.category || '';
         const isPartnerPayout = t.target_type === 'partner' || t.transaction_subtype === 'partner_payout' || ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi'].includes(catName);
-        return t.type === 'income' || (t.type === 'expense' && !isPartnerPayout && catName !== '' && catName !== 'Partner Advance' && catName !== 'Divident');
+        return t.type === 'income' || (t.type === 'expense' && !isPartnerPayout);
     });
 
     sarmoyalar.forEach(t => {
@@ -581,7 +581,9 @@ function formatDate(dateString) {
                             <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                             Jami Hisobdorlik (Qarz)
                         </p>
-                        <p class="text-2xl font-display font-black text-rose-700 tracking-tight">{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0)) }} <span class="text-xs font-medium text-amber-600/70">UZS</span></p>
+                        <p class="text-2xl font-display font-black tracking-tight" :class="partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0) < 0 ? 'text-rose-700' : 'text-emerald-700'">
+                            {{ partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0) > 0 ? '+' : '' }}{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0)) }} <span class="text-xs font-medium text-amber-600/70">UZS</span>
+                        </p>
                         <p class="text-[10px] text-amber-600/70 font-mono mt-1">Ta'sischilar qarzdorligi</p>
                     </div>
                 </div>
@@ -601,7 +603,7 @@ function formatDate(dateString) {
                                 <span class="font-display font-black text-base tracking-wide uppercase">{{ partner.user?.name || 'TA\'SISCHI' }}</span>
                                 <div class="mt-0.5">
                                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" :class="Number(partner.accountable_balance) < 0 ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'">
-                                        Hisob/Qarz: {{ formatCurrency(partner.accountable_balance) }} UZS
+                                        Hisob/Qarz: {{ Number(partner.accountable_balance) > 0 ? '+' : '' }}{{ formatCurrency(partner.accountable_balance) }} UZS
                                     </span>
                                 </div>
                             </div>
@@ -626,6 +628,7 @@ function formatDate(dateString) {
                             <div>
                                 <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Jami Sarmoya</span>
                                 <span class="block text-sm font-black text-slate-800 font-mono leading-none">{{ formatCurrency(partner.total_sarmoya) }}</span>
+                                <span v-if="partner.sarmoya_count" class="block text-[9px] text-slate-400 font-mono mt-1 font-semibold">({{ partner.sarmoya_count }} ta sarmoya)</span>
                             </div>
                             <span class="text-[8px] text-slate-400 mt-2 block group-hover/card:text-amber-600 font-bold transition-colors">Ko'rish &rarr;</span>
                         </div>
@@ -638,6 +641,7 @@ function formatDate(dateString) {
                             <div>
                                 <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Olingan pul</span>
                                 <span class="block text-sm font-black text-slate-800 font-mono leading-none">{{ formatCurrency(partner.total_olingan) }}</span>
+                                <span v-if="partner.olingan_count" class="block text-[9px] text-slate-400 font-mono mt-1 font-semibold">({{ partner.olingan_count }} ta to'lov)</span>
                             </div>
                             <span class="text-[8px] text-slate-400 mt-2 block group-hover/card:text-emerald-600 font-bold transition-colors">Ko'rish &rarr;</span>
                         </div>

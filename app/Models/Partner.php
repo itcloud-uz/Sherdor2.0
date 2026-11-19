@@ -70,7 +70,7 @@ class Partner extends Model
             ->sum('amount');
             
         $netProfit = $totalIncome - $totalExpense;
-        $dynamicUZS = (float)\App\Models\CashRegister::whereNull('parent_id')->get()->sum('balance_uzs');
+        $companyNetWorth = 0; // Kompaniyaning jami qiymati (avvalgi kelishuv bo'yicha 0 UZS)
 
         foreach ($partners as $partner) {
             $registerIds = static::getPartnerRegisterIds($partner);
@@ -128,9 +128,14 @@ class Partner extends Model
             $partner->invested_amount = $partner->total_sarmoya;
             $partner->withdrawn_amount = $partner->total_olingan;
 
-            // Hisoblangan ulush: 50% (or share %) of the total cash balance / net profit
-            $umumiySumma = $dynamicUZS > 0 ? $dynamicUZS : ($netProfit > 0 ? $netProfit : 0);
-            $partner->calculated_share = ($umumiySumma * (float)$partner->investment_share_percentage) / 100;
+            // Qarz / Hisobdorlik: Kiritilgan sarmoya - Korxonadan olingan pul
+            // Masalan: 10,000,000 sarmoya - 212,080,000 olingan = -202,080,000 UZS qarz
+            $partner->accountable_balance = (float)$partner->total_sarmoya - (float)$partner->total_olingan;
+
+            // Hisoblangan ulush: Sof foydadan (Net profit) ta'sischining ulush foizi (%) bo'yicha
+            // Masalan: 440,836,596 * 50% = 220,418,298 UZS
+            $sharePercentage = (float)$partner->investment_share_percentage;
+            $partner->calculated_share = $netProfit > 0 ? (($netProfit * $sharePercentage) / 100) : 0;
         }
 
         return [
@@ -138,8 +143,7 @@ class Partner extends Model
             'totalIncome' => $totalIncome,
             'totalExpense' => $totalExpense,
             'netProfit' => $netProfit,
-            'dynamicUZS' => $dynamicUZS,
-            'companyNetWorth' => $dynamicUZS,
+            'companyNetWorth' => $companyNetWorth,
         ];
     }
 }

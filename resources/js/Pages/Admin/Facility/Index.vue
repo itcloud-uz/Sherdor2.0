@@ -2039,8 +2039,19 @@ function nextSellStep() {
             alert("Iltimos, narx ma'lumotlarini to'ldiring!");
             return;
         }
+
+        // Ta'sischi uchun to'lov talab qilinmaydi - to'g'ridan-to'g'ri biriktirish
+        if (contractForm.value.buyer_type === 'partner') {
+            submitContract();
+            return;
+        }
+
         sellStep.value = 2;
     } else if (sellStep.value === 2) {
+        if (contractForm.value.buyer_type === 'partner') {
+            submitContract();
+            return;
+        }
         if (contractForm.value.payment_type === 'installment' && installmentCalculationType.value === 'manual' && !contractForm.value.custom_monthly_amount) {
             alert("Iltimos, oylik to'lov miqdorini kiriting!");
             return;
@@ -2048,6 +2059,19 @@ function nextSellStep() {
         sellStep.value = 3;
     }
 }
+
+// Watch buyer_type to reset step and prefill full payment for partner
+watch(() => contractForm.value.buyer_type, (newType) => {
+    if (newType === 'partner') {
+        sellStep.value = 1;
+        contractForm.value.payment_type = 'full';
+        contractForm.value.down_payment = contractForm.value.total_amount;
+        contractForm.value.term_months = 1;
+        contractForm.value.account_id = '';
+        initialDownPaymentPaid.value = '';
+        initialInstallmentPaid.value = '';
+    }
+});
 
 function prevSellStep() {
     if (sellStep.value > 1) {
@@ -2088,16 +2112,29 @@ function submitContract() {
         return;
     }
 
-    // 2. Validate Step 2
-    if (contractForm.value.payment_type === 'installment' && installmentCalculationType.value === 'manual' && !contractForm.value.custom_monthly_amount) {
-        alert("Iltimos, oylik to'lov miqdorini kiriting!");
-        sellStep.value = 2;
-        return;
-    }
-
-    // 3. Step 3 - defaults
-    if (contractForm.value.payment_type === 'full' && (!contractForm.value.actual_paid_amount || Number(contractForm.value.actual_paid_amount) <= 0)) {
+    if (contractForm.value.buyer_type === 'partner') {
+        contractForm.value.payment_type = 'full';
+        contractForm.value.down_payment = contractForm.value.total_amount;
+        contractForm.value.term_months = 1;
         contractForm.value.actual_paid_amount = contractForm.value.total_amount;
+        contractForm.value.custom_monthly_amount = '';
+        contractForm.value.account_id = null;
+        contractForm.value.client_id = null;
+        contractForm.value.employee_id = null;
+        initialDownPaymentPaid.value = '';
+        initialInstallmentPaid.value = '';
+    } else {
+        // 2. Validate Step 2
+        if (contractForm.value.payment_type === 'installment' && installmentCalculationType.value === 'manual' && !contractForm.value.custom_monthly_amount) {
+            alert("Iltimos, oylik to'lov miqdorini kiriting!");
+            sellStep.value = 2;
+            return;
+        }
+
+        // 3. Step 3 - defaults
+        if (contractForm.value.payment_type === 'full' && (!contractForm.value.actual_paid_amount || Number(contractForm.value.actual_paid_amount) <= 0)) {
+            contractForm.value.actual_paid_amount = contractForm.value.total_amount;
+        }
     }
 
     isProcessingContract.value = true;
@@ -5172,7 +5209,11 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </div>
                                         
                                         <!-- Stepper Dots -->
-                                        <div class="flex items-center gap-1">
+                                        <div v-if="contractForm.buyer_type === 'partner'" class="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-[11px] font-bold text-emerald-800">
+                                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                            <span>Ta'sischi ob'yekti (To'lovsiz)</span>
+                                        </div>
+                                        <div v-else class="flex items-center gap-1">
                                             <div class="flex items-center gap-1">
                                                 <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold font-sans" 
                                                      :class="sellStep === 1 ? 'bg-[#f2a900] text-white ring-2 ring-amber-100' : 'bg-gray-200 text-gray-500'">
@@ -5320,10 +5361,29 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <!-- Partner Info Notice -->
+                                        <div v-if="contractForm.buyer_type === 'partner'" class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-900 text-xs space-y-1">
+                                            <div class="flex items-center gap-1.5 font-bold text-emerald-800">
+                                                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                <span>To'lov talab qilinmaydi</span>
+                                            </div>
+                                            <p class="text-[11px] text-emerald-700 leading-relaxed">
+                                                Ta'sischi uy yoki do'kon olayotganda to'lov amalga oshirilmaydi. Ob'yekt qiymati ({{ formatSoM(contractForm.total_amount) }}) ta'sischining hisobdorlik balansidan avtomatik ushlab qolinadi va ob'yekt darhol unga rasmiylashtiriladi.
+                                            </p>
+                                        </div>
                                     </div>
 
                                     <!-- STEP 2: To'lov turi -->
                                     <div v-show="sellStep === 2" class="space-y-6 font-sans">
+                                        <div v-if="contractForm.buyer_type === 'partner'" class="p-6 text-center space-y-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                                            <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-xl font-bold">
+                                                ✓
+                                            </div>
+                                            <h4 class="font-bold text-gray-800 text-sm">Ta'sischi uchun to'lov talab qilinmaydi</h4>
+                                            <p class="text-xs text-gray-600">Ob'yekt qiymati to'g'ridan-to'g'ri ta'sischining hisobdorlik balansidan ushlab qolinadi.</p>
+                                        </div>
+                                        <template v-else>
                                         <!-- Main Payment Type Options -->
                                         <div class="space-y-3">
                                             <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-gray-150 hover:bg-gray-50/50 transition-colors">
@@ -5438,6 +5498,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                                 </div>
                                             </div>
                                         </div>
+                                        </template>
                                     </div>
 
                                     <!-- STEP 3: Ma'lumotlar -->
@@ -5477,7 +5538,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         </div>
 
                                         <!-- TO'LOV QABUL QILISH SECTION -->
-                                        <div class="space-y-3 pt-1">
+                                        <div v-if="contractForm.buyer_type !== 'partner'" class="space-y-3 pt-1">
                                             <h4 class="text-xs font-bold text-[#10b981] uppercase tracking-wider">To'lov qabul qilish</h4>
                                             
                                             <!-- Acceptance Inputs (Installment mode) -->
@@ -5571,20 +5632,29 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
 
                                 <!-- Action Buttons -->
                                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-150 mt-6 shrink-0">
-                                    <button type="button" @click="sellStep > 1 ? prevSellStep() : (activeRightPanel = 'details')"
+                                    <button type="button" @click="sellStep > 1 && contractForm.buyer_type !== 'partner' ? prevSellStep() : (activeRightPanel = 'details')"
                                             class="px-6 py-2.5 text-xs font-bold text-gray-800 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition-all min-w-[120px] cursor-pointer">
                                         Bekor qilish
                                     </button>
                                     
-                                    <button v-if="sellStep < 3" type="button" @click="nextSellStep"
-                                            class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[120px] shadow-sm cursor-pointer">
-                                        Davom etish
+                                    <!-- Ta'sischi: Direct One-Click Submit Button -->
+                                    <button v-if="contractForm.buyer_type === 'partner'" type="button" @click="submitContract" :disabled="isProcessingContract"
+                                            class="px-6 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white text-xs font-bold rounded-full shadow-sm transition-all min-w-[160px] disabled:opacity-50 cursor-pointer">
+                                        {{ isProcessingContract ? 'Biriktirilmoqda...' : 'TA\'SISCHIGA BIRIKTIRISH' }}
                                     </button>
-                                    
-                                    <button v-else type="button" @click="submitContract" :disabled="isProcessingContract"
-                                            class="px-6 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white text-xs font-bold rounded-full shadow-sm transition-all min-w-[120px] disabled:opacity-50 cursor-pointer">
-                                        {{ isProcessingContract ? 'Yaratilmoqda...' : 'SAVDO HUNISINI YARATISH' }}
-                                    </button>
+
+                                    <!-- Client / Employee Stepper Buttons -->
+                                    <template v-else>
+                                        <button v-if="sellStep < 3" type="button" @click="nextSellStep"
+                                                class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-full transition-all min-w-[120px] shadow-sm cursor-pointer">
+                                            Davom etish
+                                        </button>
+                                        
+                                        <button v-else type="button" @click="submitContract" :disabled="isProcessingContract"
+                                                class="px-6 py-2.5 bg-[#10b981] hover:bg-emerald-600 text-white text-xs font-bold rounded-full shadow-sm transition-all min-w-[120px] disabled:opacity-50 cursor-pointer">
+                                            {{ isProcessingContract ? 'Yaratilmoqda...' : 'SAVDO HUNISINI YARATISH' }}
+                                        </button>
+                                    </template>
                                 </div>
                             </form>
 

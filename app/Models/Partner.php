@@ -59,13 +59,14 @@ class Partner extends Model
     {
         $partners = static::with('user')->get();
 
-        $totalIncome = (float)\App\Models\Transaction::where('status', 'approved')->where('type', 'income')->sum('amount');
+        $totalIncome = (float)\App\Models\Transaction::where('status', 'approved')
+            ->where('type', 'income')
+            ->where('currency', 'UZS')
+            ->sum('amount');
+
         $totalExpense = (float)\App\Models\Transaction::where('status', 'approved')
             ->where('type', 'expense')
-            ->where(function($q) {
-                $q->whereNull('category')
-                  ->orWhereNotIn('category', ['Divident', 'Partner Advance']);
-            })
+            ->where('currency', 'UZS')
             ->sum('amount');
             
         $netProfit = $totalIncome - $totalExpense;

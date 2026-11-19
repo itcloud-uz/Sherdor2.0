@@ -518,54 +518,71 @@ function formatDate(dateString) {
             </div>
 
             <!-- Dashboard Stats -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <!-- Kompaniya balansi -->
-                <div class="relative overflow-hidden bg-white/80 backdrop-blur-xl border border-slate-200/80 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
-                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-blue-100/50 rounded-full blur-2xl"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+                <!-- Jami Kirim (Tushumlar) -->
+                <div class="relative overflow-hidden bg-emerald-50/50 backdrop-blur-xl border border-emerald-200/80 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-200/40 rounded-full blur-2xl"></div>
                     <div class="relative z-10">
-                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                            Kompaniya Balansi (Kassalar)
+                        <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            Jami Kirim (Tushumlar)
                         </p>
-                        <p class="text-2xl font-display font-black text-slate-800 tracking-tight">{{ formatCurrency(companyNetWorth) }} <span class="text-xs font-medium text-slate-400">UZS</span></p>
+                        <p class="text-2xl font-display font-black text-emerald-600 tracking-tight">+{{ formatCurrency(totalIncome || 0) }} <span class="text-xs font-medium text-emerald-500/80">UZS</span></p>
+                        <p class="text-[10px] text-emerald-600/70 font-mono mt-1">Barcha tasdiqlangan kirimlar</p>
                     </div>
                 </div>
 
-                <!-- Jami Kirim & Chiqim -->
-                <div class="relative overflow-hidden bg-white/80 backdrop-blur-xl border border-slate-200/80 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
-                    <div class="relative z-10 space-y-2">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="font-bold text-slate-500 uppercase tracking-wider text-[10px] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Kirim:</span>
-                            <span class="font-black text-emerald-600 font-mono">+{{ formatCurrency(totalIncome || 0) }}</span>
-                        </div>
-                        <div class="flex justify-between items-center text-xs border-t border-slate-100 pt-1.5">
-                            <span class="font-bold text-slate-500 uppercase tracking-wider text-[10px] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Chiqim:</span>
-                            <span class="font-black text-rose-600 font-mono">-{{ formatCurrency(totalExpense || 0) }}</span>
-                        </div>
+                <!-- Jami Chiqim (To'lovlar) -->
+                <div class="relative overflow-hidden bg-rose-50/50 backdrop-blur-xl border border-rose-200/80 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-rose-200/40 rounded-full blur-2xl"></div>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-bold text-rose-700 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                            Jami Chiqim (To'lovlar)
+                        </p>
+                        <p class="text-2xl font-display font-black text-rose-600 tracking-tight">-{{ formatCurrency(totalExpense || 0) }} <span class="text-xs font-medium text-rose-500/80">UZS</span></p>
+                        <p class="text-[10px] text-rose-600/70 font-mono mt-1">Barcha tasdiqlangan xarajatlar</p>
                     </div>
                 </div>
                 
                 <!-- Sof Foyda -->
-                <div class="relative overflow-hidden bg-emerald-50/40 backdrop-blur-xl border border-emerald-100 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
-                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-200/40 rounded-full blur-2xl"></div>
+                <div class="relative overflow-hidden bg-white/80 backdrop-blur-xl border border-slate-200/80 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-blue-100/50 rounded-full blur-2xl"></div>
                     <div class="relative z-10">
-                        <p class="text-[10px] font-bold text-emerald-600/90 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full" :class="(netProfit || 0) >= 0 ? 'bg-emerald-500' : 'bg-rose-500'"></span>
                             Sof Foyda (Net Profit)
                         </p>
-                        <p class="text-2xl font-display font-black text-emerald-700 tracking-tight">{{ formatCurrency(netProfit) }} <span class="text-xs font-medium text-emerald-500/70">UZS</span></p>
+                        <p class="text-2xl font-display font-black tracking-tight" :class="(netProfit || 0) >= 0 ? 'text-emerald-700' : 'text-rose-600'">
+                            {{ formatCurrency(netProfit || 0) }} <span class="text-xs font-medium text-slate-400">UZS</span>
+                        </p>
+                        <p class="text-[10px] text-slate-400 font-mono mt-1">Kirim - Chiqim farqi</p>
+                    </div>
+                </div>
+
+                <!-- Kompaniya balansi (Kassalar) -->
+                <div class="relative overflow-hidden bg-indigo-50/40 backdrop-blur-xl border border-indigo-100 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-indigo-200/30 rounded-full blur-2xl"></div>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-bold text-indigo-700 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            Kompaniyaning Jami Qiymati
+                        </p>
+                        <p class="text-2xl font-display font-black text-indigo-900 tracking-tight">{{ formatCurrency(companyNetWorth || 0) }} <span class="text-xs font-medium text-indigo-500/70">UZS</span></p>
+                        <p class="text-[10px] text-indigo-500/70 font-mono mt-1">Kassalardagi mavjud qoldiq</p>
                     </div>
                 </div>
                 
                 <!-- Jami Hisobdorlik -->
-                <div class="relative overflow-hidden bg-rose-50/40 backdrop-blur-xl border border-rose-100 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
-                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-rose-200/40 rounded-full blur-2xl"></div>
+                <div class="relative overflow-hidden bg-amber-50/40 backdrop-blur-xl border border-amber-200/80 shadow-sm rounded-2xl p-5 hover:shadow-md transition-shadow duration-300">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-amber-200/40 rounded-full blur-2xl"></div>
                     <div class="relative z-10">
-                        <p class="text-[10px] font-bold text-rose-600/90 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                        <p class="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                             Jami Hisobdorlik (Qarz)
                         </p>
-                        <p class="text-2xl font-display font-black text-rose-700 tracking-tight">{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0)) }} <span class="text-xs font-medium text-rose-500/70">UZS</span></p>
+                        <p class="text-2xl font-display font-black text-rose-700 tracking-tight">{{ formatCurrency(partners.reduce((sum, p) => sum + Number(p.accountable_balance), 0)) }} <span class="text-xs font-medium text-amber-600/70">UZS</span></p>
+                        <p class="text-[10px] text-amber-600/70 font-mono mt-1">Ta'sischilar qarzdorligi</p>
                     </div>
                 </div>
             </div>

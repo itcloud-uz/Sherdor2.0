@@ -2930,7 +2930,7 @@ function formatSoM(val) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " so'm";
 }
 
-function printCalculatorDetails() {
+async function printCalculatorDetails() {
     if (!selectedUnit.value) return;
 
     const unit = selectedUnit.value;
@@ -2950,11 +2950,15 @@ function printCalculatorDetails() {
         ? `/storage/${unit.model_3d_path}` 
         : (unit.blueprint_path ? `/storage/${unit.blueprint_path}` : '/modern_apartment_render.png');
 
-    const floorBlueprintSrc = unitFloor?.blueprint_path 
-        ? `/storage/${unitFloor.blueprint_path}` 
-        : (selectedFloor.value?.blueprint_path 
-            ? `/storage/${selectedFloor.value.blueprint_path}` 
-            : (unit.blueprint_path ? `/storage/${unit.blueprint_path}` : '/modern_apartment_render.png'));
+    // General Block / Floor plan: prioritize floor blueprint, never fall back to unit's 2D plan
+    let floorBp = unitFloor?.blueprint_path || selectedFloor.value?.blueprint_path;
+    if (!floorBp && building?.floors) {
+        const floorWithBp = building.floors.find(f => f.blueprint_path);
+        if (floorWithBp) {
+            floorBp = floorWithBp.blueprint_path;
+        }
+    }
+    const floorBlueprintSrc = floorBp ? `/storage/${floorBp}` : '/modern_apartment_render.png';
 
     const buildingPhoto = building?.photo_path ? `/storage/${building.photo_path}` : '/modern_apartment_render.png';
 
@@ -2967,6 +2971,93 @@ function printCalculatorDetails() {
     const monthlyPayment = (calcTermMonths.value && Number(calcTermMonths.value) > 0) 
         ? Math.round(Number(calculatedRemainingBalance.value) / Number(calcTermMonths.value)) 
         : 0;
+
+    // Preload blueprint image dimensions to align SVG overlay with 100% precision
+    const { bpWidth, bpHeight } = await new Promise((resolve) => {
+        if (!floorBlueprintSrc || floorBlueprintSrc.includes('render.png')) {
+            return resolve({ bpWidth: 1200, bpHeight: 800 });
+        }
+        const img = new Image();
+        img.onload = () => resolve({ bpWidth: img.naturalWidth || 1200, bpHeight: img.naturalHeight || 800 });
+        img.onerror = () => resolve({ bpWidth: 1200, bpHeight: 800 });
+        img.src = floorBlueprintSrc;
+        setTimeout(() => {
+            resolve({ bpWidth: img.naturalWidth || 1200, bpHeight: img.naturalHeight || 800 });
+        }, 350);
+    });
+
+    // Determine unit polygon for highlighting on the general floor plan
+    let targetPolygon = unit.svg_polygon;
+    if (!targetPolygon && building?.floors) {
+        for (const fl of building.floors) {
+            if (fl.units) {
+                const sameUnit = fl.units.find(u => String(u.unit_number).trim() === String(unit.unit_number).trim() && u.svg_polygon);
+                if (sameUnit) {
+                    targetPolygon = sameUnit.svg_polygon;
+                    break;
+                }
+            }
+        }
+    }
+
+    let polygonMarkup = '';
+    if (targetPolygon) {
+        try {
+            let parsed = targetPolygon;
+            if (typeof parsed === 'string') {
+                parsed = JSON.parse(parsed);
+            }
+            if (parsed) {
+                if (parsed.norm) {
+                    if (parsed.norm.points && parsed.norm.points.length >= 3) {
+                        const pts = parsed.norm.points.map(p => `${(p.x * bpWidth).toFixed(1)},${(p.y * bpHeight).toFixed(1)}`).join(' ');
+                        polygonMarkup = `<polygon points="${pts}" fill="#e11d48" fill-opacity="0.85" stroke="#990000" stroke-width="3" />`;
+                    } else if (parsed.type === 'rect' || parsed.norm.w) {
+                        const rx = (parsed.norm.x || 0) * bpWidth;
+                        const ry = (parsed.norm.y || 0) * bpHeight;
+                        const rw = (parsed.norm.w || 0) * bpWidth;
+                        const rh = (parsed.norm.h || 0) * bpHeight;
+                        polygonMarkup = `<rect x="${rx.toFixed(1)}" y="${ry.toFixed(1)}" width="${rw.toFixed(1)}" height="${rh.toFixed(1)}" fill="#e11d48" fill-opacity="0.85" stroke="#990000" stroke-width="3" />`;
+                    }
+                } else if (parsed.type === 'polygon' || parsed.points) {
+                    const rawPts = parsed.natural?.points || parsed.points;
+                    if (Array.isArray(rawPts) && rawPts.length >= 3) {
+                        const isNormalized = rawPts.every(p => ((p.x !== undefined ? p.x : p[0]) <= 1.05));
+                        const pts = rawPts.map(p => {
+                            const px = p.x !== undefined ? p.x : p[0];
+                            const py = p.y !== undefined ? p.y : p[1];
+                            const fx = isNormalized ? px * bpWidth : px;
+                            const fy = isNormalized ? py * bpHeight : py;
+                            return `${Number(fx).toFixed(1)},${Number(fy).toFixed(1)}`;
+                        }).join(' ');
+                        polygonMarkup = `<polygon points="${pts}" fill="#e11d48" fill-opacity="0.85" stroke="#990000" stroke-width="3" />`;
+                    }
+                } else if (parsed.type === 'rect') {
+                    const isNormalized = (parsed.left || parsed.x || 0) <= 1.05 && (parsed.width || parsed.w || 0) <= 1.05;
+                    const rx = (parsed.natural?.x ?? parsed.left ?? parsed.x ?? 0) * (isNormalized ? bpWidth : 1);
+                    const ry = (parsed.natural?.y ?? parsed.top ?? parsed.y ?? 0) * (isNormalized ? bpHeight : 1);
+                    const rw = (parsed.natural?.w ?? parsed.width ?? parsed.w ?? 100) * (isNormalized ? bpWidth : 1);
+                    const rh = (parsed.natural?.h ?? parsed.height ?? parsed.h ?? 100) * (isNormalized ? bpHeight : 1);
+                    polygonMarkup = `<rect x="${rx.toFixed(1)}" y="${ry.toFixed(1)}" width="${rw.toFixed(1)}" height="${rh.toFixed(1)}" fill="#e11d48" fill-opacity="0.85" stroke="#990000" stroke-width="3" />`;
+                }
+            }
+        } catch (e) {
+            console.warn('Error parsing polygon for print:', e);
+        }
+    }
+
+    if (!polygonMarkup) {
+        const badgeW = 200;
+        const badgeH = 40;
+        const bx = Math.max(20, (bpWidth - badgeW) / 2);
+        const by = 24;
+        polygonMarkup = `
+            <g transform="translate(${bx}, ${by})">
+                <rect width="${badgeW}" height="${badgeH}" rx="20" fill="#e11d48" stroke="#ffffff" stroke-width="3" filter="drop-shadow(0 2px 5px rgba(0,0,0,0.3))" />
+                <text x="${badgeW / 2}" y="25" text-anchor="middle" fill="#ffffff" font-family="'Montserrat', sans-serif" font-weight="900" font-size="16" letter-spacing="0.5">№ ${unit.unit_number} - XONADON</text>
+            </g>
+        `;
+    }
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -2986,7 +3077,7 @@ function printCalculatorDetails() {
 
                 @page {
                     size: A4 landscape;
-                    margin: 8mm 12mm 6mm 12mm;
+                    margin: 6mm 10mm 5mm 10mm;
                 }
 
                 * {
@@ -3004,9 +3095,9 @@ function printCalculatorDetails() {
                 }
 
                 .page-container {
-                    width: 273mm;
-                    height: 194mm;
-                    max-height: 194mm;
+                    width: 277mm;
+                    height: 198mm;
+                    max-height: 198mm;
                     margin: 0 auto;
                     display: flex;
                     flex-direction: column;
@@ -3019,13 +3110,14 @@ function printCalculatorDetails() {
                 /* Header */
                 .header-title {
                     font-family: 'Montserrat', sans-serif;
-                    font-size: 21px;
-                    font-weight: 800;
+                    font-size: 22px;
+                    font-weight: 900;
                     color: #cc0000;
                     text-align: center;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
                     margin-bottom: 2mm;
+                    flex-shrink: 0;
                 }
 
                 /* Main 2-column layout */
@@ -3033,7 +3125,7 @@ function printCalculatorDetails() {
                     flex: 1;
                     display: grid;
                     grid-template-columns: 1fr 1.15fr;
-                    gap: 12mm;
+                    gap: 8mm;
                     align-items: stretch;
                     min-height: 0;
                 }
@@ -3061,7 +3153,7 @@ function printCalculatorDetails() {
                 .spec-list, .fin-list {
                     display: flex;
                     flex-direction: column;
-                    gap: 3px;
+                    gap: 2.5px;
                 }
 
                 .row-item {
@@ -3096,13 +3188,13 @@ function printCalculatorDetails() {
 
                 .sub-title {
                     font-family: 'Montserrat', sans-serif;
-                    font-size: 14.5px;
-                    font-weight: 800;
+                    font-size: 15px;
+                    font-weight: 900;
                     color: #cc0000;
                     text-align: center;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                    margin: 3mm 0 2mm 0;
+                    margin: 2.5mm 0 1.5mm 0;
                 }
 
                 .red-value {
@@ -3115,39 +3207,49 @@ function printCalculatorDetails() {
 
                 .oylik-label {
                     color: #cc0000 !important;
-                    font-weight: 800 !important;
+                    font-weight: 900 !important;
                     font-size: 14px !important;
                 }
 
                 .oylik-value {
                     color: #cc0000 !important;
-                    font-weight: 800 !important;
-                    font-size: 15.5px !important;
+                    font-weight: 900 !important;
+                    font-size: 16px !important;
                 }
 
                 /* Images */
                 .unit-plan-img {
                     width: 100%;
-                    height: 68mm;
-                    max-height: 68mm;
+                    height: 84mm;
+                    max-height: 84mm;
                     object-fit: contain;
                     display: block;
-                    margin: 1mm auto;
+                    margin: 1.5mm auto;
                 }
 
                 .building-img {
                     width: 100%;
-                    height: ${hasDiscount ? '72mm' : '82mm'};
-                    max-height: ${hasDiscount ? '72mm' : '82mm'};
+                    height: ${hasDiscount ? '74mm' : '84mm'};
+                    max-height: ${hasDiscount ? '74mm' : '84mm'};
                     object-fit: contain;
                     display: block;
                 }
 
-                .floor-blueprint-img {
+                /* Floor Blueprint Container & SVG */
+                .floor-blueprint-wrap {
                     width: 100%;
-                    height: ${hasDiscount ? '72mm' : '82mm'};
-                    max-height: ${hasDiscount ? '72mm' : '82mm'};
-                    object-fit: contain;
+                    height: ${hasDiscount ? '76mm' : '86mm'};
+                    max-height: ${hasDiscount ? '76mm' : '86mm'};
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                }
+
+                .floor-blueprint-svg {
+                    width: 100%;
+                    height: 100%;
+                    max-height: 100%;
                     display: block;
                 }
 
@@ -3169,7 +3271,7 @@ function printCalculatorDetails() {
                 @media print {
                     @page {
                         size: A4 landscape;
-                        margin: 8mm 12mm 6mm 12mm;
+                        margin: 6mm 10mm 5mm 10mm;
                     }
                     html, body {
                         width: 297mm;
@@ -3179,9 +3281,9 @@ function printCalculatorDetails() {
                         background: #ffffff;
                     }
                     .page-container {
-                        width: 273mm;
-                        height: 194mm;
-                        max-height: 194mm;
+                        width: 277mm;
+                        height: 198mm;
+                        max-height: 198mm;
                         overflow: hidden;
                         page-break-after: avoid;
                         page-break-inside: avoid;
@@ -3277,8 +3379,13 @@ function printCalculatorDetails() {
                             </svg>
                         </div>` : ''}
 
-                        <!-- Bottom: Floor Blueprint -->
-                        <img src="${floorBlueprintSrc}" alt="Qavat chizmasi" class="floor-blueprint-img" />
+                        <!-- Bottom: Floor Blueprint with Unit Highlight -->
+                        <div class="floor-blueprint-wrap">
+                            <svg viewBox="0 0 ${bpWidth} ${bpHeight}" preserveAspectRatio="xMidYMid meet" class="floor-blueprint-svg">
+                                <image href="${floorBlueprintSrc}" x="0" y="0" width="${bpWidth}" height="${bpHeight}" />
+                                ${polygonMarkup}
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>

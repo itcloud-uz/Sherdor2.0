@@ -57,7 +57,47 @@ const goToNextBlock = () => {
 };
 
 // View mode: 'master_plan' vs 'facade' vs 'floor_plan' vs 'shaxmatka' vs 'gallery'
-const viewMode = ref('facade');
+// View mode: 'master_plan' vs 'facade' vs 'floor_plan' vs 'shaxmatka' vs 'gallery'
+// Shou room ga kirilganda birinchi 3D Maket (Master Plan) ochiladi
+const viewMode = ref('master_plan');
+
+// Project Files & Attached Archive modal state
+const showProjectFilesModal = ref(false);
+const projectFiles = computed(() => [
+    {
+        id: 'rar-archive',
+        name: 'Ургутга Жилой Дом.rar',
+        title: '3D Loyiha To\'liq Manba Arxivi (.RAR)',
+        size: '480.7 MB',
+        type: 'rar',
+        icon: '📦',
+        description: '3ds Max 2018/2021 3D modellar, AutoCAD DWG bosh reja va arxitektura loyihasining to\'liq asl nusxasi',
+        url: '/storage/archives/urgut_jiloy_dom.rar',
+        badge: 'Asosiy Arxiv (RAR)'
+    },
+    {
+        id: 'dwg-blueprint',
+        name: 'ГП.dwg',
+        title: 'Bosh reja (Генплан .DWG)',
+        size: '1.8 MB',
+        type: 'dwg',
+        icon: '📐',
+        description: 'AutoCAD formatidagi rasmiy bosh reja (Генплан) va obodonlashtirish loyihasi',
+        url: '/storage/blueprints/urgut_gp.dwg',
+        badge: 'AutoCAD DWG'
+    },
+    {
+        id: 'situatsiya-map',
+        name: 'Сетуация.jpg',
+        title: 'Hududiy Situatsiya Rejasi (Situaitsiya)',
+        size: '2.2 MB',
+        type: 'image',
+        icon: '🗺️',
+        description: 'Majmuaning sun\'iy yo\'ldosh va shahar arxitekturasi situatsion xaritasi',
+        url: '/storage/showroom/urgut_situatsiya.jpg',
+        badge: 'Yuqori Sifatli Rasm'
+    }
+]);
 
 // Floor Plan view sub-mode: 'split' (Blueprint + Units side) vs 'cards' (All 3D cards)
 const floorPlanDisplayMode = ref('split');
@@ -356,6 +396,24 @@ const getUnitSvgShape = (unit) => {
     return null;
 };
 
+// Calculate block center for floating labels
+const getBlockCenter = (block) => {
+    const shape = getBlockMasterPlanShape(block);
+    if (!shape) return null;
+    if (shape.type === 'rect') {
+        return { x: shape.x + Math.round(shape.width / 2), y: shape.y + Math.round(shape.height / 2) };
+    }
+    if (shape.type === 'polygon' && shape.points) {
+        const pairs = shape.points.split(' ').filter(Boolean).map(s => s.split(',').map(Number));
+        if (pairs.length > 0) {
+            const sumX = pairs.reduce((acc, p) => acc + p[0], 0);
+            const sumY = pairs.reduce((acc, p) => acc + p[1], 0);
+            return { x: Math.round(sumX / pairs.length), y: Math.round(sumY / pairs.length) };
+        }
+    }
+    return null;
+};
+
 // Master plan polygon
 const getBlockMasterPlanShape = (block) => {
     if (!block || !block.master_plan_polygon) return null;
@@ -543,6 +601,17 @@ onMounted(() => {
 
             <!-- Right: View Mode Switches (3D Maket, Fasad, Qavat, Shaxmatka, Galereya) -->
             <div class="flex items-center gap-1.5 shrink-0">
+                <!-- Project Files / RAR Attachment Button -->
+                <button 
+                    @click="showProjectFilesModal = true"
+                    class="h-8.5 px-3 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/20 cursor-pointer"
+                    title="Loyiha 3D va RAR arxiv fayllari"
+                >
+                    <span>📦</span>
+                    <span class="hidden md:inline">Loyiha Fayllari (.RAR)</span>
+                </button>
+
+                <div class="h-5 w-px bg-slate-200 hidden md:block"></div>
                 <!-- Master plan toggle -->
                 <button 
                     v-if="hasMasterPlan"
@@ -627,6 +696,18 @@ onMounted(() => {
                 <div class="absolute inset-0 bg-white/20 backdrop-blur-xl"></div>
             </div>
 
+            <!-- Top Floating Header Banner with Instructions -->
+            <div class="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-white/95 backdrop-blur-md px-6 py-2.5 rounded-2xl border border-slate-200/90 shadow-xl flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-xs md:text-sm font-black text-slate-800 tracking-tight">
+                    {{ selectedBuilding?.name || 'SHER-DOR TJM' }} — 3D Bosh Reja
+                </span>
+                <span class="text-[11px] font-extrabold text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-200/60 flex items-center gap-1">
+                    <span>🏢</span>
+                    <span>Boshlash uchun kerakli blokni tanlang</span>
+                </span>
+            </div>
+
             <div class="relative z-10 w-full h-full p-3 md:p-6 flex items-center justify-center">
                 <svg 
                     class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl rounded-2xl" 
@@ -658,20 +739,140 @@ onMounted(() => {
                                 :y="getBlockMasterPlanShape(block).y"
                                 :width="getBlockMasterPlanShape(block).width"
                                 :height="getBlockMasterPlanShape(block).height"
-                                :fill="hoveredBlock?.id === block.id ? 'rgba(249, 115, 22, 0.45)' : 'rgba(255, 255, 255, 0.08)'"
-                                :stroke="hoveredBlock?.id === block.id ? '#f97316' : '#ffffff'"
-                                :stroke-width="hoveredBlock?.id === block.id ? 4 : 2"
+                                :fill="hoveredBlock?.id === block.id || selectedBuildingId === block.id ? 'rgba(249, 115, 22, 0.45)' : 'rgba(255, 255, 255, 0.12)'"
+                                :stroke="hoveredBlock?.id === block.id || selectedBuildingId === block.id ? '#f97316' : '#ffffff'"
+                                :stroke-width="hoveredBlock?.id === block.id || selectedBuildingId === block.id ? 4 : 2"
                                 class="transition-all duration-200"
                             />
                             <polygon 
                                 v-else-if="getBlockMasterPlanShape(block).type === 'polygon'"
                                 :points="getBlockMasterPlanShape(block).points"
-                                :fill="hoveredBlock?.id === block.id ? 'rgba(249, 115, 22, 0.45)' : 'rgba(255, 255, 255, 0.08)'"
-                                :stroke="hoveredBlock?.id === block.id ? '#f97316' : '#ffffff'"
-                                :stroke-width="hoveredBlock?.id === block.id ? 4 : 2"
+                                :fill="hoveredBlock?.id === block.id || selectedBuildingId === block.id ? 'rgba(249, 115, 22, 0.45)' : 'rgba(255, 255, 255, 0.12)'"
+                                :stroke="hoveredBlock?.id === block.id || selectedBuildingId === block.id ? '#f97316' : '#ffffff'"
+                                :stroke-width="hoveredBlock?.id === block.id || selectedBuildingId === block.id ? 4 : 2"
                                 class="transition-all duration-200"
                             />
-                        </template>
+
+                            <!-- Floating Block Label in center of polygon -->
+                            <foreignObject 
+                                v-if="getBlockCenter(block)"
+                                :x="getBlockCenter(block).x - 65" 
+                                :y="getBlockCenter(block).y - 18" 
+                                width="130" 
+                                height="40"
+                                class="pointer-events-none"
+                            >
+                                <div 
+                                    :class="hoveredBlock?.id === block.id || selectedBuildingId === block.id 
+                                        ? 'bg-orange-600 text-white scale-110 shadow-lg shadow-orange-600/50 border-white' 
+                                        : 'bg-slate-900/85 text-white/95 border-white/40 shadow-md'"
+                                    class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-black transition-all duration-200 backdrop-blur-md"
+                                >
+                                    <span>🏢</span>
+                                    <span>{{ block.block_name || block.corpus_name || 'Blok' }}</span>
+                                </div>
+                            </foreignObject>
+                            <!-- Project Files & RAR Archive Modal -->
+    <Teleport to="body">
+        <div 
+            v-if="showProjectFilesModal" 
+            class="fixed inset-0 z-[75] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
+            @click.self="showProjectFilesModal = false"
+        >
+            <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                <!-- Modal Header -->
+                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-xl font-bold">
+                            📦
+                        </div>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 tracking-tight">
+                                Loyiha 3D va Arxitektura Hujjatlari
+                            </h3>
+                            <p class="text-xs text-slate-500 font-medium">
+                                SHER-DOR TJM — Urgut turar-joy majmuasiga biriktirilgan fayllar
+                            </p>
+                        </div>
+                    </div>
+                    <button 
+                        @click="showProjectFilesModal = false"
+                        class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm transition-all cursor-pointer"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Modal Body: File list -->
+                <div class="p-6 overflow-y-auto space-y-4">
+                    <div 
+                        v-for="file in projectFiles" 
+                        :key="file.id"
+                        class="bg-slate-50 hover:bg-slate-100/80 border border-slate-200/90 rounded-2xl p-4 transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-12 h-12 rounded-2xl bg-white shadow-xs border border-slate-200/80 flex items-center justify-center text-2xl shrink-0">
+                                {{ file.icon }}
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h4 class="text-sm font-black text-slate-900">{{ file.title }}</h4>
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-blue-100 text-blue-800">
+                                        {{ file.badge }}
+                                    </span>
+                                </div>
+                                <div class="text-xs text-slate-600 font-mono mt-0.5">{{ file.name }} • <span class="text-emerald-700 font-bold">{{ file.size }}</span></div>
+                                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">{{ file.description }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <button 
+                                v-if="file.type === 'image'"
+                                @click="openLightbox(file.url)"
+                                class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-black transition-all cursor-pointer"
+                            >
+                                Ko'rish
+                            </button>
+                            <a 
+                                :href="file.url"
+                                :download="file.name"
+                                class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-500/25 transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                                <span>📥</span>
+                                <span>Yuklab olish</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Informational Alert -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-xs text-blue-900 flex items-start gap-3">
+                        <span class="text-lg">ℹ️</span>
+                        <div>
+                            <span class="font-bold">Eslatma:</span>
+                            <p class="text-blue-800/90 text-[11px] mt-0.5">
+                                Ushbu RAR arxivi ichida 3ds Max loyiha fayllari (2018 va 2021 versiyalar), AutoCAD bosh rejasi (.DWG) va situatsiya xaritasi to'liq jamlangan holda saqlanadi.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                    <span class="text-[11px] text-slate-500 font-bold">
+                        Jami: {{ projectFiles.length }} ta biriktirilgan hujjat
+                    </span>
+                    <button 
+                        @click="showProjectFilesModal = false"
+                        class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                    >
+                        Yopish
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
+</template>
                     </g>
                 </svg>
 
@@ -715,6 +916,49 @@ onMounted(() => {
                         </div>
                     </div>
                 </transition>
+            </div>
+
+            <!-- Floating Block Selection Dock (Pastki qismdagi Blok tanlash paneli) -->
+            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 max-w-[95vw] overflow-x-auto px-4 py-2 pointer-events-auto">
+                <button
+                    v-for="b in availableBlocks"
+                    :key="'deck-b-' + b.id"
+                    @mouseenter="hoveredBlock = b"
+                    @mouseleave="hoveredBlock = null"
+                    @click="selectBlock(b.id); viewMode = 'facade'"
+                    :class="hoveredBlock?.id === b.id || selectedBuildingId === b.id 
+                        ? 'bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-xl shadow-orange-500/30 scale-105 border-orange-400 ring-2 ring-orange-400/40' 
+                        : 'bg-white/95 text-slate-800 border-slate-200/90 hover:bg-white shadow-lg'"
+                    class="px-5 py-3 rounded-2xl border transition-all duration-200 text-left cursor-pointer shrink-0 min-w-[160px]"
+                >
+                    <div class="flex items-center justify-between gap-2 pb-1">
+                        <span class="text-xs font-black">{{ b.block_name || b.corpus_name || 'Blok' }}</span>
+                        <span class="text-[10px] font-bold opacity-80">{{ b.total_floors || 9 }} qavat</span>
+                    </div>
+                    <div class="text-[11px] opacity-90 font-bold flex items-center justify-between">
+                        <span>{{ b.total_apartments || 45 }} ta xonadon</span>
+                        <span class="text-xs font-black">→</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Floating Project RAR Archive Widget (Chap pastki burchak) -->
+            <div class="absolute left-6 bottom-6 z-30 hidden xl:block pointer-events-auto">
+                <button 
+                    @click="showProjectFilesModal = true"
+                    class="bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl rounded-2xl p-3 flex items-center gap-3 hover:bg-white transition-all cursor-pointer group text-left"
+                >
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                        📦
+                    </div>
+                    <div>
+                        <div class="text-xs font-black text-slate-800">3D Loyiha Arxivi (.RAR)</div>
+                        <div class="text-[10px] text-slate-500 font-bold">Max 3D, DWG va Situatsiya • 480.7 MB</div>
+                    </div>
+                    <span class="text-blue-600 font-black text-xs px-2.5 py-1 bg-blue-50 rounded-lg border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        Ochish
+                    </span>
+                </button>
             </div>
         </div>
 

@@ -29,7 +29,7 @@ const sortBy = ref('default');
 
 // Modal States for 3D & Blueprint Inspection
 const selectedUnit = ref(null);
-const activeDetailTab = ref('3d'); // '3d' | 'blueprint' | 'calc'
+const activeDetailTab = ref('3d'); // '3d' | 'blueprint'
 const isImageModalOpen = ref(false);
 const modalPreviewImage = ref('');
 
@@ -171,7 +171,7 @@ const openUnitDetails = (unit) => {
     } else if (unit.blueprint_path) {
         activeDetailTab.value = 'blueprint';
     } else {
-        activeDetailTab.value = 'calc';
+        activeDetailTab.value = '3d';
     }
 };
 
@@ -185,7 +185,7 @@ const selectAndApply = (unit) => {
     const unitLabel = unit.type === 'commercial' ? `№${unit.unit_number}-do'kon` : `№${unit.unit_number}-xonadon (${unit.rooms} xona)`;
     const pTypeStr = paymentType.value === 'full' ? "100% to'liq to'lov" : `Bo'lib to'lash (${paymentMonths.value} oy, boshlang'ich ${downPaymentPercent.value}%)`;
     
-    form.value.comment = `Tanlangan: ${unit.building_name} (${unit.block_name}), ${unit.floor_level}-qavat, ${unitLabel}, ${unit.area} m². Umumiy narx: ${formatPrice(unit.price)} so'm. To'lov rejasi: ${pTypeStr}.`;
+    form.value.comment = `Tanlangan: ${unit.building_name} (${unit.block_name}), ${unit.floor_level}-qavat, ${unitLabel}, ${unit.area} m².`;
     
     selectedUnit.value = null;
     activeView.value = 'apply';
@@ -203,9 +203,6 @@ const submitLead = async () => {
             unit: activeSelectedUnit.value,
             fullName: form.value.full_name,
             phone: form.value.phone,
-            paymentType: form.value.payment_type,
-            monthly: calcMonthlyPayment.value,
-            downPayment: calcDownPayment.value,
         };
         successMessage.value = props.promoSettings?.promo_success_message || response.data.message || 'Arizangiz muvaffaqiyatli qabul qilindi!';
         
@@ -455,8 +452,6 @@ onMounted(() => {
                             <span class="font-medium">Saralash:</span>
                             <select v-model="sortBy" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-slate-800 font-medium focus:border-orange-500 focus:bg-white focus:outline-none">
                                 <option value="default">Odatiy (Tartib raqami)</option>
-                                <option value="price_asc">Narxi (arzondan qimmatga)</option>
-                                <option value="price_desc">Narxi (qimmatdan arzonga)</option>
                                 <option value="area_asc">Maydoni (kichikdan kattaga)</option>
                                 <option value="area_desc">Maydoni (kattadan kichikka)</option>
                                 <option value="floor_asc">Qavati bo'yicha</option>
@@ -569,38 +564,23 @@ onMounted(() => {
                             </div>
                         </div>
 
-                        <!-- Price & Action Section -->
+                        <!-- Action Section (Narxlarsiz) -->
                         <div class="pt-4 border-t border-slate-100">
-                            
-                            <!-- Price breakdown -->
-                            <div class="mb-4 bg-orange-50/60 border border-orange-100 p-3 rounded-2xl flex items-center justify-between">
-                                <div>
-                                    <span class="text-[10px] font-bold uppercase text-slate-500 tracking-wider block">Umumiy Qiymati</span>
-                                    <span class="text-lg font-black text-[#0f172a]">{{ formatPrice(unit.price) }} <small class="text-xs font-semibold text-slate-600">so'm</small></span>
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-[10px] font-bold text-slate-500 block">1 m² uchun:</span>
-                                    <span class="text-xs font-extrabold text-orange-600 font-mono">{{ formatPrice(unit.price_per_sqm) }} so'm</span>
-                                </div>
-                            </div>
-
-                            <!-- Action Buttons -->
                             <div class="grid grid-cols-2 gap-2.5">
                                 <button 
                                     @click="openUnitDetails(unit)"
-                                    class="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-1.5"
+                                    class="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                                 >
-                                    <span>🔍</span> 3D & Reja
+                                    <span>🏢</span> 3D & Chizma
                                 </button>
 
                                 <button 
                                     @click="selectAndApply(unit)"
-                                    class="py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-1"
+                                    class="py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-1 cursor-pointer"
                                 >
-                                    <span>✍️</span> Xarid Qilish
+                                    <span>📝</span> Ariza Qoldirish
                                 </button>
                             </div>
-
                         </div>
 
                     </div>
@@ -665,12 +645,11 @@ onMounted(() => {
                         </p>
 
                         <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-                            <div>
-                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Qiymati:</span>
-                                <span class="text-lg font-black text-orange-600">{{ formatPrice(activeSelectedUnit.price) }} so'm</span>
+                            <div class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">
+                                Holati: Sotuvda mavjud
                             </div>
-                            <button @click="openUnitDetails(activeSelectedUnit)" class="text-xs font-bold text-[#0f172a] hover:underline flex items-center gap-1">
-                                🔍 3D & Rejani ko'rish
+                            <button @click="openUnitDetails(activeSelectedUnit)" class="text-xs font-bold text-orange-600 hover:underline flex items-center gap-1 cursor-pointer">
+                                🏢 3D & Rejani ko'rish →
                             </button>
                         </div>
                     </div>
@@ -771,49 +750,6 @@ onMounted(() => {
                             </div>
                         </div>
 
-                        <!-- Payment Plan Selection -->
-                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                            <label class="block text-xs font-bold text-[#0f172a] uppercase tracking-wider">Xarid va To'lov Turi:</label>
-                            
-                            <div class="grid grid-cols-2 gap-3">
-                                <button 
-                                    type="button" 
-                                    @click="paymentType = 'full'; form.payment_type = 'full'"
-                                    :class="paymentType === 'full' ? 'bg-[#0f172a] text-white font-bold border-[#0f172a] shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'"
-                                    class="p-3 rounded-xl border text-xs text-left transition-all"
-                                >
-                                    <span class="block font-extrabold text-sm mb-0.5">💰 100% To'liq To'lov</span>
-                                    <span class="text-[11px] opacity-80">Maksimal chegirma va tezkor rasmiylashtirish</span>
-                                </button>
-
-                                <button 
-                                    type="button" 
-                                    @click="paymentType = 'installment'; form.payment_type = 'installment'"
-                                    :class="paymentType === 'installment' ? 'bg-orange-500 text-white font-bold border-orange-500 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'"
-                                    class="p-3 rounded-xl border text-xs text-left transition-all"
-                                >
-                                    <span class="block font-extrabold text-sm mb-0.5">🗓️ Bo'lib To'lash</span>
-                                    <span class="text-[11px] opacity-80">36 oygacha 0% foizsiz muddatli to'lov</span>
-                                </button>
-                            </div>
-
-                            <!-- Installment params preview if chosen -->
-                            <div v-if="paymentType === 'installment' && activeSelectedUnit" class="pt-3 border-t border-slate-200 grid grid-cols-3 gap-2 text-center text-xs">
-                                <div class="bg-white p-2 rounded-lg border border-slate-200">
-                                    <span class="text-[10px] text-slate-400 block">Boshlang'ich:</span>
-                                    <span class="font-bold text-orange-600">{{ formatPrice(calcDownPayment) }} so'm</span>
-                                </div>
-                                <div class="bg-white p-2 rounded-lg border border-slate-200">
-                                    <span class="text-[10px] text-slate-400 block">Muddat:</span>
-                                    <span class="font-bold text-slate-800">{{ paymentMonths }} oy</span>
-                                </div>
-                                <div class="bg-white p-2 rounded-lg border border-slate-200">
-                                    <span class="text-[10px] text-slate-400 block">Oylik to'lov:</span>
-                                    <span class="font-bold text-emerald-600">{{ formatPrice(calcMonthlyPayment) }} so'm</span>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Comment / Additional requests -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Qo'shimcha istaklar yoki Izoh</label>
@@ -894,20 +830,10 @@ onMounted(() => {
                             >
                                 <span>📐</span> Arxitektura Chizmasi
                             </button>
-                            <button 
-                                @click="activeDetailTab = 'calc'"
-                                :class="activeDetailTab === 'calc' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'"
-                                class="px-4 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5"
-                            >
-                                <span>🧮</span> Bo'lib To'lash Kalkulyatori
-                            </button>
+
                         </div>
 
-                        <!-- Price display in modal -->
-                        <div class="text-right">
-                            <span class="text-xs text-slate-400 block">Umumiy narxi:</span>
-                            <span class="text-lg font-black text-orange-600">{{ formatPrice(selectedUnit.price) }} so'm</span>
-                        </div>
+                        
 
                     </div>
 
@@ -996,90 +922,19 @@ onMounted(() => {
                         </div>
 
                     </div>
-
-                    <!-- TAB 3: INSTALLMENT CALCULATOR (BO'LIB TO'LASH) -->
-                    <div v-show="activeDetailTab === 'calc'" class="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-6">
-                        
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-200">
-                            <h4 class="text-base font-bold text-[#0f172a] flex items-center gap-2">
-                                <span>🧮</span> Moslashuvchan Bo'lib To'lash Hisoblagichi
-                            </h4>
-                            <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold">
-                                0% Ustamasiz
-                            </span>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <!-- Down Payment Options -->
-                            <div>
-                                <label class="block text-xs text-slate-600 mb-1.5 font-bold">Dastlabki to'lov miqdori (%):</label>
-                                <div class="flex gap-2">
-                                    <button 
-                                        v-for="p in [20, 30, 50]" 
-                                        :key="p"
-                                        @click="downPaymentPercent = p"
-                                        :class="downPaymentPercent === p ? 'bg-orange-500 text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-100 font-medium'"
-                                        class="flex-1 py-2.5 rounded-xl text-xs border border-slate-200 transition-colors"
-                                    >
-                                        {{ p }}%
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Term Months Options -->
-                            <div>
-                                <label class="block text-xs text-slate-600 mb-1.5 font-bold">To'lov muddati (oy):</label>
-                                <div class="flex gap-2">
-                                    <button 
-                                        v-for="m in [12, 24, 36, 48]" 
-                                        :key="m"
-                                        @click="paymentMonths = m"
-                                        :class="paymentMonths === m ? 'bg-[#0f172a] text-white font-bold' : 'bg-white text-slate-700 hover:bg-slate-100 font-medium'"
-                                        class="flex-1 py-2.5 rounded-xl text-xs border border-slate-200 transition-colors"
-                                    >
-                                        {{ m }} oy
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Live Calculation Breakdown Cards -->
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div class="p-4 rounded-xl bg-white border border-slate-200">
-                                <span class="text-slate-500 text-xs block mb-1">Boshlang'ich to'lov ({{ downPaymentPercent }}%):</span>
-                                <span class="text-lg font-black text-orange-600">{{ formatPrice(calcDownPayment) }} so'm</span>
-                            </div>
-
-                            <div class="p-4 rounded-xl bg-white border border-slate-200">
-                                <span class="text-slate-500 text-xs block mb-1">Qoldiq summa:</span>
-                                <span class="text-lg font-black text-slate-800">{{ formatPrice(calcBalance) }} so'm</span>
-                            </div>
-
-                            <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-                                <span class="text-emerald-800 text-xs block mb-1 font-bold">Oylik to'lov ({{ paymentMonths }} oy):</span>
-                                <span class="text-xl font-black text-emerald-700">{{ formatPrice(calcMonthlyPayment) }} so'm</span>
-                            </div>
-                        </div>
-
-                        <div class="p-3.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-900 text-xs flex items-center gap-2">
-                            <span>ℹ️</span> To'lov grafigi shartnoma asosida teng taqsimlanadi. Qo'shimcha komissiya yoki foizlar undirilmaydi.
-                        </div>
-
-                    </div>
-
                 </div>
 
                 <!-- Modal Footer -->
                 <div class="px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50">
-                    <div class="text-xs text-slate-600">
-                        Tanlangan: <strong class="text-[#0f172a] font-bold">{{ selectedUnit.rooms }} xona, {{ selectedUnit.area }} m²</strong> • <span class="text-orange-600 font-bold">{{ formatPrice(selectedUnit.price) }} so'm</span>
+                    <div class="text-xs text-slate-600 font-medium">
+                        Tanlangan: <strong class="text-[#0f172a] font-bold">{{ selectedUnit.rooms }} xona, {{ selectedUnit.area }} m²</strong> ({{ selectedUnit.block_name }}, {{ selectedUnit.floor_level }}-qavat)
                     </div>
 
                     <button 
                         @click="selectAndApply(selectedUnit)"
                         class="w-full sm:w-auto px-8 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-sm shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-2"
                     >
-                        <span>✍️</span> Ushbu Xonadonga Ariza / Xarid Qilish
+                        <span>✍️</span> Ushbu Xonadonga Ariza Qoldirish
                     </button>
                 </div>
 

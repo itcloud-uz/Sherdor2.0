@@ -122,7 +122,16 @@ Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('admin.dashboard');
     }
-    return Inertia::render('Public/Landing');
+    $settings = \App\Models\SystemSetting::first();
+    return Inertia::render('Public/Landing', [
+        'settings' => $settings ? [
+            'appName' => $settings->app_name ?? 'Sher-Dor',
+            'companyName' => $settings->company_name ?? 'Sher-Dor TJM',
+            'phone' => $settings->company_phone ?? '(97) 708-44-44, (93) 573-29-29',
+            'address' => $settings->company_address ?? 'Urgut tuman, Do\'stlik mahallasi, Navoiy-Shoh ko\'chasi №3-uy',
+            'fbPixelId' => $settings->fb_pixel_id,
+        ] : null,
+    ]);
 })->name('landing');
 
 Route::get('/promo/offers', function () use ($getLeadFormData) {

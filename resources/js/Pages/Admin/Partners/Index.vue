@@ -603,8 +603,8 @@ function formatDate(dateString) {
                         </div>
                     </div>
 
-                    <!-- Modern Premium Grid -->
-                    <div class="p-6 grid grid-cols-3 gap-4 bg-slate-50/50 border-b border-slate-100">
+                    <!-- Modern Premium Grid (4 Cards: Sarmoya, Olingan, Ulush, Hisob/Qarz) -->
+                    <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-3.5 bg-slate-50/50 border-b border-slate-100">
                         <!-- Card 1: Sarmoya -->
                         <div @click="openAnalytics(partner, 'expenses')" class="bg-white border border-slate-200/80 rounded-2xl p-4 text-center cursor-pointer hover:shadow-lg hover:border-amber-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[140px] group/card shadow-sm">
                             <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3 group-hover/card:bg-amber-500 group-hover/card:text-white transition-colors duration-300">
@@ -639,8 +639,36 @@ function formatDate(dateString) {
                             <div>
                                 <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ulush {{ Number(partner.investment_share_percentage) }}%</span>
                                 <span class="block text-sm font-black text-blue-700 font-mono leading-none">{{ formatCurrency(partner.calculated_share) }}</span>
+                                <span class="block text-[9px] text-slate-400 font-mono mt-1 font-semibold">(Sof foydadan)</span>
                             </div>
                             <span class="text-[8px] text-slate-400 mt-2 block group-hover/card:text-blue-600 font-bold transition-colors">Hisobot &rarr;</span>
+                        </div>
+
+                        <!-- Card 4: Hisob / Qarz (Ulush yonida) -->
+                        <div @click="openAnalytics(partner, 'analytics')" 
+                             class="bg-white border rounded-2xl p-4 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[140px] group/card shadow-sm"
+                             :class="Number(partner.accountable_balance) < 0 ? 'border-rose-200/90 hover:border-rose-400' : 'border-emerald-200/90 hover:border-emerald-400'">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3 transition-colors duration-300"
+                                 :class="Number(partner.accountable_balance) < 0 ? 'bg-rose-50 text-rose-600 group-hover/card:bg-rose-500 group-hover/card:text-white' : 'bg-emerald-50 text-emerald-600 group-hover/card:bg-emerald-500 group-hover/card:text-white'">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                                </svg>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hisob / Qarz</span>
+                                <span class="block text-sm font-black font-mono leading-none"
+                                      :class="Number(partner.accountable_balance) < 0 ? 'text-rose-600' : 'text-emerald-600'">
+                                    {{ Number(partner.accountable_balance) > 0 ? '+' : '' }}{{ formatCurrency(partner.accountable_balance) }}
+                                </span>
+                                <span class="block text-[9px] font-mono mt-1 font-semibold"
+                                      :class="Number(partner.accountable_balance) < 0 ? 'text-rose-400' : 'text-emerald-500'">
+                                    {{ Number(partner.accountable_balance) >= 0 ? '(Ulush qoldig\'i)' : '(Ortiqcha olingan)' }}
+                                </span>
+                            </div>
+                            <span class="text-[8px] mt-2 block font-bold transition-colors"
+                                  :class="Number(partner.accountable_balance) < 0 ? 'text-rose-400 group-hover/card:text-rose-600' : 'text-emerald-500 group-hover/card:text-emerald-600'">
+                                Batafsil &rarr;
+                            </span>
                         </div>
                     </div>
 

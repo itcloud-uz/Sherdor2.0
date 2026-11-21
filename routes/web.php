@@ -16,44 +16,81 @@ $getLeadFormData = function () {
         return in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'svg']);
     };
 
-    $availableUnits = \App\Models\Unit::with(['floor.building'])
-        ->where('status', 'available')
-        ->orderBy('id', 'asc')
-        ->get()
-        ->map(function ($unit) use ($isImage) {
-            $building = $unit->floor->building ?? null;
-            $area = (float)($unit->area_sqm ?? 0);
-            $rawPrice = (float)($unit->price ?? 0);
-            
-            // Standard square meter price if not explicitly set
-            $defaultRate = ($unit->type === 'commercial') ? 7000000 : 4200000;
-            $pricePerSqm = ($rawPrice > 0 && $area > 0) ? round($rawPrice / $area) : $defaultRate;
-            $calculatedPrice = $rawPrice > 0 ? $rawPrice : ($area > 0 ? round($area * $pricePerSqm) : 0);
-            
-            return [
-                'id' => $unit->id,
-                'building_name' => $building->name ?? 'SHER-DOR TJM',
-                'block_name' => $building->block_name ?? ($building->corpus_name ? $building->corpus_name . ' BLOK' : '1 BLOK'),
-                'building_id' => $building->id ?? null,
-                'floor_level' => $unit->floor->floor_number ?? '1',
-                'unit_number' => $unit->unit_number,
-                'type' => $unit->type ?? 'residential',
-                'rooms' => (int)($unit->rooms_count ?? 1),
-                'area' => $area,
-                'price' => $calculatedPrice,
-                'price_per_sqm' => $pricePerSqm,
-                'has_explicit_price' => $rawPrice > 0,
-                'kitchens_count' => (int)($unit->kitchens_count ?? 1),
-                'bathrooms_count' => (int)($unit->bathrooms_count ?? 1),
-                'has_balcony' => (bool)($unit->has_balcony ?? true),
-                'orientation' => $unit->orientation ?? 'Ko\'chaga qaragan',
-                'podyezd' => $unit->podyezd ?? 1,
-                'blueprint_path' => ($unit->blueprint_path && $isImage($unit->blueprint_path)) ? '/storage/' . $unit->blueprint_path : null,
-                'model_3d_path' => ($unit->model_3d_path && $isImage($unit->model_3d_path)) ? '/storage/' . $unit->model_3d_path : null,
-            ];
-        });
+    // Rasmdagi 26 ta sotuvda mavjud uylarning aniq xaritasi (№, blok, qavat, xona, o'lcham, yangi va eski raqamlari)
+    $availableMap = [
+        1054 => ['new_no' => '86', 'old_no' => '23', 'rooms' => 2, 'area' => 68.53, 'fl' => '4'],
+        1067 => ['new_no' => '97', 'old_no' => '34', 'rooms' => 2, 'area' => 77.12, 'fl' => '6'],
+        1068 => ['new_no' => '86', 'old_no' => '23/35', 'rooms' => 2, 'area' => 68.53, 'fl' => '6'],
+        1076 => ['new_no' => '105', 'old_no' => '42', 'rooms' => 2, 'area' => 101.08, 'fl' => '7'],
+        1078 => ['new_no' => '106', 'old_no' => '43', 'rooms' => 2, 'area' => 51.97, 'fl' => 'Mansarda'],
+        1080 => ['new_no' => '108', 'old_no' => '45', 'rooms' => 2, 'area' => 63.98, 'fl' => 'Mansarda'],
+        1081 => ['new_no' => '109', 'old_no' => '46', 'rooms' => 2, 'area' => 74.72, 'fl' => 'Mansarda'],
+        1082 => ['new_no' => '110', 'old_no' => '47', 'rooms' => 2, 'area' => 68.53, 'fl' => 'Mansarda'],
+        1083 => ['new_no' => '111', 'old_no' => '48', 'rooms' => 2, 'area' => 98.54, 'fl' => 'Mansarda'],
 
-    $buildings = \App\Models\Building::orderBy('id')->get()->map(function($b) {
+        1164 => ['new_no' => '127', 'old_no' => '16', 'rooms' => 2, 'area' => 70.35, 'fl' => '4'],
+        1165 => ['new_no' => '128', 'old_no' => '17', 'rooms' => 2, 'area' => 65.35, 'fl' => '4'],
+        1167 => ['new_no' => '130', 'old_no' => '19', 'rooms' => 1, 'area' => 40.65, 'fl' => '4'],
+        1171 => ['new_no' => '132', 'old_no' => '21', 'rooms' => 2, 'area' => 70.35, 'fl' => '5'],
+        1172 => ['new_no' => '133', 'old_no' => '22', 'rooms' => 2, 'area' => 65.35, 'fl' => '5'],
+        1174 => ['new_no' => '135', 'old_no' => '24', 'rooms' => 1, 'area' => 40.65, 'fl' => '5'],
+        1178 => ['new_no' => '137', 'old_no' => '26', 'rooms' => 2, 'area' => 70.35, 'fl' => '6'],
+        1179 => ['new_no' => '138', 'old_no' => '27', 'rooms' => 2, 'area' => 65.35, 'fl' => '6'],
+        1180 => ['new_no' => '139', 'old_no' => '28', 'rooms' => 2, 'area' => 76.42, 'fl' => '6'],
+        1181 => ['new_no' => '140', 'old_no' => '29', 'rooms' => 1, 'area' => 40.65, 'fl' => '6'],
+        1185 => ['new_no' => '142', 'old_no' => '31', 'rooms' => 2, 'area' => 70.35, 'fl' => '7'],
+        1186 => ['new_no' => '143', 'old_no' => '32', 'rooms' => 2, 'area' => 65.35, 'fl' => '7'],
+        1187 => ['new_no' => '144', 'old_no' => '33', 'rooms' => 2, 'area' => 76.42, 'fl' => '7'],
+        1197 => ['new_no' => '146', 'old_no' => '36', 'rooms' => 2, 'area' => 63.11, 'fl' => 'Mansarda'],
+        1198 => ['new_no' => '147', 'old_no' => '37', 'rooms' => 2, 'area' => 67.59, 'fl' => 'Mansarda'],
+        1199 => ['new_no' => '148', 'old_no' => '38', 'rooms' => 2, 'area' => 61.35, 'fl' => 'Mansarda'],
+        1200 => ['new_no' => '149', 'old_no' => '39', 'rooms' => 2, 'area' => 76.42, 'fl' => 'Mansarda'],
+    ];
+
+    $unitIds = array_keys($availableMap);
+
+    $rawUnits = \App\Models\Unit::with(['floor.building'])
+        ->whereIn('id', $unitIds)
+        ->get()
+        ->keyBy('id');
+
+    // Jadval tartibida (1 dan 26 gacha)
+    $availableUnits = collect();
+    foreach ($availableMap as $id => $meta) {
+        $unit = $rawUnits->get($id);
+        if (!$unit) continue;
+
+        $building = $unit->floor->building ?? null;
+        $area = (float)$meta['area'];
+        $unitNoDisplay = "{$meta['new_no']} (eski №{$meta['old_no']})";
+        $floorDisplay = $meta['fl'];
+
+        $availableUnits->push([
+            'id' => $unit->id,
+            'building_name' => $building->name ?? 'SHER-DOR TJM',
+            'block_name' => $building->block_name ?? ($building->corpus_name ? $building->corpus_name . ' BLOK' : '1 BLOK'),
+            'building_id' => $building->id ?? null,
+            'floor_level' => $floorDisplay,
+            'unit_number' => $unitNoDisplay,
+            'type' => $unit->type ?? 'residential',
+            'rooms' => (int)$meta['rooms'],
+            'area' => $area,
+            'price' => 0,
+            'price_per_sqm' => 0,
+            'has_explicit_price' => false,
+            'kitchens_count' => (int)($unit->kitchens_count ?? 1),
+            'bathrooms_count' => (int)($unit->bathrooms_count ?? 1),
+            'has_balcony' => (bool)($unit->has_balcony ?? true),
+            'orientation' => $unit->orientation ?? 'Ko\'chaga qaragan',
+            'podyezd' => $unit->podyezd ?? 1,
+            'blueprint_path' => ($unit->blueprint_path && $isImage($unit->blueprint_path)) ? '/storage/' . $unit->blueprint_path : null,
+            'model_3d_path' => ($unit->model_3d_path && $isImage($unit->model_3d_path)) ? '/storage/' . $unit->model_3d_path : null,
+        ]);
+    }
+
+    $buildingIds = $availableUnits->pluck('building_id')->filter()->unique()->values()->all();
+
+    $buildings = \App\Models\Building::whereIn('id', $buildingIds)->orderBy('id')->get()->map(function($b) {
         return [
             'id' => $b->id,
             'name' => $b->name,
@@ -76,8 +113,8 @@ $getLeadFormData = function () {
             'fb_pixel_id' => $settings->fb_pixel_id,
             'company_phone' => $settings->phone ?? null,
         ] : null,
-        'availableUnits' => $availableUnits,
-        'buildings' => $buildings,
+        'availableUnits' => $availableUnits->values()->all(),
+        'buildings' => $buildings->values()->all(),
     ];
 };
 
@@ -102,7 +139,7 @@ Route::get('/promo/offers', function () use ($getLeadFormData) {
 // Dedicated High-Converting Target Landing Pages for Instagram & Social Media Ads
 $targetHandler = function () {
     $settings = \App\Models\SystemSetting::first();
-    $buildings = \App\Models\Building::orderBy('id')->get()->map(function($b) {
+    $buildings = \App\Models\Building::whereIn('id', [20, 22])->orderBy('id')->get()->map(function($b) {
         return [
             'id' => $b->id,
             'name' => $b->name,

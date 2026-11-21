@@ -24,8 +24,8 @@ const scenes = [
         tag: 'INTRODUKSIYA',
         title: 'SHER-DOR RESIDENCE',
         subtitle: 'Samarqandning Yangi Me\'moriy Durdonasi',
-        bgImage: '/storage/showroom/6w0xuYXlUsHUbM0Lr1PMrZGFTyYBxEwhatyUsR3C.jpg',
-        fallbackBg: '/images/tropical-future-city.jpg'
+        bgImage: '/images/cinematic/scene-01-hero.jpg',
+        fallbackBg: '/storage/showroom/6w0xuYXlUsHUbM0Lr1PMrZGFTyYBxEwhatyUsR3C.jpg'
     },
     {
         id: 'scene-02',
@@ -33,8 +33,8 @@ const scenes = [
         tag: 'MONUMENTAL ME\'MORCHILIK',
         title: '4 BLOK • 8 QAVAT • 9 BALLIK SEYSMIK XAVFSIZLIK',
         subtitle: 'Pishiq g\'isht, monolit karkas va abadiy sifat',
-        bgImage: '/storage/showroom/DP6yWc7mh3CcjOVpbwmFjfO67hkDbRha2Oiy5sUJ.jpg',
-        fallbackBg: '/images/clean-building-facade.jpg'
+        bgImage: '/images/cinematic/scene-02-architecture.jpg',
+        fallbackBg: '/storage/showroom/DP6yWc7mh3CcjOVpbwmFjfO67hkDbRha2Oiy5sUJ.jpg'
     },
     {
         id: 'scene-03',
@@ -42,7 +42,7 @@ const scenes = [
         tag: 'HASHAMATLI INTERYER',
         title: 'YORUG\'LIK, KENG MAYDON VA ERKINLIK',
         subtitle: '3.2 metr baland shiftlar va panoramik derazalar',
-        bgImage: '/modern_apartment_render.png',
+        bgImage: '/images/cinematic/scene-03-interior.jpg',
         fallbackBg: '/modern_apartment_render.png'
     },
     {
@@ -51,8 +51,8 @@ const scenes = [
         tag: '3D XONADONLAR VA PLANLAR',
         title: 'HAR BIR OILANING ORZUSI UCHUN REJA',
         subtitle: '1, 2, 3 xonali va muhtasham mansardalar',
-        bgImage: '/storage/showroom/sdHFjNqfgsEvOiwidtf9Zn21KinE24MVwlvOgghZ.jpg',
-        fallbackBg: '/images/clean-building-facade.jpg'
+        bgImage: '/images/cinematic/scene-04-plan.jpg',
+        fallbackBg: '/storage/showroom/sdHFjNqfgsEvOiwidtf9Zn21KinE24MVwlvOgghZ.jpg'
     },
     {
         id: 'scene-05',
@@ -60,8 +60,8 @@ const scenes = [
         tag: 'EKO-HUDUD VA XAVFSIZLIK',
         title: 'AVTOMOBILLARDAN HOLI YOPIQ HOVLI',
         subtitle: '24/7 video-kuzatuv, yerosti parkingi va yashil bog\'',
-        bgImage: '/storage/showroom/mFPwnci4buGDaK8bCKdI4LbMYLpBxyoLgtmOGHEU.jpg',
-        fallbackBg: '/images/tropical-future-city.jpg'
+        bgImage: '/images/cinematic/scene-05-courtyard.jpg',
+        fallbackBg: '/storage/showroom/mFPwnci4buGDaK8bCKdI4LbMYLpBxyoLgtmOGHEU.jpg'
     },
     {
         id: 'scene-06',
@@ -69,7 +69,7 @@ const scenes = [
         tag: 'STRATEGIK JOYLASHUV',
         title: 'URGUT VA SAMARQAND MARKAZIDA',
         subtitle: 'Barcha asosiy maskanlarga 2-5 daqiqalik masofa',
-        bgImage: '/storage/showroom/urgut_situatsiya.jpg',
+        bgImage: '/images/cinematic/scene-06-location.jpg',
         fallbackBg: '/storage/showroom/urgut_situatsiya.jpg'
     },
     {
@@ -78,8 +78,8 @@ const scenes = [
         tag: 'ORZUINGIZDAGI XONADON',
         title: 'BUGUN QAROR QILING • XARID QILING',
         subtitle: 'Qulay to\'lov shartlari va 3D tanlash imkoniyati',
-        bgImage: '/storage/showroom/VpPIgHp32Tr49WWmFcN2WgAbju284kFmQxYUsdBu.jpg',
-        fallbackBg: '/images/clean-building-facade.jpg'
+        bgImage: '/images/cinematic/scene-07-entrance.jpg',
+        fallbackBg: '/storage/showroom/VpPIgHp32Tr49WWmFcN2WgAbju284kFmQxYUsdBu.jpg'
     }
 ];
 
@@ -226,76 +226,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     window.removeEventListener('scroll', handleWindowScroll);
-    stopAudio();
 });
-
-// Ambient Audio Synthesizer (Web Audio API - GTA VI Trailer Cinema Style Ambient)
-const isAudioActive = ref(false);
-let audioCtx = null;
-let masterGain = null;
-let synthOsc1 = null;
-let synthOsc2 = null;
-let synthFilter = null;
-
-const toggleAudio = () => {
-    if (isAudioActive.value) {
-        stopAudio();
-    } else {
-        startAudio();
-    }
-};
-
-const startAudio = () => {
-    try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        
-        audioCtx = new AudioContext();
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-
-        masterGain = audioCtx.createGain();
-        masterGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-        masterGain.gain.exponentialRampToValueAtTime(0.12, audioCtx.currentTime + 3);
-        masterGain.connect(audioCtx.destination);
-
-        synthFilter = audioCtx.createBiquadFilter();
-        synthFilter.type = 'lowpass';
-        synthFilter.frequency.setValueAtTime(320, audioCtx.currentTime);
-        synthFilter.connect(masterGain);
-
-        synthOsc1 = audioCtx.createOscillator();
-        synthOsc1.type = 'sawtooth';
-        synthOsc1.frequency.setValueAtTime(65.41, audioCtx.currentTime); // C2
-        synthOsc1.connect(synthFilter);
-        synthOsc1.start();
-
-        synthOsc2 = audioCtx.createOscillator();
-        synthOsc2.type = 'sine';
-        synthOsc2.frequency.setValueAtTime(98.00, audioCtx.currentTime); // G2
-        synthOsc2.connect(synthFilter);
-        synthOsc2.start();
-
-        isAudioActive.value = true;
-    } catch (e) {
-        console.warn('Web Audio could not start:', e);
-    }
-};
-
-const stopAudio = () => {
-    if (masterGain && audioCtx) {
-        try {
-            masterGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1);
-            setTimeout(() => {
-                if (synthOsc1) { synthOsc1.stop(); synthOsc1.disconnect(); synthOsc1 = null; }
-                if (synthOsc2) { synthOsc2.stop(); synthOsc2.disconnect(); synthOsc2 = null; }
-                if (audioCtx) { audioCtx.close(); audioCtx = null; }
-            }, 1000);
-        } catch (e) {}
-    }
-    isAudioActive.value = false;
-};
 </script>
 
 <template>
@@ -340,22 +271,6 @@ const stopAudio = () => {
             <!-- Header Action Controls -->
             <div class="flex items-center gap-2.5 sm:gap-4">
                 
-                <!-- Ambient Audio Synthesizer Button -->
-                <button 
-                    @click="toggleAudio"
-                    :class="isAudioActive ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'"
-                    class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono tracking-wider transition-all cursor-pointer"
-                    title="Ovoz effektini yoqish/o'chirish"
-                >
-                    <span v-if="isAudioActive" class="flex gap-0.5 items-end h-3">
-                        <span class="w-0.5 h-3 bg-amber-400 animate-pulse"></span>
-                        <span class="w-0.5 h-2 bg-amber-400 animate-bounce"></span>
-                        <span class="w-0.5 h-3.5 bg-amber-400 animate-pulse"></span>
-                    </span>
-                    <span v-else class="text-sm">🔇</span>
-                    <span class="hidden sm:inline font-bold">{{ isAudioActive ? 'OVOZ: YOQILGAN' : 'OVOZNI YOQISH' }}</span>
-                </button>
-
                 <!-- 3D Plan & Buy Button -->
                 <Link 
                     :href="route('promo.offers')" 
@@ -782,6 +697,20 @@ const stopAudio = () => {
                             >
                                 <span class="text-amber-400 font-bold">✓</span>
                                 <span>{{ hl }}</span>
+                            </div>
+                        </div>
+
+                        <!-- 3D Plan Preview -->
+                        <div class="relative w-full h-44 sm:h-56 rounded-2xl overflow-hidden border border-white/10 mb-6 group">
+                            <img 
+                                src="/images/cinematic/scene-04-plan.jpg" 
+                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                alt="3D Plan Rejasi" 
+                            />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                            <div class="absolute bottom-3 left-4 flex items-center gap-2">
+                                <span class="px-2.5 py-0.5 rounded bg-amber-500 text-black font-extrabold text-[10px] tracking-wider uppercase">3D PLAN</span>
+                                <span class="text-xs text-white font-semibold drop-shadow">{{ planTabs[activePlanTab].title }} • {{ planTabs[activePlanTab].area }}</span>
                             </div>
                         </div>
 

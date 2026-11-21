@@ -120,22 +120,26 @@ class ContractController extends Controller
                     \App\Models\Transaction::create([
                         'type' => 'expense',
                         'amount' => $validated['total_amount'],
+                        'currency' => 'UZS',
+                        'partner_id' => $partner->id,
+                        'transaction_subtype' => 'partner_payout',
                         'account_type' => 'partner',
                         'account_id' => null, // Non-cash transaction
                         'contract_id' => $contract->id,
                         'category_id' => $partnerCategory->id,
+                        'category' => 'Ta\'sischi Xaridi (Ob\'yekt)',
                         'status' => 'approved',
                         'transaction_date' => $baseDate,
                         'created_at' => $baseDate,
                         'updated_at' => $baseDate,
-                        'notes' => 'Ta\'sischi ob\'yekt xaridi (Ulushidan ushlandi): Unit ID ' . $validated['unit_id'],
+                        'notes' => 'Ta\'sischi ob\'yekt xaridi (Ulushidan ushlandi): ' . ($contract->contract_number ?? '') . ' - Ob\'yekt ID ' . $validated['unit_id'],
                         'created_by' => auth()->id() ?? 1,
                         'target_type' => 'partner',
                         'target_id' => $partner->id
                     ]);
 
                     // Reduce partner accountable balance
-                    $partner->accountable_balance -= $validated['total_amount'];
+                    $partner->accountable_balance = ($partner->accountable_balance ?? 0) - $validated['total_amount'];
                     $partner->save();
 
                     // Automatically mark contract as active (since partner paid in full via their share)

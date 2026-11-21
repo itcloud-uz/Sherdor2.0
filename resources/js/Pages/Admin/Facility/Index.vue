@@ -5318,7 +5318,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                         <!-- Stepper Dots -->
                                         <div v-if="contractForm.buyer_type === 'partner'" class="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-[11px] font-bold text-emerald-800">
                                             <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                                            <span>Ta'sischi ob'yekti (To'lovsiz)</span>
+                                            <span>Ta'sischi ob'yekti</span>
                                         </div>
                                         <div v-else class="flex items-center gap-1">
                                             <div class="flex items-center gap-1">
@@ -5469,16 +5469,7 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             </div>
                                         </div>
 
-                                        <!-- Partner Info Notice -->
-                                        <div v-if="contractForm.buyer_type === 'partner'" class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-900 text-xs space-y-1">
-                                            <div class="flex items-center gap-1.5 font-bold text-emerald-800">
-                                                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                <span>To'lov talab qilinmaydi</span>
-                                            </div>
-                                            <p class="text-[11px] text-emerald-700 leading-relaxed">
-                                                Ta'sischi uy yoki do'kon olayotganda to'lov amalga oshirilmaydi. Ob'yekt qiymati ({{ formatSoM(contractForm.total_amount) }}) ta'sischining hisobdorlik balansidan avtomatik ushlab qolinadi va ob'yekt darhol unga rasmiylashtiriladi.
-                                            </p>
-                                        </div>
+                                        <!-- Partner Info Notice removed per user request -->
                                     </div>
 
                                     <!-- STEP 2: To'lov turi -->
@@ -5487,8 +5478,8 @@ function handleFileChange(formRef, field, event, maxSizeMb) {
                                             <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-xl font-bold">
                                                 ✓
                                             </div>
-                                            <h4 class="font-bold text-gray-800 text-sm">Ta'sischi uchun to'lov talab qilinmaydi</h4>
-                                            <p class="text-xs text-gray-600">Ob'yekt qiymati to'g'ridan-to'g'ri ta'sischining hisobdorlik balansidan ushlab qolinadi.</p>
+                                            <h4 class="font-bold text-gray-800 text-sm">Ta'sischi ob'yekti biriktirilmoqda</h4>
+                                            <p class="text-xs text-gray-600">Ob'yekt qiymati ta'sischining ulushidan ushlanadi va olingan pul hisobiga kiritiladi.</p>
                                         </div>
                                         <template v-else>
                                         <!-- Main Payment Type Options -->

@@ -229,7 +229,7 @@ const expandedExpenses = computed(() => {
     // Filter to get sarmoyalar: expense transactions (excluding partner payouts/advances/dividends) plus any incomes
     const sarmoyalar = transactions.value.filter(t => {
         const catName = t.category_display || t.category || '';
-        const isPartnerPayout = t.target_type === 'partner' || t.transaction_subtype === 'partner_payout' || ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi'].includes(catName);
+        const isPartnerPayout = t.target_type === 'partner' || t.transaction_subtype === 'partner_payout' || ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi', 'Ta\'sischi Xaridi (Ob\'yekt)'].includes(catName);
         return t.type === 'income' || (t.type === 'expense' && !isPartnerPayout);
     });
 
@@ -280,7 +280,7 @@ const expandedAdvances = computed(() => {
     // Filter to get olingan pullar: Partner Advance, Divident, and any payout to partner
     const advances = transactions.value.filter(t => {
         const catName = t.category_display || t.category || '';
-        const isPartnerPayout = t.target_type === 'partner' || t.transaction_subtype === 'partner_payout' || ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi'].includes(catName);
+        const isPartnerPayout = t.target_type === 'partner' || t.transaction_subtype === 'partner_payout' || ['Partner Advance', 'Divident', 'Hamkorga to\'lov', 'Hamkor to\'lovi', 'Ta\'sischi to\'lovi', 'Ta\'sischi Xaridi (Ob\'yekt)'].includes(catName);
         return t.type === 'expense' && (isPartnerPayout || (!catName && t.partner_id));
     });
 

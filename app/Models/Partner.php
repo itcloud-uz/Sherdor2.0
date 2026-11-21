@@ -67,6 +67,12 @@ class Partner extends Model
         $totalExpense = (float)\App\Models\Transaction::where('status', 'approved')
             ->where('type', 'expense')
             ->where('currency', 'UZS')
+            ->where(function($q) {
+                $q->whereNull('category')->orWhere('category', '!=', 'Ta\'sischi Xaridi (Ob\'yekt)');
+            })
+            ->whereDoesntHave('category', function($cq) {
+                $cq->where('name', 'Ta\'sischi Xaridi (Ob\'yekt)');
+            })
             ->sum('amount');
             
         $netProfit = $totalIncome - $totalExpense;
@@ -88,12 +94,12 @@ class Partner extends Model
                 })
                 ->get();
 
-            // Olingan pul: korxonadan ta'sischiga berilgan mablag'lar (Avans, Divident, Payout)
+            // Olingan pul: korxonadan ta'sischiga berilgan mablag'lar (Avans, Divident, Payout, Ob'yekt xaridi)
             $olinganTxs = $partnerTxs->filter(function($t) use ($partner) {
                 $cat = is_object($t->category) ? ($t->category->name ?? '') : ($t->category ?? '');
                 $isPartnerPayout = ($t->target_type === 'partner' && $t->target_id == $partner->id) 
                     || $t->transaction_subtype === 'partner_payout' 
-                    || in_array($cat, ['Partner Advance', 'Divident', "Hamkorga to'lov", "Hamkor to'lovi", "Ta'sischi to'lovi"]);
+                    || in_array($cat, ['Partner Advance', 'Divident', "Hamkorga to'lov", "Hamkor to'lovi", "Ta'sischi to'lovi", "Ta'sischi Xaridi (Ob'yekt)"]);
                 return $t->type === 'expense' && ($isPartnerPayout || (!$cat && $t->partner_id == $partner->id));
             });
 
@@ -102,7 +108,7 @@ class Partner extends Model
                 $cat = is_object($t->category) ? ($t->category->name ?? '') : ($t->category ?? '');
                 $isPartnerPayout = ($t->target_type === 'partner' && $t->target_id == $partner->id) 
                     || $t->transaction_subtype === 'partner_payout' 
-                    || in_array($cat, ['Partner Advance', 'Divident', "Hamkorga to'lov", "Hamkor to'lovi", "Ta'sischi to'lovi"]);
+                    || in_array($cat, ['Partner Advance', 'Divident', "Hamkorga to'lov", "Hamkor to'lovi", "Ta'sischi to'lovi", "Ta'sischi Xaridi (Ob'yekt)"]);
                 return $t->type === 'income' || ($t->type === 'expense' && !$isPartnerPayout);
             });
 

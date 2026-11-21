@@ -940,12 +940,14 @@ class FinanceController extends Controller
             $isRefundCategory = in_array($catName, [
                 'Mijozga pulni qaytarish',
                 'Mijozga to\'lov qilish',
+                'Mijozga to\'lov',
                 'Bekor qilingan shartnoma to\'lovi',
                 'Ortiqcha to\'lovni qaytarish'
             ])
             || stripos($catName, 'bekor') !== false
             || stripos($catName, 'qaytarish') !== false
-            || stripos($catName, 'ortiqcha') !== false;
+            || stripos($catName, 'ortiqcha') !== false
+            || stripos($catName, 'mijozga to\'lov') !== false;
 
             if ($contract && $isRefundCategory) {
                 $contract->increment('refunded_amount', $transaction->amount);

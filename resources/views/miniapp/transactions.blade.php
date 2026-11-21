@@ -289,56 +289,65 @@
                 <!-- 3. DYNAMIC TARGET ENTITY SELECTION (Kategoriyaga mos odamlar/shartnomalar) -->
                 <div v-if="activeTargetType" class="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm space-y-3">
                     
-                    <!-- A. Bekor qilingan shartnomalar va mijozlar -->
-                    <div v-if="activeTargetType === 'cancelled_contract'" class="space-y-2">
-                        <label class="block text-[11px] font-black text-rose-700 flex items-center justify-between uppercase tracking-wider">
-                            <span>🔄 Bekor qilingan shartnoma & mijoz <span class="text-rose-500">*</span></span>
-                            <span class="text-[10px] text-slate-500 font-normal">(@{{ cancelledContracts.length }} ta mavjud)</span>
+                    <!-- A. Mijozga to'lov (Bekor qilingan shartnomalar va Ortiqcha to'lovlar birlashgan) -->
+                    <div v-if="activeTargetType === 'client_payout' || activeTargetType === 'cancelled_contract' || activeTargetType === 'overpayment'" class="space-y-2.5">
+                        <label class="block text-[11px] font-black text-slate-800 flex items-center justify-between uppercase tracking-wider">
+                            <span>👥 Mijoz va Shartnoma <span class="text-rose-500">*</span></span>
+                            <span class="text-[10px] text-slate-500 font-normal">(@{{ cancelledContracts.length + overpaidContracts.length }} ta mijoz)</span>
                         </label>
                         <select
                             v-model="form.contract_id"
-                            @change="onCancelledContractSelect"
-                            class="w-full px-3 py-2.5 bg-rose-50/60 border border-rose-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500 cursor-pointer"
+                            @change="onClientPayoutSelect"
+                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
                         >
-                            <option :value="null">-- Shartnoma egasini tanlang --</option>
-                            <option v-for="c in cancelledContracts" :key="c.id" :value="c.id">
-                                @{{ c.label }}
-                            </option>
+                            <option :value="null">-- Shartnoma / Mijozni tanlang --</option>
+                            
+                            <!-- Bekor qilingan shartnomalar -->
+                            <optgroup v-if="cancelledContracts.length > 0" label="🚫 Bekor qilingan shartnomalar">
+                                <option v-for="c in cancelledContracts" :key="'canc_' + c.id" :value="c.id">
+                                    [Bekor qilingan] @{{ c.label }}
+                                </option>
+                            </optgroup>
+
+                            <!-- Ortiqcha to'lov qilgan mijozlar -->
+                            <optgroup v-if="overpaidContracts.length > 0" label="💸 Ortiqcha to'lov qilgan mijozlar">
+                                <option v-for="c in overpaidContracts" :key="'over_' + c.id" :value="c.id">
+                                    [Ortiqcha to'lov] @{{ c.label }}
+                                </option>
+                            </optgroup>
                         </select>
-                        <div v-if="selectedCancelledContract" class="p-3 bg-rose-50 rounded-2xl border border-rose-200 text-[11px] text-rose-900 space-y-1">
-                            <div class="font-bold flex justify-between">
+
+                        <!-- 1. If Cancelled Contract selected -->
+                        <div v-if="selectedCancelledContract" class="p-3.5 bg-rose-50/80 rounded-2xl border border-rose-200 text-[11px] text-rose-900 space-y-1.5 shadow-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2 py-0.5 bg-rose-100 text-rose-700 text-[9px] font-black uppercase rounded-md tracking-wider">
+                                    🚫 Bekor qilingan shartnoma
+                                </span>
+                                <span class="font-bold text-xs text-rose-800">№@{{ selectedCancelledContract.contract_number }}</span>
+                            </div>
+                            <div class="font-black text-xs text-slate-900 flex justify-between">
                                 <span>👤 @{{ selectedCancelledContract.client_name }}</span>
                                 <span>🏠 @{{ selectedCancelledContract.unit_number }}-xonadon</span>
                             </div>
-                            <div class="flex justify-between text-[10px] text-rose-600">
+                            <div class="flex justify-between text-[10px] text-rose-700">
                                 <span>Jami qaytarilishi kerak: @{{ formatNumber(selectedCancelledContract.refund_target) }} UZS</span>
                                 <span>To'langan: @{{ formatNumber(selectedCancelledContract.refunded_amount) }} UZS</span>
                             </div>
-                            <div class="font-black text-xs text-rose-700 pt-1 border-t border-rose-200/70 flex justify-between">
-                                <span>Hozirgi qarz/qoldiq:</span>
+                            <div class="font-black text-xs text-rose-700 pt-1.5 border-t border-rose-200 flex justify-between">
+                                <span>Qolgan qaytariladigan summa:</span>
                                 <span>@{{ formatNumber(selectedCancelledContract.remaining_refund) }} UZS</span>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- B. Ortiqcha to'langan shartnomalar va mijozlar -->
-                    <div v-else-if="activeTargetType === 'overpayment'" class="space-y-2">
-                        <label class="block text-[11px] font-black text-amber-700 flex items-center justify-between uppercase tracking-wider">
-                            <span>💸 Ortiqcha to'langan shartnoma & mijoz <span class="text-amber-500">*</span></span>
-                            <span class="text-[10px] text-slate-500 font-normal">(@{{ overpaidContracts.length }} ta)</span>
-                        </label>
-                        <select
-                            v-model="form.contract_id"
-                            @change="onOverpaidContractSelect"
-                            class="w-full px-3 py-2.5 bg-amber-50/60 border border-amber-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
-                        >
-                            <option :value="null">-- Shartnoma egasini tanlang --</option>
-                            <option v-for="c in overpaidContracts" :key="c.id" :value="c.id">
-                                @{{ c.label }}
-                            </option>
-                        </select>
-                        <div v-if="selectedOverpaidContract" class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-[11px] text-amber-900 space-y-1">
-                            <div class="font-bold flex justify-between">
+                        <!-- 2. If Overpaid Contract selected -->
+                        <div v-else-if="selectedOverpaidContract" class="p-3.5 bg-amber-50/80 rounded-2xl border border-amber-200 text-[11px] text-amber-900 space-y-1.5 shadow-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-black uppercase rounded-md tracking-wider">
+                                    💸 Ortiqcha to'lov
+                                </span>
+                                <span class="font-bold text-xs text-amber-900">№@{{ selectedOverpaidContract.contract_number }}</span>
+                            </div>
+                            <div class="font-black text-xs text-slate-900 flex justify-between">
                                 <span>👤 @{{ selectedOverpaidContract.client_name }}</span>
                                 <span>🏠 @{{ selectedOverpaidContract.unit_number }}-xonadon</span>
                             </div>
@@ -346,8 +355,8 @@
                                 <span>Shartnoma qiymati: @{{ formatNumber(selectedOverpaidContract.total_amount) }} UZS</span>
                                 <span>To'langan: @{{ formatNumber(selectedOverpaidContract.paid_amount) }} UZS</span>
                             </div>
-                            <div class="font-black text-xs text-amber-700 pt-1 border-t border-amber-200/70 flex justify-between">
-                                <span>Ortiqcha to'lov summasi:</span>
+                            <div class="font-black text-xs text-amber-800 pt-1.5 border-t border-amber-200 flex justify-between">
+                                <span>Ortiqcha to'lov (qaytariladigan):</span>
                                 <span>+@{{ formatNumber(selectedOverpaidContract.overpaid_amount) }} UZS</span>
                             </div>
                         </div>
@@ -772,6 +781,21 @@
                     form.value.building_id = null;
                 };
 
+                // When Client Payout Contract is selected (cancelled or overpaid)
+                const onClientPayoutSelect = () => {
+                    triggerHaptic('medium');
+                    const canc = selectedCancelledContract.value;
+                    if (canc) {
+                        form.value.amount = canc.remaining_refund || canc.refund_target || 0;
+                        return;
+                    }
+                    const over = selectedOverpaidContract.value;
+                    if (over) {
+                        form.value.amount = over.overpaid_amount || 0;
+                        return;
+                    }
+                };
+
                 // When Cancelled Contract is selected
                 const onCancelledContractSelect = () => {
                     triggerHaptic('medium');
@@ -988,7 +1012,7 @@
                             target_mode: activeTargetType.value
                         };
 
-                        if (activeTargetType.value === 'cancelled_contract' || activeTargetType.value === 'overpayment' || activeTargetType.value === 'contract') {
+                        if (activeTargetType.value === 'client_payout' || activeTargetType.value === 'cancelled_contract' || activeTargetType.value === 'overpayment' || activeTargetType.value === 'contract') {
                             payload.contract_id = form.value.contract_id;
                         } else if (activeTargetType.value === 'worker') {
                             payload.worker_id = form.value.worker_id;
@@ -1097,6 +1121,7 @@
                     setTimeToNow,
                     setTimeToYesterday,
                     onCategoryChange,
+                    onClientPayoutSelect,
                     onCancelledContractSelect,
                     onOverpaidContractSelect,
                     initApp,

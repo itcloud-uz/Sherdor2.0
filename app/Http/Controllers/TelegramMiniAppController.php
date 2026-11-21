@@ -70,17 +70,31 @@ class TelegramMiniAppController extends Controller
                 ];
             });
 
+        // Ensure "Mijozga to'lov" category exists for expenses
+        TransactionCategory::firstOrCreate(
+            ['name' => 'Mijozga to\'lov', 'type' => 'expense'],
+            ['is_active' => true, 'target_type' => 'client_payout']
+        );
+
         // Fetch Categories with target_type
         $categories = TransactionCategory::orderBy('name')
             ->get(['id', 'name', 'type', 'target_type'])
+            ->filter(function ($cat) {
+                // Combine cancelled contracts and overpayment refunds into "Mijozga to'lov"
+                $nameLower = mb_strtolower($cat->name);
+                if ($cat->type === 'expense' || $cat->type === 'both') {
+                    if (str_contains($nameLower, 'bekor qilingan') || str_contains($nameLower, 'ortiqcha to\'lov')) {
+                        return false;
+                    }
+                }
+                return true;
+            })
             ->map(function ($cat) {
                 $targetType = $cat->target_type;
                 $nameLower = mb_strtolower($cat->name);
                 if (!$targetType) {
-                    if ($cat->id == 44 || str_contains($nameLower, 'bekor')) {
-                        $targetType = 'cancelled_contract';
-                    } elseif ($cat->id == 43 || str_contains($nameLower, 'ortiqcha')) {
-                        $targetType = 'overpayment';
+                    if (str_contains($nameLower, 'mijozga to\'lov') || str_contains($nameLower, 'bekor') || str_contains($nameLower, 'ortiqcha')) {
+                        $targetType = 'client_payout';
                     } elseif ($cat->id == 2 || $cat->id == 16 || str_contains($nameLower, 'shartnoma') || str_contains($nameLower, 'mijoz')) {
                         $targetType = 'contract';
                     } elseif ($cat->id == 6 || str_contains($nameLower, 'ishchi') || str_contains($nameLower, 'oylik') || str_contains($nameLower, 'avans')) {
@@ -105,7 +119,8 @@ class TelegramMiniAppController extends Controller
                     'type' => $cat->type,
                     'target_type' => $targetType,
                 ];
-            });
+            })
+            ->values();
 
         // Fetch Active Contracts (Kirim uchun)
         $contracts = Contract::with(['client:id,first_name,last_name,phone', 'unit:id,unit_number'])
@@ -346,22 +361,19 @@ class TelegramMiniAppController extends Controller
         $targetId = $validated['target_id'] ?? null;
         $clientId = $validated['client_id'] ?? null;
 
-        // Auto-detect and handle "Bekor qilingan shartnoma to'lovi" and "Ortiqcha to'lovni qaytarish"
+        // Auto-detect and handle "Mijozga to'lov" (Bekor qilingan shartnomalar va ortiqcha to'lovlar)
         if ($validated['type'] === 'expense') {
-            if ($targetType === 'cancelled_contract' || $request->input('target_mode') === 'cancelled_contract') {
+            if ($targetType === 'client_payout' || $request->input('target_mode') === 'client_payout') {
                 $targetType = 'client';
-                $cat44 = TransactionCategory::firstOrCreate(
-                    ['name' => 'Bekor qilingan shartnoma to\'lovi', 'type' => 'expense'],
-                    ['is_active' => true]
+                $clientPayoutCat = TransactionCategory::firstOrCreate(
+                    ['name' => 'Mijozga to\'lov', 'type' => 'expense'],
+                    ['is_active' => true, 'target_type' => 'client_payout']
                 );
-                $validated['category_id'] = $cat44->id;
+                $validated['category_id'] = $clientPayoutCat->id;
+            } elseif ($targetType === 'cancelled_contract' || $request->input('target_mode') === 'cancelled_contract') {
+                $targetType = 'client';
             } elseif ($targetType === 'overpayment' || $request->input('target_mode') === 'overpayment') {
                 $targetType = 'client';
-                $cat43 = TransactionCategory::firstOrCreate(
-                    ['name' => 'Ortiqcha to\'lovni qaytarish', 'type' => 'expense'],
-                    ['is_active' => true]
-                );
-                $validated['category_id'] = $cat43->id;
             }
         }
 

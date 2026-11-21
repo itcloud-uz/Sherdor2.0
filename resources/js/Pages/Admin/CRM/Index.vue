@@ -4892,12 +4892,108 @@ function openClientLedgerFromGroup(entry) {
 
 const filteredClientDebts = computed(() => {
     const list = [];
+    const processedContractIds = new Set();
     const processedClientIds = new Set();
 
-    // 1. Counterparties with non-zero balance
+    // 1. Gather all contracts from props.contracts and props.clients
+    const allContracts = [];
+    if (props.contracts && Array.isArray(props.contracts)) {
+        allContracts.push(...props.contracts);
+    }
+    if (props.clients && Array.isArray(props.clients)) {
+        props.clients.forEach(cl => {
+            (cl.contracts || []).forEach(ct => {
+                if (!allContracts.some(existing => existing.id === ct.id)) {
+                    allContracts.push({
+                        ...ct,
+                        client: ct.client || cl
+                    });
+                }
+            });
+        });
+    }
+
+    // 2. Scan contracts for Cancelled Contracts (Qaytariladigan summa)
+    allContracts.forEach(contract => {
+        if (contract.status === 'cancelled' || contract.status === 'canceled') {
+            const contractPaid = calculatePaidAmount(contract);
+            const refunds = (contract.transactions || [])
+                .filter(t => t.type === 'expense' && (t.status === 'approved' || !t.status))
+                .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+            const refundedAmount = Math.max(Number(contract.refunded_amount || 0), refunds);
+            const remainingRefund = Math.max(0, contractPaid - refundedAmount);
+
+            if (remainingRefund > 0) {
+                processedContractIds.add(contract.id);
+                if (contract.client_id) processedClientIds.add(contract.client_id);
+
+                const client = contract.client || (props.clients || []).find(cl => cl.id === contract.client_id) || {};
+                const clientName = `${client.last_name || ''} ${client.first_name || ''} ${client.middle_name || ''}`.trim() || client.name || client.phone || `Mijoz #${contract.client_id}`;
+
+                list.push({
+                    id: `contract-cancelled-${contract.id}`,
+                    client_id: contract.client_id,
+                    contract_id: contract.id,
+                    contract_number: contract.contract_number || `#${contract.id}`,
+                    name: clientName,
+                    phone: client.phone,
+                    agreed_amount: Number(contract.total_amount || 0),
+                    paid_amount: contractPaid,
+                    balance: remainingRefund, // Positive balance = Company owes refund to client
+                    debt_amount: remainingRefund,
+                    is_cancelled_contract: true,
+                    is_overpaid: false,
+                    customable: client,
+                    contract: contract
+                });
+            }
+        }
+    });
+
+    // 3. Scan contracts for Overpaid Contracts (Ortiqcha to'lovlar)
+    allContracts.forEach(contract => {
+        if (contract.status !== 'cancelled' && contract.status !== 'canceled') {
+            const totalAmount = Number(contract.total_amount || 0);
+            const contractPaid = calculatePaidAmount(contract);
+            const refunds = (contract.transactions || [])
+                .filter(t => t.type === 'expense' && (t.status === 'approved' || !t.status))
+                .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+            const refundedAmount = Math.max(Number(contract.refunded_amount || 0), refunds);
+            const netPaid = contractPaid - refundedAmount;
+            const overpaidAmount = Math.max(0, netPaid - totalAmount);
+
+            if (overpaidAmount > 0) {
+                processedContractIds.add(contract.id);
+                if (contract.client_id) processedClientIds.add(contract.client_id);
+
+                const client = contract.client || (props.clients || []).find(cl => cl.id === contract.client_id) || {};
+                const clientName = `${client.last_name || ''} ${client.first_name || ''} ${client.middle_name || ''}`.trim() || client.name || client.phone || `Mijoz #${contract.client_id}`;
+
+                list.push({
+                    id: `contract-overpaid-${contract.id}`,
+                    client_id: contract.client_id,
+                    contract_id: contract.id,
+                    contract_number: contract.contract_number || `#${contract.id}`,
+                    name: clientName,
+                    phone: client.phone,
+                    agreed_amount: totalAmount,
+                    paid_amount: contractPaid,
+                    balance: overpaidAmount, // Positive balance = Company owes refund to client
+                    debt_amount: overpaidAmount,
+                    is_cancelled_contract: false,
+                    is_overpaid: true,
+                    customable: client,
+                    contract: contract
+                });
+            }
+        }
+    });
+
+    // 4. Counterparties with non-zero balance (general client debts or balance)
     (props.counterparties || []).forEach(cp => {
         if (cp.type === 'client' && Number(cp.balance || 0) !== 0) {
-            if (cp.customable_id) processedClientIds.add(cp.customable_id);
+            // If already added via specific overpaid or cancelled contract, don't duplicate
+            if (cp.customable_id && processedClientIds.has(cp.customable_id)) return;
             
             const clientContracts = cp.customable?.contracts || [];
             const activeContracts = clientContracts.filter(ct => ct.status !== 'cancelled' && ct.status !== 'canceled');
@@ -4905,7 +5001,6 @@ const filteredClientDebts = computed(() => {
             
             const agreed = activeContracts.reduce((sum, ct) => sum + Number(ct.total_amount || 0), 0);
             
-            // Calculate total paid across transactions
             let paid = (cp.transactions || [])
                 .filter(t => t.type === 'income' && (t.status === 'approved' || !t.status))
                 .reduce((sum, t) => sum + Number(t.amount || 0), 0);
@@ -4920,6 +5015,7 @@ const filteredClientDebts = computed(() => {
 
             const bal = Number(cp.balance || 0);
             const isCancelled = cancelledContracts.length > 0 && (activeContracts.length === 0 || bal > 0);
+            const isOverpaid = !isCancelled && bal > 0;
 
             list.push({
                 ...cp,
@@ -4934,45 +5030,11 @@ const filteredClientDebts = computed(() => {
                 balance: bal,
                 debt_amount: Math.abs(bal),
                 is_cancelled_contract: isCancelled,
-                customable: cp.customable || cp
+                is_overpaid: isOverpaid,
+                customable: cp.customable || cp,
+                contract: clientContracts[0] || null
             });
         }
-    });
-
-    // 2. Clients with Cancelled Contracts where client paid money (in case CP is missing or not yet synced)
-    (props.clients || []).forEach(client => {
-        if (processedClientIds.has(client.id)) return;
-
-        const cancelledContracts = (client.contracts || []).filter(ct => ct.status === 'cancelled' || ct.status === 'canceled');
-        if (cancelledContracts.length === 0) return;
-
-        cancelledContracts.forEach(contract => {
-            const contractPaid = calculatePaidAmount(contract);
-            const refunds = (contract.transactions || [])
-                .filter(t => t.type === 'expense' && (t.status === 'approved' || !t.status))
-                .reduce((sum, t) => sum + Number(t.amount || 0), 0);
-            const refundedAmount = Math.max(Number(contract.refunded_amount || 0), refunds);
-            const remainingRefund = Math.max(0, contractPaid - refundedAmount);
-
-            if (remainingRefund > 0) {
-                processedClientIds.add(client.id);
-                const clientName = `${client.last_name || ''} ${client.first_name || ''} ${client.middle_name || ''}`.trim() || client.phone || `Mijoz #${client.id}`;
-                list.push({
-                    id: `client-cancelled-${client.id}-${contract.id}`,
-                    client_id: client.id,
-                    contract_id: contract.id,
-                    contract_number: contract.contract_number || `#${contract.id}`,
-                    name: clientName,
-                    phone: client.phone,
-                    agreed_amount: Number(contract.total_amount || 0),
-                    paid_amount: contractPaid,
-                    balance: remainingRefund, // Positive balance = Company owes refund to client
-                    debt_amount: remainingRefund,
-                    is_cancelled_contract: true,
-                    customable: client
-                });
-            }
-        });
     });
 
     if (!clientDebtsSearch.value) return list;
@@ -5059,31 +5121,43 @@ const editTransactionForm = ref({
     notes: '',
 });
 
-function openQuickTransaction(type = 'income', client = null) {
+function openQuickTransaction(type = 'income', client = null, contract = null, defaultAmount = null) {
+    let catName = type === 'expense' ? "Mijozga pulni qaytarish" : "Mijoz To'lovi (Shartnoma)";
+    if (contract && (contract.status === 'cancelled' || contract.status === 'canceled')) {
+        catName = "Bekor qilingan shartnoma to'lovi";
+    } else if (contract) {
+        catName = "Ortiqcha to'lovni qaytarish";
+    }
+
+    const cId = client ? (client.id || client.client_id) : (contract ? contract.client_id : '');
+    const contractId = contract ? contract.id : '';
+
     transactionForm.value = {
         type: type,
-        category_name: type === 'expense' ? "Mijozga pulni qaytarish" : "Mijoz To'lovi (Shartnoma)",
-        amount: '',
+        category_name: catName,
+        amount: defaultAmount ? String(defaultAmount) : '',
         currency: 'UZS',
         payment_method: 'cash',
         account_id: props.cashRegisters && props.cashRegisters.length > 0 ? props.cashRegisters[0].id : '',
         overpayment_account_id: '',
         counterparty_id: '',
-        contract_id: '',
-        client_id: '',
+        contract_id: contractId,
+        client_id: cId,
         transaction_date: getLocalDateString(),
-        notes: '',
+        notes: contract ? `Shartnoma: ${contract.contract_number || contract.id}` : '',
         auto_approve: true,
     };
     
-    if (client) {
-        const cp = props.counterparties?.find(c => c.customable_id == client.id && c.customable_type?.includes('Client'));
+    if (cId) {
+        const cp = props.counterparties?.find(c => c.customable_id == cId && c.customable_type?.includes('Client'));
         if (cp) {
             transactionForm.value.counterparty_id = cp.id;
-            transactionForm.value.client_id = client.id;
-            const contracts = cp.customable?.contracts || [];
-            if (contracts.length > 0) {
-                transactionForm.value.contract_id = contracts[0].id;
+            transactionForm.value.client_id = cId;
+            if (!transactionForm.value.contract_id) {
+                const contracts = cp.customable?.contracts || [];
+                if (contracts.length > 0) {
+                    transactionForm.value.contract_id = contracts[0].id;
+                }
             }
         }
     }
@@ -7638,13 +7712,14 @@ const ledgerReportData = computed(() => {
                                 <td class="p-4 text-gray-400 font-bold text-center">{{ idx + 1 }}</td>
                                 <td class="p-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm shrink-0" :class="c.is_cancelled_contract ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm shrink-0" :class="c.is_cancelled_contract ? 'bg-red-500 text-white' : (c.is_overpaid ? 'bg-amber-500 text-white' : 'bg-blue-500 text-white')">
                                             {{ getInitials(c.name ? c.name.split(' ')[1] : '', c.name ? c.name.split(' ')[0] : '') }}
                                         </div>
                                         <div>
                                             <div class="flex items-center gap-2 flex-wrap">
                                                 <p class="font-bold text-gray-900 text-sm leading-tight">{{ c.name }}</p>
                                                 <span v-if="c.is_cancelled_contract" class="px-2 py-0.5 text-[10px] bg-red-100 text-red-700 border border-red-200 rounded font-bold uppercase tracking-wider">Bekor qilingan shartnoma (Qaytariladi)</span>
+                                                <span v-else-if="c.is_overpaid" class="px-2 py-0.5 text-[10px] bg-amber-100 text-amber-800 border border-amber-300 rounded font-bold uppercase tracking-wider">Ortiqcha to'lov (Qaytariladi)</span>
                                                 <span v-else-if="c.balance > 0" class="px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 rounded font-bold uppercase tracking-wider">Mijozga qaytarish</span>
                                                 <span v-else class="px-2 py-0.5 text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded font-bold uppercase tracking-wider">Mijoz qarzdorligi</span>
                                             </div>
@@ -7659,8 +7734,8 @@ const ledgerReportData = computed(() => {
                                     {{ Number(c.paid_amount || 0).toLocaleString() }} so'm
                                     <div class="text-[10px] text-gray-400 font-normal font-sans">Kelishilgan: {{ Number(c.agreed_amount || 0).toLocaleString() }} so'm</div>
                                 </td>
-                                <td class="p-4 text-right font-bold text-base" :class="c.balance > 0 ? 'text-emerald-600' : 'text-red-600'">
-                                    {{ c.balance > 0 ? 'Qaytariladi: ' : 'Qarzdorlik: ' }}{{ Number(c.debt_amount || 0).toLocaleString() }} so'm
+                                <td class="p-4 text-right font-bold text-base" :class="(c.balance > 0 || c.is_cancelled_contract || c.is_overpaid) ? 'text-emerald-600' : 'text-red-600'">
+                                    {{ (c.balance > 0 || c.is_cancelled_contract || c.is_overpaid) ? 'Qaytariladi: ' : 'Qarzdorlik: ' }}{{ Number(c.debt_amount || 0).toLocaleString() }} so'm
                                 </td>
                                 <td class="p-4 text-right">
                                     <div class="flex items-center justify-end gap-3">
@@ -7668,8 +7743,8 @@ const ledgerReportData = computed(() => {
                                         <button @click="openDebtLedger(c)" class="px-3 py-1 border rounded-lg text-xs font-bold transition-all shadow-sm font-sans bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-500 hover:text-white">
                                             Hisob-kitob jurnali
                                         </button>
-                                        <button @click="openQuickTransaction(c.balance > 0 ? 'expense' : 'income', c.customable)" class="px-3 py-1 border rounded-lg text-xs font-bold transition-all shadow-sm font-sans" :class="c.balance > 0 ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-500 hover:text-white' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-500 hover:text-white'">
-                                            {{ c.balance > 0 ? '+ Pulni Qaytarish' : '+ Qarzni to\'lash' }}
+                                        <button @click="openQuickTransaction((c.balance > 0 || c.is_cancelled_contract || c.is_overpaid) ? 'expense' : 'income', c.customable, c.contract, c.debt_amount)" class="px-3 py-1 border rounded-lg text-xs font-bold transition-all shadow-sm font-sans" :class="(c.balance > 0 || c.is_cancelled_contract || c.is_overpaid) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-500 hover:text-white' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-500 hover:text-white'">
+                                            {{ (c.balance > 0 || c.is_cancelled_contract || c.is_overpaid) ? '+ Pulni Qaytarish' : '+ Qarzni to\'lash' }}
                                         </button>
                                         
                                         <!-- Edit/delete counterparty -->

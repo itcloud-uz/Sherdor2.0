@@ -1677,12 +1677,126 @@ const clientPayments = computed(() => {
 });
 
 const clientDebts = computed(() => {
-    return (props.counterparties || [])
+    const list = [];
+    const processedContractIds = new Set();
+    const processedClientIds = new Set();
+
+    // 1. Gather all contracts
+    const allContracts = [];
+    if (props.contracts && Array.isArray(props.contracts)) {
+        allContracts.push(...props.contracts);
+    }
+    if (props.clients && Array.isArray(props.clients)) {
+        props.clients.forEach(cl => {
+            (cl.contracts || []).forEach(ct => {
+                if (!allContracts.some(existing => existing.id === ct.id)) {
+                    allContracts.push({
+                        ...ct,
+                        client: ct.client || cl
+                    });
+                }
+            });
+        });
+    }
+
+    // 2. Cancelled contracts
+    allContracts.forEach(contract => {
+        if (contract.status === 'cancelled' || contract.status === 'canceled') {
+            const txnPaid = (contract.transactions || [])
+                .filter(t => (t.status === 'approved' || !t.status) && t.type === 'income')
+                .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+            const schedPaid = (contract.payment_schedules || contract.paymentSchedules || []).reduce((s, p) => s + Number(p.paid_amount || 0), 0);
+            const contractPaid = Math.max(txnPaid, schedPaid, Number(contract.paid_amount || 0));
+
+            const refunds = (contract.transactions || [])
+                .filter(t => t.type === 'expense' && (t.status === 'approved' || !t.status))
+                .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+            const refundedAmount = Math.max(Number(contract.refunded_amount || 0), refunds);
+            const remainingRefund = Math.max(0, contractPaid - refundedAmount);
+
+            if (remainingRefund > 0) {
+                processedContractIds.add(contract.id);
+                if (contract.client_id) processedClientIds.add(contract.client_id);
+
+                const client = contract.client || (props.clients || []).find(cl => cl.id === contract.client_id) || {};
+                const clientName = `${client.last_name || ''} ${client.first_name || ''} ${client.middle_name || ''}`.trim() || client.name || client.phone || `Mijoz #${contract.client_id}`;
+
+                list.push({
+                    id: `contract-cancelled-${contract.id}`,
+                    client_id: contract.client_id,
+                    contract_id: contract.id,
+                    contract_number: contract.contract_number || `#${contract.id}`,
+                    name: clientName,
+                    phone: client.phone,
+                    agreed_amount: Number(contract.total_amount || 0),
+                    paid_amount: contractPaid,
+                    balance: remainingRefund,
+                    debt_amount: remainingRefund,
+                    is_cancelled_contract: true,
+                    is_overpaid: false,
+                });
+            }
+        }
+    });
+
+    // 3. Overpaid contracts
+    allContracts.forEach(contract => {
+        if (contract.status !== 'cancelled' && contract.status !== 'canceled') {
+            const totalAmount = Number(contract.total_amount || 0);
+            const txnPaid = (contract.transactions || [])
+                .filter(t => (t.status === 'approved' || !t.status) && t.type === 'income')
+                .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+            const schedPaid = (contract.payment_schedules || contract.paymentSchedules || []).reduce((s, p) => s + Number(p.paid_amount || 0), 0);
+            const contractPaid = Math.max(txnPaid, schedPaid, Number(contract.paid_amount || 0));
+
+            const refunds = (contract.transactions || [])
+                .filter(t => t.type === 'expense' && (t.status === 'approved' || !t.status))
+                .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+            const refundedAmount = Math.max(Number(contract.refunded_amount || 0), refunds);
+            const netPaid = contractPaid - refundedAmount;
+            const overpaidAmount = Math.max(0, netPaid - totalAmount);
+
+            if (overpaidAmount > 0) {
+                processedContractIds.add(contract.id);
+                if (contract.client_id) processedClientIds.add(contract.client_id);
+
+                const client = contract.client || (props.clients || []).find(cl => cl.id === contract.client_id) || {};
+                const clientName = `${client.last_name || ''} ${client.first_name || ''} ${client.middle_name || ''}`.trim() || client.name || client.phone || `Mijoz #${contract.client_id}`;
+
+                list.push({
+                    id: `contract-overpaid-${contract.id}`,
+                    client_id: contract.client_id,
+                    contract_id: contract.id,
+                    contract_number: contract.contract_number || `#${contract.id}`,
+                    name: clientName,
+                    phone: client.phone,
+                    agreed_amount: totalAmount,
+                    paid_amount: contractPaid,
+                    balance: overpaidAmount,
+                    debt_amount: overpaidAmount,
+                    is_cancelled_contract: false,
+                    is_overpaid: true,
+                });
+            }
+        }
+    });
+
+    // 4. Counterparties
+    (props.counterparties || [])
         .filter(c => c.type === 'client' && Number(c.balance || 0) !== 0)
-        .map(c => ({
-            ...c,
-            debt_amount: Math.abs(Number(c.balance))
-        }));
+        .forEach(c => {
+            if (c.customable_id && processedClientIds.has(c.customable_id)) return;
+            const bal = Number(c.balance);
+            list.push({
+                ...c,
+                debt_amount: Math.abs(bal),
+                balance: bal,
+                is_cancelled_contract: false,
+                is_overpaid: bal > 0,
+            });
+        });
+
+    return list;
 });
 
 const clientPaymentsSearch = ref('');
@@ -5012,12 +5126,16 @@ function deleteCategory(id) {
                                     <td class="p-4 font-bold text-gray-900">
                                         <div class="flex items-center gap-2">
                                             <span>{{ c.name }}</span>
-                                            <span v-if="c.balance > 0" class="px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 rounded font-bold uppercase tracking-wider">Mijozga qaytarish</span>
+                                            <span v-if="c.is_cancelled_contract" class="px-2 py-0.5 text-[10px] bg-red-100 text-red-700 border border-red-200 rounded font-bold uppercase tracking-wider">Bekor qilingan shartnoma (Qaytariladi)</span>
+                                            <span v-else-if="c.is_overpaid" class="px-2 py-0.5 text-[10px] bg-amber-100 text-amber-800 border border-amber-300 rounded font-bold uppercase tracking-wider">Ortiqcha to'lov (Qaytariladi)</span>
+                                            <span v-else-if="c.balance > 0" class="px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-200 rounded font-bold uppercase tracking-wider">Mijozga qaytarish</span>
+                                            <span v-else class="px-2 py-0.5 text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded font-bold uppercase tracking-wider">Mijoz qarzdorligi</span>
                                         </div>
+                                        <div v-if="c.contract_number" class="text-xs text-gray-500 font-mono mt-0.5">Shartnoma: {{ c.contract_number }}</div>
                                     </td>
-                                    <td class="p-4 text-gray-600">{{ c.phone || '-' }}</td>
-                                    <td class="p-4 text-right font-bold" :class="c.balance > 0 ? 'text-emerald-600' : 'text-red-600'">
-                                        {{ c.balance > 0 ? 'Qaytariladigan: ' : '' }}{{ formatMoney(c.debt_amount) }}
+                                    <td class="p-4 text-gray-600 font-mono">{{ c.phone || '-' }}</td>
+                                    <td class="p-4 text-right font-bold font-mono" :class="(c.balance > 0 || c.is_cancelled_contract || c.is_overpaid) ? 'text-emerald-600' : 'text-red-600'">
+                                        {{ (c.balance > 0 || c.is_cancelled_contract || c.is_overpaid) ? 'Qaytariladi: ' : 'Qarzdorlik: ' }}{{ formatMoney(c.debt_amount) }}
                                     </td>
                                     <td class="p-4 text-center">
                                         <div class="flex items-center justify-center gap-2">

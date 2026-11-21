@@ -127,15 +127,21 @@ class TelegramMiniAppController extends Controller
             });
 
         // Fetch Cancelled Contracts (Bekor qilingan shartnomalarga to'lov qaytarish uchun)
-        $cancelledContracts = Contract::with(['client:id,first_name,last_name,phone', 'unit:id,unit_number'])
+        $cancelledContracts = Contract::with(['client:id,first_name,last_name,phone', 'unit:id,unit_number', 'transactions', 'paymentSchedules'])
             ->whereIn('status', ['cancelled', 'canceled'])
             ->latest()
             ->get()
             ->map(function ($c) {
                 $clientName = $c->client ? trim("{$c->client->first_name} {$c->client->last_name}") : "Mijoz #{$c->client_id}";
                 $unitNum = $c->unit ? $c->unit->unit_number : ($c->unit_id ? "#{$c->unit_id}" : "-");
-                $refundTarget = (float)($c->refund_amount ?? $c->paid_amount ?? 0);
-                $refunded = (float)($c->refunded_amount ?? 0);
+                $txnPaid = (float)$c->transactions->where('type', 'income')->where('status', 'approved')->sum('amount');
+                $schedPaid = (float)$c->paymentSchedules->sum('paid_amount');
+                $contractPaid = max($txnPaid, $schedPaid);
+                $refundTarget = (float)($c->refund_amount ?: $contractPaid);
+                $refunded = (float)$c->transactions->where('type', 'expense')->where('status', 'approved')->sum('amount');
+                if (isset($c->refunded_amount)) {
+                    $refunded = max($refunded, (float)$c->refunded_amount);
+                }
                 $remaining = max(0, $refundTarget - $refunded);
                 return [
                     'id' => $c->id,
@@ -146,23 +152,26 @@ class TelegramMiniAppController extends Controller
                     'refund_target' => $refundTarget,
                     'refunded_amount' => $refunded,
                     'remaining_refund' => $remaining,
-                    'label' => "№{$c->contract_number} — {$clientName} ({$unitNum}-uy) [Qolgan: " . number_format($remaining, 0, '.', ' ') . "]"
+                    'label' => "№{$c->contract_number} — {$clientName} ({$unitNum}-uy) [Qolgan: " . number_format($remaining, 0, '.', ' ') . " UZS]"
                 ];
             });
 
         // Fetch Overpaid Contracts (Ortiqcha to'lovni qaytarish uchun)
-        $overpaidContracts = Contract::with(['client:id,first_name,last_name,phone', 'unit:id,unit_number'])
+        $overpaidContracts = Contract::with(['client:id,first_name,last_name,phone', 'unit:id,unit_number', 'transactions', 'paymentSchedules'])
             ->whereNotIn('status', ['cancelled', 'canceled'])
-            ->whereRaw('paid_amount > total_amount')
             ->latest()
-            ->limit(150)
+            ->limit(200)
             ->get()
             ->map(function ($c) {
                 $clientName = $c->client ? trim("{$c->client->first_name} {$c->client->last_name}") : "Mijoz #{$c->client_id}";
                 $unitNum = $c->unit ? $c->unit->unit_number : ($c->unit_id ? "#{$c->unit_id}" : "-");
                 $total = (float)$c->total_amount;
-                $paid = (float)$c->paid_amount;
-                $overpaid = max(0, $paid - $total);
+                $txnPaid = (float)$c->transactions->where('type', 'income')->where('status', 'approved')->sum('amount');
+                $schedPaid = (float)$c->paymentSchedules->sum('paid_amount');
+                $paid = max($txnPaid, $schedPaid);
+                $refunded = (float)$c->transactions->where('type', 'expense')->where('status', 'approved')->sum('amount');
+                $overpaid = max(0, ($paid - $refunded) - $total);
+                if ($overpaid <= 0) return null;
                 return [
                     'id' => $c->id,
                     'client_id' => $c->client_id,
@@ -172,9 +181,11 @@ class TelegramMiniAppController extends Controller
                     'total_amount' => $total,
                     'paid_amount' => $paid,
                     'overpaid_amount' => $overpaid,
-                    'label' => "№{$c->contract_number} — {$clientName} ({$unitNum}-uy) [Ortiqcha: " . number_format($overpaid, 0, '.', ' ') . "]"
+                    'label' => "№{$c->contract_number} — {$clientName} ({$unitNum}-uy) [Ortiqcha: " . number_format($overpaid, 0, '.', ' ') . " UZS]"
                 ];
-            });
+            })
+            ->filter()
+            ->values();
 
         // Fetch Partners
         $partners = Partner::with('user:id,name')->get()->map(function ($p) {

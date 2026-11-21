@@ -4086,6 +4086,7 @@ const docPreviewTitle = ref('');
 const docPreviewUrl = ref('');
 const docDownloadUrl = ref('');
 const docDownloadDocxUrl = ref('');
+const docDownloadXlsxUrl = ref('');
 const docPreviewLoading = ref(false);
 
 function openDocumentPreview(type, contract) {
@@ -4097,6 +4098,7 @@ function openDocumentPreview(type, contract) {
 
     if (type === 'contract') {
         docPreviewTitle.value = 'Shartnoma';
+        docDownloadXlsxUrl.value = '';
         try {
             docPreviewUrl.value = route('admin.contracts.document.preview', contractId) + '?lang=' + currentLang;
         } catch (e) {
@@ -4120,23 +4122,20 @@ function openDocumentPreview(type, contract) {
             docPreviewUrl.value = `/admin/crm/ledger/${contractId}/preview`;
         }
         
-        // Dynamically use PDF/DOCX export if a schedule template exists in templates list
-        const hasScheduleTpl = props.contractTemplates?.some(t => t.type === 'schedule');
-        if (hasScheduleTpl) {
-            try {
-                docDownloadUrl.value = route('admin.contracts.export.pdf', contractId);
-                docDownloadDocxUrl.value = route('admin.contracts.export.docx', contractId);
-            } catch (e) {
-                docDownloadUrl.value = `/admin/crm/ledger/${contractId}/export/pdf`;
-                docDownloadDocxUrl.value = `/admin/crm/ledger/${contractId}/export/docx`;
-            }
-        } else {
-            try {
-                docDownloadUrl.value = route('admin.contracts.export.xlsx', contractId);
-            } catch (e) {
-                docDownloadUrl.value = `/admin/crm/ledger/${contractId}/export/xlsx`;
-            }
-            docDownloadDocxUrl.value = '';
+        try {
+            docDownloadUrl.value = route('admin.contracts.export.pdf', contractId);
+        } catch (e) {
+            docDownloadUrl.value = `/admin/crm/ledger/${contractId}/export/pdf`;
+        }
+        try {
+            docDownloadXlsxUrl.value = route('admin.contracts.export.xlsx', contractId);
+        } catch (e) {
+            docDownloadXlsxUrl.value = `/admin/crm/ledger/${contractId}/export/xlsx`;
+        }
+        try {
+            docDownloadDocxUrl.value = route('admin.contracts.export.docx', contractId);
+        } catch (e) {
+            docDownloadDocxUrl.value = `/admin/crm/ledger/${contractId}/export/docx`;
         }
     }
     showDocPreviewModal.value = true;
@@ -9005,18 +9004,15 @@ const ledgerReportData = computed(() => {
 
                 <!-- Footer with Download Button -->
                 <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
-                    <template v-if="docDownloadDocxUrl">
-                        <a :href="docDownloadDocxUrl" target="_blank" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
-                            💾 Word (.docx) Yuklab olish
-                        </a>
-                        <a :href="docDownloadUrl" target="_blank" class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                            PDF Yuklab olish
-                        </a>
-                    </template>
-                    <a v-else :href="docDownloadUrl" target="_blank" class="px-6 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
+                    <a v-if="docDownloadXlsxUrl" :href="docDownloadXlsxUrl" target="_blank" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
+                        📊 Excel Yuklab olish
+                    </a>
+                    <a v-if="docDownloadDocxUrl" :href="docDownloadDocxUrl" target="_blank" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
+                        💾 Word (.docx) Yuklab olish
+                    </a>
+                    <a v-if="docDownloadUrl" :href="docDownloadUrl" target="_blank" class="px-5 py-2.5 bg-[#f2a900] hover:bg-[#d99700] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                        Yuklab olish
+                        PDF Yuklab olish
                     </a>
                 </div>
             </div>

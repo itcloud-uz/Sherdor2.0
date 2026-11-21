@@ -13,122 +13,130 @@ class LedgerExportController extends Controller
     {
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
         $type = $request->query('type');
+        $isExport = true;
 
-        $template = \App\Models\ContractTemplate::where('type', 'schedule')->latest()->first();
-        if ($template && $template->docx_path) {
-            try {
-                $selectedVariants = $contract->selected_variants ?? [];
-                $docxPath = $template->compileDocx($contract, $selectedVariants);
-                $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
+        if ($request->has('template')) {
+            $template = \App\Models\ContractTemplate::where('type', 'schedule')->latest()->first();
+            if ($template && $template->docx_path) {
+                try {
+                    $selectedVariants = $contract->selected_variants ?? [];
+                    $docxPath = $template->compileDocx($contract, $selectedVariants);
+                    $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
 
-                $outputDirectory = dirname($absoluteDocxPath);
-                $pdfFileName = pathinfo($absoluteDocxPath, PATHINFO_FILENAME) . '.pdf';
-                $absolutePdfPath = $outputDirectory . DIRECTORY_SEPARATOR . $pdfFileName;
+                    $outputDirectory = dirname($absoluteDocxPath);
+                    $pdfFileName = pathinfo($absoluteDocxPath, PATHINFO_FILENAME) . '.pdf';
+                    $absolutePdfPath = $outputDirectory . DIRECTORY_SEPARATOR . $pdfFileName;
 
-                $isSofficeAvailable = false;
-                $sofficePath = 'soffice';
-                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                    $checkCmd = 'where soffice 2>nul';
-                    $pathCheck = shell_exec($checkCmd);
-                    if ($pathCheck) {
-                        $isSofficeAvailable = true;
-                        $sofficePath = trim($pathCheck);
-                    } else {
-                        $paths = [
-                            'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
-                            'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe'
-                        ];
-                        foreach ($paths as $p) {
-                            if (file_exists($p)) {
-                                $isSofficeAvailable = true;
-                                $sofficePath = '"' . $p . '"';
-                                break;
+                    $isSofficeAvailable = false;
+                    $sofficePath = 'soffice';
+                    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                        $checkCmd = 'where soffice 2>nul';
+                        $pathCheck = shell_exec($checkCmd);
+                        if ($pathCheck) {
+                            $isSofficeAvailable = true;
+                            $sofficePath = trim($pathCheck);
+                        } else {
+                            $paths = [
+                                'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+                                'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe'
+                            ];
+                            foreach ($paths as $p) {
+                                if (file_exists($p)) {
+                                    $isSofficeAvailable = true;
+                                    $sofficePath = '"' . $p . '"';
+                                    break;
+                                }
                             }
                         }
+                    } else {
+                        $checkCmd = 'which soffice 2>/dev/null || which libreoffice 2>/dev/null';
+                        $pathCheck = shell_exec($checkCmd);
+                        if ($pathCheck) {
+                            $isSofficeAvailable = true;
+                            $sofficePath = trim($pathCheck);
+                        }
                     }
-                } else {
-                    $checkCmd = 'which soffice 2>/dev/null || which libreoffice 2>/dev/null';
-                    $pathCheck = shell_exec($checkCmd);
-                    if ($pathCheck) {
-                        $isSofficeAvailable = true;
-                        $sofficePath = trim($pathCheck);
-                    }
-                }
 
-                if ($isSofficeAvailable) {
-                    $binary = $sofficePath;
-                    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-                        $binary = trim(shell_exec('which soffice 2>/dev/null') ?: 'libreoffice');
+                    if ($isSofficeAvailable) {
+                        $binary = $sofficePath;
+                        if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+                            $binary = trim(shell_exec('which soffice 2>/dev/null') ?: 'libreoffice');
+                        }
+                        
+                        $envParam = (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') ? ' -env:UserInstallation=file:///tmp/libreoffice_www-data' : '';
+                        $convertCmd = $binary . $envParam . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
+                        shell_exec($convertCmd);
+
+                        if (file_exists($absolutePdfPath)) {
+                            $response = response()->download($absolutePdfPath, "tolov_grafigi_{$contract->id}.pdf")->deleteFileAfterSend(true);
+                            @unlink($absoluteDocxPath);
+                            return $response;
+                        }
                     }
+
+                    $previewOutput = \App\Models\ContractTemplate::runPython('preview "' . $absoluteDocxPath . '"');
+                    $previewData = json_decode($previewOutput, true);
                     
-                    $envParam = (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') ? ' -env:UserInstallation=file:///tmp/libreoffice_www-data' : '';
-                    $convertCmd = $binary . $envParam . ' --headless --convert-to pdf --outdir ' . escapeshellarg($outputDirectory) . ' ' . escapeshellarg($absoluteDocxPath) . ' 2>&1';
-                    shell_exec($convertCmd);
-
-                    if (file_exists($absolutePdfPath)) {
-                        $response = response()->download($absolutePdfPath, "tolov_grafigi_{$contract->id}.pdf")->deleteFileAfterSend(true);
-                        @unlink($absoluteDocxPath);
-                        return $response;
-                    }
+                    $content = $previewData['html'] ?? '';
+                    @unlink($absoluteDocxPath);
+                    
+                    $pdf = Pdf::loadView('contracts.compiled', compact('content'));
+                    return $pdf->download("tolov_grafigi_{$contract->id}.pdf");
+                } catch (\Exception $e) {
+                    // fallback
                 }
-
-                $previewOutput = \App\Models\ContractTemplate::runPython('preview "' . $absoluteDocxPath . '"');
-                $previewData = json_decode($previewOutput, true);
-                
-                $content = $previewData['html'] ?? '';
-                @unlink($absoluteDocxPath);
-                
-                $pdf = Pdf::loadView('contracts.compiled', compact('content'));
-                return $pdf->download("tolov_grafigi_{$contract->id}.pdf");
-            } catch (\Exception $e) {
-                // fallback
             }
         }
 
-        $pdf = Pdf::loadView('exports.client_ledger', compact('contract', 'type'));
+        $pdf = Pdf::loadView('exports.client_ledger', compact('contract', 'type', 'isExport'));
+        $pdf->setPaper('a4', 'portrait');
         $suffix = $type ? "_{$type}" : "";
-        return $pdf->download("ledger_{$contract->id}{$suffix}.pdf");
+        return $pdf->download("tolov_grafigi_{$contract->id}{$suffix}.pdf");
     }
 
     public function exportDocx(Contract $contract, Request $request)
     {
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
         $type = $request->query('type');
+        $isExport = true;
 
-        $template = \App\Models\ContractTemplate::where('type', 'schedule')->latest()->first();
-        if ($template && $template->docx_path) {
-            try {
-                $selectedVariants = $contract->selected_variants ?? [];
-                $docxPath = $template->compileDocx($contract, $selectedVariants);
-                $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
+        if ($request->has('template') || !$request->has('ledger')) {
+            $template = \App\Models\ContractTemplate::where('type', 'schedule')->latest()->first();
+            if ($template && $template->docx_path) {
+                try {
+                    $selectedVariants = $contract->selected_variants ?? [];
+                    $docxPath = $template->compileDocx($contract, $selectedVariants);
+                    $absoluteDocxPath = storage_path('app/public/' . str_replace('public/', '', $docxPath));
 
-                return response()->download($absoluteDocxPath, "tolov_grafigi_{$contract->id}.docx")->deleteFileAfterSend(true);
-            } catch (\Exception $e) {
-                // fallback
+                    return response()->download($absoluteDocxPath, "tolov_grafigi_{$contract->id}.docx")->deleteFileAfterSend(true);
+                } catch (\Exception $e) {
+                    // fallback
+                }
             }
         }
         
         $suffix = $type ? "_{$type}" : "";
         $headers = [
-            "Content-type" => "application/vnd.ms-word",
-            "Content-Disposition" => "attachment;Filename=ledger_{$contract->id}{$suffix}.doc"
+            "Content-type" => "application/vnd.ms-word; charset=utf-8",
+            "Content-Disposition" => "attachment;Filename=tolov_grafigi_{$contract->id}{$suffix}.doc"
         ];
 
-        return response()->view('exports.client_ledger', compact('contract', 'type'), 200, $headers);
+        return response()->view('exports.client_ledger', compact('contract', 'type', 'isExport'), 200, $headers);
     }
 
     public function exportXlsx(Contract $contract, Request $request)
     {
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
         $type = $request->query('type');
+        $isExport = true;
         
         $suffix = $type ? "_{$type}" : "";
         $headers = [
-            "Content-type" => "application/vnd.ms-excel",
-            "Content-Disposition" => "attachment;Filename=ledger_{$contract->id}{$suffix}.xls"
+            "Content-type" => "application/vnd.ms-excel; charset=utf-8",
+            "Content-Disposition" => "attachment;Filename=tolov_grafigi_{$contract->id}{$suffix}.xls"
         ];
 
-        return response()->view('exports.client_ledger', compact('contract', 'type'), 200, $headers);
+        return response()->view('exports.client_ledger', compact('contract', 'type', 'isExport'), 200, $headers);
     }
 
     public function exportContractPdf(Contract $contract, Request $request)
@@ -284,8 +292,9 @@ class LedgerExportController extends Controller
     {
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules.transactions', 'transactions.category']);
         $type = $request->query('type');
+        $isExport = false;
 
-        return view('exports.client_ledger', compact('contract', 'type'));
+        return view('exports.client_ledger', compact('contract', 'type', 'isExport'));
     }
 
     public function previewContract(Contract $contract, Request $request)

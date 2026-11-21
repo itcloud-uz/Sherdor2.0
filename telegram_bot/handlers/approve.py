@@ -5,35 +5,31 @@ from keyboards.inline import get_approval_keyboard
 
 router = Router()
 
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, ReplyKeyboardRemove
+from config import APP_URL
+
 @router.message(F.text == "🤝 Tasdiq kutayotganlar")
 async def show_pending(message: Message):
-    data, status = await get_pending_transactions()
-    
-    if status != 200:
-        await message.answer("API xatosi yuz berdi yoki ruxsat yo'q.")
-        return
-        
-    transactions = data.get("transactions", [])
-    
-    if not transactions:
-        await message.answer("Tasdiq kutayotgan tranzaksiyalar yo'q.")
-        return
-        
-    for txn in transactions:
-        t_type = "Daromad" if txn['type'] == 'income' else "Xarajat"
-        creator = txn.get('creator', {}).get('name', 'Noma\'lum')
-        amount = float(txn['amount'])
-        
-        text = (
-            f"📝 <b>Yangi So'rov:</b> #{txn['id']}\n"
-            f"👤 <b>Yaratuvchi:</b> {creator}\n"
-            f"🏷️ <b>Turi:</b> {t_type}\n"
-            f"💰 <b>Summa:</b> {amount:,.2f} {txn['currency']}\n"
-            f"💬 <b>Izoh:</b> {txn.get('notes', '')}\n"
-            f"📅 <b>Sana:</b> {txn['created_at']}"
-        )
-        
-        await message.answer(text, reply_markup=get_approval_keyboard(txn['id']), parse_mode="HTML")
+    miniapp_url = f"{APP_URL.rstrip('/')}/miniapp/transactions"
+    inline_kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="⏳ Mini Appda Tasdiqlash",
+                    web_app=WebAppInfo(url=miniapp_url)
+                )
+            ]
+        ]
+    )
+    await message.answer(
+        "Tranzaksiyalarni tasdiqlash yoki rad etish Mini App orqali amalga oshiriladi:",
+        reply_markup=inline_kb
+    )
+    await message.answer(
+        "Pastki menyu tugmalari olib tashlandi.",
+        reply_markup=ReplyKeyboardRemove()
+    )
+
 
 @router.callback_query(F.data.startswith("approve_"))
 async def process_approve(callback: CallbackQuery):

@@ -120,27 +120,34 @@ async def ask_next_field(message: Message, state: FSMContext):
             await state.update_data(search_type='building')
             await message.answer("Obyekt nomini qidirish uchun kiriting:")
 
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, ReplyKeyboardRemove
+from config import APP_URL
+
 @router.message(F.text.in_(["💰 Kirim qilish", "💸 Chiqim qilish"]))
 async def start_transaction(message: Message, state: FSMContext):
-    type_ = "income" if "Kirim" in message.text else "expense"
     await state.clear()
-    
-    loading_msg = await message.answer("Ma'lumotlar yuklanmoqda, iltimos kuting...")
-    
-    metadata, status = await get_metadata()
-    if status != 200:
-        await loading_msg.edit_text("🛑 Tizim ma'lumotlarini yuklashda xatolik yuz berdi. Iltimos, keyinroq qayta urining.")
-        return
-        
-    await state.update_data(transaction_type=type_, metadata=metadata)
-    await state.set_state(TransactionState.waiting_for_amount)
-    
-    action_title = "💰 Kirim (Daromad)" if type_ == 'income' else "💸 Chiqim (Xarajat)"
-    await loading_msg.edit_text(
-        f"Siz <b>{action_title}</b> bo'limini tanladingiz.\n\n"
-        f"Iltimos, summani kiriting (faqat raqam):",
+    miniapp_url = f"{APP_URL.rstrip('/')}/miniapp/transactions"
+    inline_kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📱 Mini Appni ochish (Kirim / Chiqim)",
+                    web_app=WebAppInfo(url=miniapp_url)
+                )
+            ]
+        ]
+    )
+    await message.answer(
+        "Barcha kirim, chiqim va tasdiqlash amaliyotlari to'liq <b>Mini App</b> ga ko'chirildi.\n\n"
+        "Quyidagi tugma orqali qulay va tezkor bajaring:",
+        reply_markup=inline_kb,
         parse_mode="HTML"
     )
+    await message.answer(
+        "Oddiy klaviatura tugmalari olib tashlandi.",
+        reply_markup=ReplyKeyboardRemove()
+    )
+
 
 @router.message(TransactionState.waiting_for_amount)
 async def process_amount(message: Message, state: FSMContext):

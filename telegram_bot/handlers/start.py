@@ -1,8 +1,7 @@
 from aiogram import Router, Bot
 from aiogram.filters import CommandStart
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, MenuButtonWebApp
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, MenuButtonWebApp, ReplyKeyboardRemove
 from api_client import verify_user
-from keyboards.reply import get_main_menu
 from config import APP_URL
 
 router = Router()
@@ -38,17 +37,26 @@ async def cmd_start(message: Message, bot: Bot):
             ]
         )
         
+        # Foydalanuvchiga xabar yuborish va pastki oddiy tugmalarni to'liq tozalash (ReplyKeyboardRemove)
         await message.answer(
             f"Assalomu alaykum, <b>{user_name}</b>! ERP Moliya tizimiga xush kelibsiz.\n\n"
-            "Kirim va chiqimlarni qulay interfeysda kiritish uchun quyidagi <b>Mini App</b> tugmasini bosing:",
+            "Barcha kirim, chiqim va tasdiqlash amaliyotlari qulay <b>Mini App</b> orqali amalga oshiriladi.\n\n"
+            "Dasturga kirish uchun quyidagi tugmani bosing:",
             reply_markup=inline_kb,
             parse_mode="HTML"
         )
         
+        # Eskirgan pastki tugmalar qolib ketgan bo'lsa ularni o'chirish
         await message.answer(
-            "Yoki quyidagi menyudan foydalanishingiz mumkin:",
-            reply_markup=get_main_menu()
+            "👇 Mini Appni pastki chap burchakdagi <b>Menyu</b> tugmasi orqali ham istalgan vaqtda ochishingiz mumkin.",
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode="HTML"
         )
     else:
         error_msg = data.get('error', 'Sizda tizimga kirish huquqi yo\'q.')
-        await message.answer(f"🛑 Xatolik: {error_msg}\nSizning Chat ID: <code>{chat_id}</code>", parse_mode="HTML")
+        await message.answer(
+            f"🛑 Xatolik: {error_msg}\nSizning Chat ID: <code>{chat_id}</code>", 
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode="HTML"
+        )
+

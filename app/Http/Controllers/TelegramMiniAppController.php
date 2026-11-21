@@ -74,11 +74,11 @@ class TelegramMiniAppController extends Controller
         $categories = TransactionCategory::orderBy('name')
             ->get(['id', 'name', 'type']);
 
-        // Fetch Active Contracts
+        // Fetch Active Contracts (Kirim uchun)
         $contracts = Contract::with(['client:id,first_name,last_name,phone', 'unit:id,unit_number'])
-            ->where('status', '!=', 'completed')
+            ->whereNotIn('status', ['cancelled', 'canceled'])
             ->latest()
-            ->limit(100)
+            ->limit(150)
             ->get()
             ->map(function ($c) {
                 $clientName = $c->client ? trim("{$c->client->first_name} {$c->client->last_name}") : "Mijoz #{$c->client_id}";
@@ -90,6 +90,55 @@ class TelegramMiniAppController extends Controller
                     'contract_number' => $c->contract_number ?: "№{$c->id}",
                     'unit_number' => $unitNum,
                     'label' => "{$c->contract_number} — {$clientName} ({$unitNum}-uy)"
+                ];
+            });
+
+        // Fetch Cancelled Contracts (Bekor qilingan shartnomalarga to'lov qaytarish uchun)
+        $cancelledContracts = Contract::with(['client:id,first_name,last_name,phone', 'unit:id,unit_number'])
+            ->whereIn('status', ['cancelled', 'canceled'])
+            ->latest()
+            ->get()
+            ->map(function ($c) {
+                $clientName = $c->client ? trim("{$c->client->first_name} {$c->client->last_name}") : "Mijoz #{$c->client_id}";
+                $unitNum = $c->unit ? $c->unit->unit_number : ($c->unit_id ? "#{$c->unit_id}" : "-");
+                $refundTarget = (float)($c->refund_amount ?? $c->paid_amount ?? 0);
+                $refunded = (float)($c->refunded_amount ?? 0);
+                $remaining = max(0, $refundTarget - $refunded);
+                return [
+                    'id' => $c->id,
+                    'client_id' => $c->client_id,
+                    'client_name' => $clientName,
+                    'contract_number' => $c->contract_number ?: "№{$c->id}",
+                    'unit_number' => $unitNum,
+                    'refund_target' => $refundTarget,
+                    'refunded_amount' => $refunded,
+                    'remaining_refund' => $remaining,
+                    'label' => "№{$c->contract_number} — {$clientName} ({$unitNum}-uy) [Qolgan: " . number_format($remaining, 0, '.', ' ') . "]"
+                ];
+            });
+
+        // Fetch Overpaid Contracts (Ortiqcha to'lovni qaytarish uchun)
+        $overpaidContracts = Contract::with(['client:id,first_name,last_name,phone', 'unit:id,unit_number'])
+            ->whereNotIn('status', ['cancelled', 'canceled'])
+            ->latest()
+            ->limit(150)
+            ->get()
+            ->map(function ($c) {
+                $clientName = $c->client ? trim("{$c->client->first_name} {$c->client->last_name}") : "Mijoz #{$c->client_id}";
+                $unitNum = $c->unit ? $c->unit->unit_number : ($c->unit_id ? "#{$c->unit_id}" : "-");
+                $total = (float)$c->total_amount;
+                $paid = (float)$c->paid_amount;
+                $overpaid = max(0, $paid - $total);
+                return [
+                    'id' => $c->id,
+                    'client_id' => $c->client_id,
+                    'client_name' => $clientName,
+                    'contract_number' => $c->contract_number ?: "№{$c->id}",
+                    'unit_number' => $unitNum,
+                    'total_amount' => $total,
+                    'paid_amount' => $paid,
+                    'overpaid_amount' => $overpaid,
+                    'label' => "№{$c->contract_number} — {$clientName} ({$unitNum}-uy)" . ($overpaid > 0 ? " [Ortiqcha: " . number_format($overpaid, 0, '.', ' ') . "]" : "")
                 ];
             });
 
@@ -152,6 +201,8 @@ class TelegramMiniAppController extends Controller
             'registers' => $registers,
             'categories' => $categories,
             'contracts' => $contracts,
+            'cancelled_contracts' => $cancelledContracts,
+            'overpaid_contracts' => $overpaidContracts,
             'partners' => $partners,
             'buildings' => $buildings,
             'suppliers' => $suppliers,
@@ -212,11 +263,30 @@ class TelegramMiniAppController extends Controller
         }
 
         // Target mapping
-        $targetType = $validated['target_type'] ?? null;
+        $targetType = $validated['target_type'] ?? $request->input('target_mode');
         $targetId = $validated['target_id'] ?? null;
         $clientId = $validated['client_id'] ?? null;
 
-        if (!empty($validated['contract_id']) && empty($clientId)) {
+        // Auto-detect and handle "Bekor qilingan shartnoma to'lovi" and "Ortiqcha to'lovni qaytarish"
+        if ($validated['type'] === 'expense') {
+            if ($targetType === 'cancelled_contract' || $request->input('target_mode') === 'cancelled_contract') {
+                $targetType = 'client';
+                $cat44 = TransactionCategory::firstOrCreate(
+                    ['name' => 'Bekor qilingan shartnoma to\'lovi', 'type' => 'expense'],
+                    ['is_active' => true]
+                );
+                $validated['category_id'] = $cat44->id;
+            } elseif ($targetType === 'overpayment' || $request->input('target_mode') === 'overpayment') {
+                $targetType = 'client';
+                $cat43 = TransactionCategory::firstOrCreate(
+                    ['name' => 'Ortiqcha to\'lovni qaytarish', 'type' => 'expense'],
+                    ['is_active' => true]
+                );
+                $validated['category_id'] = $cat43->id;
+            }
+        }
+
+        if (!empty($validated['contract_id'])) {
             $contract = Contract::find($validated['contract_id']);
             if ($contract) {
                 $clientId = $contract->client_id;
@@ -245,6 +315,9 @@ class TelegramMiniAppController extends Controller
         if ($request->hasFile('attachment')) {
             $attachmentPath = $request->file('attachment')->store('transactions/attachments', 'public');
         }
+
+        $roles = method_exists($user, 'getRoleNames') ? $user->getRoleNames()->toArray() : [];
+        $isAdminOrPartner = in_array('Super_Admin', $roles) || in_array('Admin', $roles) || in_array('Partner', $roles);
 
         $transaction = Transaction::create([
             'type' => $validated['type'],
@@ -284,6 +357,16 @@ class TelegramMiniAppController extends Controller
                     'partner_id' => $partner->id,
                     'vote' => 'pending'
                 ]);
+            }
+        } elseif ($isAdminOrPartner && ($request->input('auto_approve') == '1' || $request->input('auto_approve') === true)) {
+            // Admin/Partner avtomatik tasdiqlashni tanlagan bo'lsa darhol tasdiqlash
+            auth()->login($user);
+            try {
+                app(\App\Http\Controllers\Admin\FinanceController::class)->approveTransaction($request, $transaction);
+            } catch (\Exception $e) {
+                Log::warning('MiniApp auto-approve error: ' . $e->getMessage());
+            } finally {
+                auth()->logout();
             }
         }
 

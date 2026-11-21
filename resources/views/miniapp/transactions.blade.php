@@ -337,6 +337,46 @@
                         </select>
                     </div>
 
+                    <div v-else-if="form.target_mode === 'cancelled_contract'" class="space-y-1">
+                        <label class="block text-[11px] font-bold text-rose-700 flex items-center justify-between">
+                            <span>🔄 Bekor qilingan shartnoma:</span>
+                            <span class="text-[10px] text-slate-500 font-normal">(@{{ cancelledContracts.length }} ta mavjud)</span>
+                        </label>
+                        <select
+                            v-model="form.contract_id"
+                            @change="onCancelledContractSelect"
+                            class="w-full px-3 py-2.5 bg-rose-50/50 border border-rose-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500"
+                        >
+                            <option :value="null">-- Bekor qilingan shartnomani tanlang --</option>
+                            <option v-for="c in cancelledContracts" :key="c.id" :value="c.id">
+                                @{{ c.label }}
+                            </option>
+                        </select>
+                        <p v-if="selectedCancelledContract" class="text-[11px] text-rose-600 font-medium pt-1">
+                            Qaytarilishi kerak: <b>@{{ formatNumber(selectedCancelledContract.remaining_refund) }} UZS</b> (Jami maqsad: @{{ formatNumber(selectedCancelledContract.refund_target) }} UZS, Qaytarilgan: @{{ formatNumber(selectedCancelledContract.refunded_amount) }} UZS)
+                        </p>
+                    </div>
+
+                    <div v-else-if="form.target_mode === 'overpayment'" class="space-y-1">
+                        <label class="block text-[11px] font-bold text-amber-700 flex items-center justify-between">
+                            <span>💸 Ortiqcha to'langan shartnoma:</span>
+                            <span class="text-[10px] text-slate-500 font-normal">(@{{ overpaidContracts.length }} ta)</span>
+                        </label>
+                        <select
+                            v-model="form.contract_id"
+                            @change="onOverpaidContractSelect"
+                            class="w-full px-3 py-2.5 bg-amber-50/50 border border-amber-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500"
+                        >
+                            <option :value="null">-- Ortiqcha to'langan shartnomani tanlang --</option>
+                            <option v-for="c in overpaidContracts" :key="c.id" :value="c.id">
+                                @{{ c.label }}
+                            </option>
+                        </select>
+                        <p v-if="selectedOverpaidContract" class="text-[11px] text-amber-700 font-medium pt-1">
+                            Ortiqcha to'lov: <b>@{{ formatNumber(selectedOverpaidContract.overpaid_amount) }} UZS</b> (Shartnoma: @{{ formatNumber(selectedOverpaidContract.total_amount) }} UZS, To'langan: @{{ formatNumber(selectedOverpaidContract.paid_amount) }} UZS)
+                        </p>
+                    </div>
+
                     <div v-else-if="form.target_mode === 'building'" class="space-y-1">
                         <label class="block text-[11px] font-bold text-slate-600">Obyekt / Bino:</label>
                         <select
@@ -618,6 +658,8 @@
                 const registers = ref([]);
                 const categories = ref([]);
                 const contracts = ref([]);
+                const cancelledContracts = ref([]);
+                const overpaidContracts = ref([]);
                 const partners = ref([]);
                 const buildings = ref([]);
                 const suppliers = ref([]);
@@ -657,16 +699,78 @@
                     ];
                 });
 
-                // Target category tabs
-                const targetOptions = [
-                    { key: 'contract', label: 'Shartnoma / Mijoz', icon: '📑' },
-                    { key: 'building', label: 'Obyekt / Bino', icon: '🏢' },
-                    { key: 'partner', label: 'Hamkor', icon: '🤝' },
-                    { key: 'supplier', label: "Ta'minotchi", icon: '🚚' },
-                    { key: 'worker', label: 'Ishchi / Usta', icon: '👷' },
-                    { key: 'brigade', label: 'Brigada', icon: '🏗️' },
-                    { key: 'machine_owner', label: 'Texnika Egasi', icon: '🚜' },
-                ];
+                // Target category tabs (Dynamic based on income/expense)
+                const targetOptions = computed(() => {
+                    if (form.value.type === 'expense') {
+                        return [
+                            { key: 'cancelled_contract', label: 'Bekor qilingan shartnoma', icon: '🔄' },
+                            { key: 'overpayment', label: "Ortiqcha to'lov", icon: '💸' },
+                            { key: 'contract', label: 'Shartnoma / Mijoz', icon: '📑' },
+                            { key: 'building', label: 'Obyekt / Bino', icon: '🏢' },
+                            { key: 'partner', label: 'Hamkor', icon: '🤝' },
+                            { key: 'supplier', label: "Ta'minotchi", icon: '🚚' },
+                            { key: 'worker', label: 'Ishchi / Usta', icon: '👷' },
+                            { key: 'brigade', label: 'Brigada', icon: '🏗️' },
+                            { key: 'machine_owner', label: 'Texnika Egasi', icon: '🚜' },
+                        ];
+                    }
+                    return [
+                        { key: 'contract', label: 'Shartnoma / Mijoz', icon: '📑' },
+                        { key: 'building', label: 'Obyekt / Bino', icon: '🏢' },
+                        { key: 'partner', label: 'Hamkor', icon: '🤝' },
+                        { key: 'supplier', label: "Ta'minotchi", icon: '🚚' },
+                        { key: 'worker', label: 'Ishchi / Usta', icon: '👷' },
+                        { key: 'brigade', label: 'Brigada', icon: '🏗️' },
+                        { key: 'machine_owner', label: 'Texnika Egasi', icon: '🚜' },
+                    ];
+                });
+
+                // Helpers for Cancelled and Overpaid Contracts
+                const selectedCancelledContract = computed(() => {
+                    if (!form.value.contract_id) return null;
+                    return cancelledContracts.value.find(c => c.id === form.value.contract_id);
+                });
+
+                const selectedOverpaidContract = computed(() => {
+                    if (!form.value.contract_id) return null;
+                    return overpaidContracts.value.find(c => c.id === form.value.contract_id);
+                });
+
+                const onCancelledContractSelect = () => {
+                    triggerHaptic('medium');
+                    const c = selectedCancelledContract.value;
+                    if (c) {
+                        if (!form.value.amount || form.value.amount === 0) {
+                            form.value.amount = c.remaining_refund || c.refund_target || 0;
+                        }
+                        // Find matching category: "Bekor qilingan shartnoma to'lovi"
+                        const matchCat = categories.value.find(cat => 
+                            cat.id === 44 || 
+                            cat.name.toLowerCase().includes('bekor')
+                        );
+                        if (matchCat) {
+                            form.value.category_id = matchCat.id;
+                        }
+                    }
+                };
+
+                const onOverpaidContractSelect = () => {
+                    triggerHaptic('medium');
+                    const c = selectedOverpaidContract.value;
+                    if (c) {
+                        if (!form.value.amount || form.value.amount === 0) {
+                            form.value.amount = c.overpaid_amount || 0;
+                        }
+                        // Find matching category: "Ortiqcha to'lovni qaytarish"
+                        const matchCat = categories.value.find(cat => 
+                            cat.id === 43 || 
+                            cat.name.toLowerCase().includes('ortiqcha')
+                        );
+                        if (matchCat) {
+                            form.value.category_id = matchCat.id;
+                        }
+                    }
+                };
 
                 // Main Form State
                 const form = ref({
@@ -796,6 +900,8 @@
                         registers.value = res.registers || [];
                         categories.value = res.categories || [];
                         contracts.value = res.contracts || [];
+                        cancelledContracts.value = res.cancelled_contracts || [];
+                        overpaidContracts.value = res.overpaid_contracts || [];
                         partners.value = res.partners || [];
                         buildings.value = res.buildings || [];
                         suppliers.value = res.suppliers || [];
@@ -887,8 +993,9 @@
                         formData.append('account_id', form.value.account_id);
                         formData.append('category_id', form.value.category_id);
                         
-                        if (form.value.target_mode === 'contract' && form.value.contract_id) {
+                        if ((form.value.target_mode === 'contract' || form.value.target_mode === 'cancelled_contract' || form.value.target_mode === 'overpayment') && form.value.contract_id) {
                             formData.append('contract_id', form.value.contract_id);
+                            formData.append('target_mode', form.value.target_mode);
                         } else if (form.value.target_mode === 'building' && form.value.building_id) {
                             formData.append('building_id', form.value.building_id);
                         } else if (form.value.target_mode === 'partner' && form.value.partner_id) {

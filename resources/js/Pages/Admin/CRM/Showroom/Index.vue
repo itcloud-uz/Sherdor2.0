@@ -62,6 +62,9 @@ const viewMode = ref('facade');
 // Floor Plan view sub-mode: 'split' (Blueprint + Units side) vs 'cards' (All 3D cards)
 const floorPlanDisplayMode = ref('split');
 
+// Blueprint background image toggle state (on/off for clean schematic mode)
+const showBlueprintImage = ref(true);
+
 // Blueprint Zoom state
 const blueprintZoom = ref(1);
 const zoomIn = () => {
@@ -932,7 +935,18 @@ onMounted(() => {
                 </div>
 
                 <!-- Right Toolbar: Display mode + Zoom controls -->
-                <div class="flex items-center gap-3 shrink-0">
+                <div class="flex items-center gap-2 shrink-0">
+                    <!-- Blueprint Background Toggle -->
+                    <button 
+                        @click="showBlueprintImage = !showBlueprintImage"
+                        :class="showBlueprintImage ? 'bg-orange-50 text-orange-600 border-orange-200 font-bold' : 'bg-slate-100 text-slate-500 border-slate-200 font-medium'"
+                        class="px-2.5 py-1.5 rounded-xl text-xs border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs hover:bg-slate-200/70"
+                        :title="showBlueprintImage ? 'Chizma fon rasmini o\'chirish (aniq sxemani ko\'rish)' : 'Chizma fon rasmini ko\'rsatish'"
+                    >
+                        <span>🗺️</span>
+                        <span class="hidden sm:inline">{{ showBlueprintImage ? 'Chizma foni: Yoqilgan' : 'Sxema rejimi' }}</span>
+                    </button>
+
                     <!-- Display mode switch -->
                     <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
                         <button 
@@ -979,7 +993,25 @@ onMounted(() => {
                                     :viewBox="`0 0 ${floorBlueprintNaturalSize.width} ${floorBlueprintNaturalSize.height}`"
                                     preserveAspectRatio="xMidYMid meet"
                                 >
+                                    <defs>
+                                        <!-- Architectural Grid Background Pattern -->
+                                        <pattern id="archGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f1f5f9" stroke-width="1" />
+                                        </pattern>
+                                    </defs>
+
+                                    <!-- Architectural Drafting Background -->
+                                    <rect 
+                                        x="0" 
+                                        y="0" 
+                                        :width="floorBlueprintNaturalSize.width" 
+                                        :height="floorBlueprintNaturalSize.height" 
+                                        fill="url(#archGrid)" 
+                                    />
+
+                                    <!-- Blueprint Background Image (Optional toggle) -->
                                     <image 
+                                        v-if="showBlueprintImage && activeFloorBlueprintUrl"
                                         :href="activeFloorBlueprintUrl" 
                                         x="0" 
                                         y="0" 
@@ -988,7 +1020,7 @@ onMounted(() => {
                                         preserveAspectRatio="xMidYMid meet"
                                     />
 
-                                    <!-- Unit SVG Polygons (Semi-transparent so blueprint details show clearly!) -->
+                                    <!-- Unit SVG Polygons -->
                                     <g 
                                         v-for="unit in (activeFloor?.units || [])" 
                                         :key="'unit-svg-' + unit.id"
@@ -1006,7 +1038,7 @@ onMounted(() => {
                                                 :height="getUnitSvgShape(unit).height"
                                                 :fill="getUnitFillColor(unit, hoveredUnit?.id === unit.id)"
                                                 :stroke="hoveredUnit?.id === unit.id ? '#ea580c' : getUnitStrokeColor(unit)"
-                                                :stroke-width="hoveredUnit?.id === unit.id ? 3.5 : 1.8"
+                                                :stroke-width="hoveredUnit?.id === unit.id ? 3.5 : 2"
                                                 class="transition-all duration-200"
                                             />
                                             <polygon 
@@ -1014,7 +1046,7 @@ onMounted(() => {
                                                 :points="getUnitSvgShape(unit).points"
                                                 :fill="getUnitFillColor(unit, hoveredUnit?.id === unit.id)"
                                                 :stroke="hoveredUnit?.id === unit.id ? '#ea580c' : getUnitStrokeColor(unit)"
-                                                :stroke-width="hoveredUnit?.id === unit.id ? 3.5 : 1.8"
+                                                :stroke-width="hoveredUnit?.id === unit.id ? 3.5 : 2"
                                                 class="transition-all duration-200"
                                             />
                                         </template>
@@ -1024,7 +1056,10 @@ onMounted(() => {
                                     <g 
                                         v-for="unit in (activeFloor?.units || [])" 
                                         :key="'unit-badge-' + unit.id"
-                                        class="pointer-events-none select-none"
+                                        class="cursor-pointer select-none"
+                                        @click="openUnitModal(unit)"
+                                        @mouseenter="hoveredUnit = unit"
+                                        @mouseleave="hoveredUnit = null"
                                     >
                                         <g 
                                             v-if="getUnitBadgeCenter(unit)" 
@@ -1033,40 +1068,40 @@ onMounted(() => {
                                         >
                                             <!-- Pill Background -->
                                             <rect 
-                                                x="-44" 
-                                                y="-16" 
-                                                width="88" 
-                                                height="32" 
-                                                rx="8" 
-                                                ry="8" 
+                                                x="-52" 
+                                                y="-20" 
+                                                width="104" 
+                                                height="40" 
+                                                rx="10" 
+                                                ry="10" 
                                                 :fill="hoveredUnit?.id === unit.id ? '#ea580c' : '#ffffff'" 
                                                 :stroke="hoveredUnit?.id === unit.id ? '#ffffff' : (unit.status === 'sold' ? '#ef4444' : (unit.status === 'reserved' || unit.status === 'booked' ? '#f59e0b' : '#10b981'))"
-                                                stroke-width="1.8"
-                                                filter="drop-shadow(0 2px 5px rgba(0,0,0,0.14))"
+                                                stroke-width="2"
+                                                filter="drop-shadow(0 3px 8px rgba(0,0,0,0.18))"
                                             />
                                             <!-- Status dot -->
                                             <circle 
-                                                cx="-32" 
+                                                cx="-38" 
                                                 cy="-4" 
-                                                r="3" 
+                                                r="4" 
                                                 :fill="hoveredUnit?.id === unit.id ? '#ffffff' : (unit.status === 'sold' ? '#ef4444' : (unit.status === 'reserved' || unit.status === 'booked' ? '#f59e0b' : '#10b981'))" 
                                             />
                                             <!-- Apartment Number -->
                                             <text 
-                                                x="-24" 
+                                                x="-28" 
                                                 y="0" 
                                                 :fill="hoveredUnit?.id === unit.id ? '#ffffff' : '#0f172a'" 
-                                                font-size="11" 
+                                                font-size="12" 
                                                 font-weight="900" 
                                                 font-family="sans-serif"
                                             >№ {{ unit.unit_number }}</text>
                                             <!-- Area & Rooms -->
                                             <text 
                                                 x="0" 
-                                                y="10" 
-                                                :fill="hoveredUnit?.id === unit.id ? '#ffedd5' : '#64748b'" 
-                                                font-size="8.5" 
-                                                font-weight="700" 
+                                                y="12" 
+                                                :fill="hoveredUnit?.id === unit.id ? '#ffedd5' : '#475569'" 
+                                                font-size="9" 
+                                                font-weight="800" 
                                                 font-family="sans-serif"
                                                 text-anchor="middle"
                                             >{{ unit.rooms_count }}x • {{ unit.area_sqm }}m²</text>

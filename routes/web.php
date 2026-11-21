@@ -125,6 +125,19 @@ Route::get('/', function () {
     return Inertia::render('Public/Landing');
 })->name('landing');
 
+Route::redirect('/dashboard', '/admin/dashboard')->name('dashboard');
+
+// Public Receipt Verification Route
+Route::get('/receipt/verify/{hash}', [\App\Http\Controllers\Public\PublicReceiptController::class, 'verify'])->name('public.receipt.verify');
+Route::post('/receipt/verify/{hash}/auth', [\App\Http\Controllers\Public\PublicReceiptController::class, 'authenticate'])->name('public.receipt.auth');
+
+// Telegram Mini App (Kirim / Chiqim)
+Route::get('/miniapp/transactions', [\App\Http\Controllers\TelegramMiniAppController::class, 'index'])->name('miniapp.transactions');
+Route::post('/miniapp/api/init', [\App\Http\Controllers\TelegramMiniAppController::class, 'init'])->name('miniapp.init');
+Route::post('/miniapp/api/transactions', [\App\Http\Controllers\TelegramMiniAppController::class, 'storeTransaction'])->name('miniapp.store_transaction');
+Route::get('/miniapp/api/pending', [\App\Http\Controllers\TelegramMiniAppController::class, 'getPending'])->name('miniapp.pending');
+Route::post('/miniapp/api/approve', [\App\Http\Controllers\TelegramMiniAppController::class, 'processApproval'])->name('miniapp.approve');
+
 Route::get('/promo/offers', function () use ($getLeadFormData) {
     return Inertia::render('Public/LeadForm', $getLeadFormData());
 })->name('promo.offers');

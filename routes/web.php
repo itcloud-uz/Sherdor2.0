@@ -122,16 +122,7 @@ Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('admin.dashboard');
     }
-    $settings = \App\Models\SystemSetting::first();
-    return Inertia::render('Public/Landing', [
-        'settings' => $settings ? [
-            'appName' => $settings->app_name ?? 'Sher-Dor',
-            'companyName' => $settings->company_name ?? 'Sher-Dor TJM',
-            'phone' => $settings->company_phone ?? '(97) 708-44-44, (93) 573-29-29',
-            'address' => $settings->company_address ?? 'Urgut tuman, Do\'stlik mahallasi, Navoiy-Shoh ko\'chasi №3-uy',
-            'fbPixelId' => $settings->fb_pixel_id,
-        ] : null,
-    ]);
+    return Inertia::render('Public/Landing');
 })->name('landing');
 
 Route::get('/promo/offers', function () use ($getLeadFormData) {
@@ -149,24 +140,14 @@ Route::get('/uylar', function () use ($getLeadFormData) {
 // Dedicated High-Converting Target Landing Pages for Instagram & Social Media Ads
 $targetHandler = function () {
     $settings = \App\Models\SystemSetting::first();
-    $buildings = \App\Models\Building::whereIn('id', [20, 22])->orderBy('id')->get()->map(function($b) {
-        return [
-            'id' => $b->id,
-            'name' => $b->name,
-            'block_name' => $b->block_name ?? ($b->corpus_name ? $b->corpus_name . ' BLOK' : 'BLOK ' . $b->id),
-            'model_3d_path' => $b->model_3d_path ? '/storage/' . $b->model_3d_path : null,
-            'photo_path' => $b->photo_path ? '/storage/' . $b->photo_path : null,
-        ];
-    });
-
     return Inertia::render('Public/Target', [
-        'promoSettings' => $settings ? [
-            'promo_title' => $settings->promo_title,
-            'promo_subtitle' => $settings->promo_subtitle,
-            'fb_pixel_id' => $settings->fb_pixel_id,
+        'settings' => $settings ? [
+            'appName' => $settings->app_name ?? 'Sher-Dor',
+            'companyName' => $settings->company_name ?? 'Sher-Dor TJM',
+            'phone' => $settings->company_phone ?? '(97) 708-44-44, (93) 573-29-29',
+            'address' => $settings->company_address ?? 'Urgut tuman, Do\'stlik mahallasi, Navoiy-Shoh ko\'chasi №3-uy',
+            'fbPixelId' => $settings->fb_pixel_id,
         ] : null,
-        'companyPhone' => $settings->phone ?? '+998 94 633 04 00',
-        'buildings' => $buildings,
     ]);
 };
 

@@ -62,11 +62,26 @@ const viewMode = ref('facade');
 // Floor Plan view sub-mode: 'split' (Blueprint + Units side) vs 'cards' (All 3D cards)
 const floorPlanDisplayMode = ref('split');
 
+// Blueprint Zoom state
+const blueprintZoom = ref(1);
+const zoomIn = () => {
+    if (blueprintZoom.value < 2.5) blueprintZoom.value = +(blueprintZoom.value + 0.2).toFixed(1);
+};
+const zoomOut = () => {
+    if (blueprintZoom.value > 0.6) blueprintZoom.value = +(blueprintZoom.value - 0.2).toFixed(1);
+};
+const resetZoom = () => {
+    blueprintZoom.value = 1;
+};
+
 // Active floor & hover states
 const activeFloor = ref(null);
 const hoveredFloor = ref(null);
 const hoveredUnit = ref(null);
 const hoveredBlock = ref(null);
+
+// Right sidebar status filter: 'all' | 'available' | 'reserved' | 'sold'
+const sidebarStatusFilter = ref('all');
 
 // Unit detail modal state
 const selectedUnit = ref(null);
@@ -87,6 +102,7 @@ const closeLightbox = () => {
 const openFloorPlan = (floor) => {
     activeFloor.value = floor;
     viewMode.value = 'floor_plan';
+    resetZoom();
 };
 
 // Open unit modal
@@ -131,12 +147,10 @@ watch(sortedFloors, (floors) => {
     }
 }, { immediate: true });
 
-// Blueprint URL for active floor
+// Blueprint URL for active floor (clean: returns null if not set)
 const activeFloorBlueprintUrl = computed(() => {
-    if (!activeFloor.value) return '/images/clean-building-facade.jpg';
-    return activeFloor.value.blueprint_path 
-        ? `/storage/${activeFloor.value.blueprint_path}` 
-        : '/images/clean-building-facade.jpg';
+    if (!activeFloor.value?.blueprint_path) return null;
+    return `/storage/${activeFloor.value.blueprint_path}`;
 });
 
 const floorBlueprintNaturalSize = ref({ width: 1200, height: 800 });
@@ -156,7 +170,7 @@ const loadFloorBlueprintDimensions = (url) => {
 };
 
 watch(activeFloorBlueprintUrl, (newUrl) => {
-    loadFloorBlueprintDimensions(newUrl);
+    if (newUrl) loadFloorBlueprintDimensions(newUrl);
 }, { immediate: true });
 
 // Facade Image URL
@@ -356,6 +370,36 @@ const getUnitSvgShape = (unit) => {
     return null;
 };
 
+// Calculate centroid / badge center for on-canvas apartment badge
+const getUnitBadgeCenter = (unit) => {
+    if (!unit || !unit.svg_polygon) return null;
+    try {
+        const shape = getUnitSvgShape(unit);
+        if (!shape) return null;
+        if (shape.type === 'rect') {
+            return {
+                x: Math.round(shape.x + shape.width / 2),
+                y: Math.round(shape.y + shape.height / 2)
+            };
+        }
+        if (shape.type === 'polygon' && shape.points) {
+            const pts = shape.points.trim().split(/\s+/).map(p => {
+                const parts = p.split(',');
+                return { x: Number(parts[0]), y: Number(parts[1]) };
+            }).filter(pt => !isNaN(pt.x) && !isNaN(pt.y));
+            if (pts.length > 0) {
+                let sumX = 0, sumY = 0;
+                pts.forEach(p => { sumX += p.x; sumY += p.y; });
+                return {
+                    x: Math.round(sumX / pts.length),
+                    y: Math.round(sumY / pts.length)
+                };
+            }
+        }
+    } catch (e) {}
+    return null;
+};
+
 // Master plan polygon
 const getBlockMasterPlanShape = (block) => {
     if (!block || !block.master_plan_polygon) return null;
@@ -408,12 +452,12 @@ const getBlockMasterPlanShape = (block) => {
     return null;
 };
 
-// Colors & Formatting
+// Elegant semi-transparent polygon fills (allows architectural blueprint details to stay visible!)
 const getUnitFillColor = (unit, isHovered) => {
-    if (isHovered) return 'rgba(249, 115, 22, 0.65)';
-    if (unit.status === 'sold') return 'rgba(239, 68, 68, 0.45)';
-    if (unit.status === 'reserved' || unit.status === 'booked') return 'rgba(245, 158, 11, 0.45)';
-    return 'rgba(16, 185, 129, 0.45)';
+    if (isHovered) return 'rgba(249, 115, 22, 0.45)';
+    if (unit.status === 'sold') return 'rgba(239, 68, 68, 0.22)';
+    if (unit.status === 'reserved' || unit.status === 'booked') return 'rgba(245, 158, 11, 0.25)';
+    return 'rgba(16, 185, 129, 0.20)';
 };
 
 const getUnitStrokeColor = (unit) => {
@@ -462,6 +506,16 @@ const activeFloorUnits = computed(() => {
     return filterUnitsList(activeFloor.value?.units || []);
 });
 
+// Filtered floor units for right sidebar based on status chips
+const filteredFloorUnits = computed(() => {
+    const units = activeFloor.value?.units || [];
+    if (sidebarStatusFilter.value === 'all') return units;
+    if (sidebarStatusFilter.value === 'available') return units.filter(u => u.status === 'available');
+    if (sidebarStatusFilter.value === 'reserved') return units.filter(u => u.status === 'reserved' || u.status === 'booked');
+    if (sidebarStatusFilter.value === 'sold') return units.filter(u => u.status === 'sold');
+    return units;
+});
+
 // Shaxmatka columns
 const leftColumnFloors = computed(() => {
     const floors = [...sortedFloors.value];
@@ -494,23 +548,23 @@ onMounted(() => {
         <!-- ========================================================================= -->
         <!-- UNIVERSAL TOP NAVIGATION BAR                                             -->
         <!-- ========================================================================= -->
-        <header class="h-[58px] bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between shadow-xs shrink-0 z-40 gap-3">
+        <header class="h-[60px] bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between shadow-2xs shrink-0 z-40 gap-3">
             
             <!-- Left: Back to Dashboard & Object Title -->
             <div class="flex items-center gap-3 shrink-0">
                 <Link 
-                    :href="route('admin.dashboard')" 
+                    :href="route('admin.crm')" 
                     class="h-9 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                    title="Boshqaruv paneliga qaytish"
+                    title="CRM bo'limiga qaytish"
                 >
                     <span class="text-sm font-black">←</span>
-                    <span class="hidden sm:inline">Panel</span>
+                    <span class="font-bold">CRM</span>
                 </Link>
 
                 <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
 
                 <!-- Object Name -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2.5">
                     <span class="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 flex items-center justify-center font-black text-sm">
                         🏢
                     </span>
@@ -526,15 +580,15 @@ onMounted(() => {
             </div>
 
             <!-- Center: 1-Click Block Selector Tabs (Har bir bo'lim) -->
-            <div class="hidden lg:flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <div class="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
                 <button
                     v-for="b in availableBlocks"
                     :key="'tab-b-' + b.id"
                     @click="selectBlock(b.id)"
                     :class="selectedBuildingId === b.id 
                         ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20 font-black' 
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 font-bold'"
-                    class="h-7 px-3 rounded-lg text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 font-bold'"
+                    class="h-7.5 px-3.5 rounded-lg text-xs transition-all cursor-pointer flex items-center gap-1.5"
                 >
                     <span>🏢</span>
                     <span>{{ b.block_name || b.corpus_name || b.name }}</span>
@@ -542,91 +596,83 @@ onMounted(() => {
             </div>
 
             <!-- Right: View Mode Switches (3D Maket, Fasad, Qavat, Shaxmatka, Galereya) -->
-            <div class="flex items-center gap-1.5 shrink-0">
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs shrink-0">
                 <!-- Master plan toggle -->
                 <button 
                     v-if="hasMasterPlan"
                     @click="viewMode = 'master_plan'"
-                    :class="viewMode === 'master_plan' ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                    class="h-8.5 px-3 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border border-slate-200/80 cursor-pointer"
+                    :class="viewMode === 'master_plan' ? 'bg-white text-orange-600 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                    class="h-7.5 px-3 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer"
                     title="Umumiy 3D Maket"
                 >
                     <span>🌐</span>
-                    <span class="hidden md:inline">3D Maket</span>
+                    <span class="hidden lg:inline">3D Maket</span>
                 </button>
 
                 <!-- Facade toggle -->
                 <button 
                     @click="viewMode = 'facade'"
-                    :class="viewMode === 'facade' ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                    class="h-8.5 px-3 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border border-slate-200/80 cursor-pointer"
+                    :class="viewMode === 'facade' ? 'bg-white text-orange-600 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                    class="h-7.5 px-3 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer"
                     title="Bino 3D Fasadi"
                 >
                     <span>🏢</span>
-                    <span class="hidden md:inline">3D Bino</span>
+                    <span class="hidden lg:inline">3D Bino</span>
                 </button>
 
                 <!-- Floor Plan toggle -->
                 <button 
                     @click="viewMode = 'floor_plan'"
-                    :class="viewMode === 'floor_plan' ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                    class="h-8.5 px-3 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border border-slate-200/80 cursor-pointer"
+                    :class="viewMode === 'floor_plan' ? 'bg-white text-orange-600 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                    class="h-7.5 px-3 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer"
                     title="Qavat & Xonadonlar Rejasi"
                 >
                     <span>📐</span>
-                    <span class="hidden md:inline">Qavatlar</span>
+                    <span class="hidden lg:inline">Qavatlar</span>
                 </button>
 
                 <!-- Shaxmatka toggle -->
                 <button 
                     @click="viewMode = 'shaxmatka'"
-                    :class="viewMode === 'shaxmatka' ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                    class="h-8.5 px-3 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border border-slate-200/80 cursor-pointer"
+                    :class="viewMode === 'shaxmatka' ? 'bg-white text-orange-600 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                    class="h-7.5 px-3 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer"
                     title="Shaxmatka ko'rinishi"
                 >
                     <span>📊</span>
-                    <span class="hidden md:inline">Shaxmatka</span>
+                    <span class="hidden lg:inline">Shaxmatka</span>
                 </button>
 
                 <!-- 3D Showroom Renders Gallery toggle -->
                 <button 
                     v-if="showroomImages.length > 0"
                     @click="viewMode = 'gallery'"
-                    :class="viewMode === 'gallery' ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                    class="h-8.5 px-3 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border border-slate-200/80 cursor-pointer"
+                    :class="viewMode === 'gallery' ? 'bg-white text-orange-600 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                    class="h-7.5 px-3 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer"
                     title="3D Showroom Galereyasi"
                 >
                     <span>🖼️</span>
-                    <span class="hidden md:inline">3D Galereya</span>
+                    <span class="hidden lg:inline">3D Galereya</span>
                 </button>
             </div>
         </header>
 
         <!-- Block Switcher Pills on Mobile/Tablet -->
-        <div class="lg:hidden bg-white border-b border-slate-200 px-4 py-2 flex items-center gap-1.5 overflow-x-auto shrink-0 z-30">
+        <div class="md:hidden bg-white border-b border-slate-200 px-4 py-2 flex items-center gap-1.5 overflow-x-auto shrink-0 z-30">
             <button
                 v-for="b in availableBlocks"
                 :key="'mob-b-' + b.id"
                 @click="selectBlock(b.id)"
-                :class="selectedBuildingId === b.id ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-700'"
-                class="px-3 py-1 rounded-lg text-xs font-black shrink-0 cursor-pointer"
+                :class="selectedBuildingId === b.id ? 'bg-orange-500 text-white font-black' : 'bg-slate-100 text-slate-700 font-bold'"
+                class="px-3 py-1 rounded-lg text-xs shrink-0 cursor-pointer"
             >
                 {{ b.block_name || b.corpus_name || b.name }}
             </button>
         </div>
 
         <!-- ========================================================================= -->
-        <!-- 0. FULL SCREEN 3D COMPLEX MASTER PLAN (BOSH REJA)                        -->
+        <!-- 0. FULL SCREEN 3D MASTER PLAN (BOSH REJA)                                -->
         <!-- ========================================================================= -->
-        <div v-if="viewMode === 'master_plan'" class="flex-1 w-full h-[calc(100vh-58px)] flex items-center justify-center overflow-hidden relative bg-[#f1f5f9]">
-            <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                <img 
-                    :src="masterPlanImageUrl || buildingImageUrl" 
-                    class="w-full h-full object-cover filter blur-3xl opacity-60 scale-110"
-                />
-                <div class="absolute inset-0 bg-white/20 backdrop-blur-xl"></div>
-            </div>
-
+        <div v-if="viewMode === 'master_plan'" class="flex-1 w-full h-[calc(100vh-60px)] flex items-center justify-center overflow-hidden relative bg-slate-900">
             <div class="relative z-10 w-full h-full p-3 md:p-6 flex items-center justify-center">
                 <svg 
                     class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl rounded-2xl" 
@@ -721,22 +767,13 @@ onMounted(() => {
         <!-- ========================================================================= -->
         <!-- 1. FULL SCREEN 3D BINO FASADI (HAR BIR QAVATNI TANLASH)                  -->
         <!-- ========================================================================= -->
-        <div v-else-if="viewMode === 'facade'" class="flex-1 w-full h-[calc(100vh-58px)] flex items-center justify-center overflow-hidden relative bg-[#f1f5f9]">
+        <div v-else-if="viewMode === 'facade'" class="flex-1 w-full h-[calc(100vh-60px)] flex items-center justify-center overflow-hidden relative bg-[#f8fafc]">
             
-            <!-- Ambient Backdrop -->
-            <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                <img 
-                    :src="buildingImageUrl" 
-                    class="w-full h-full object-cover filter blur-3xl opacity-60 scale-110"
-                />
-                <div class="absolute inset-0 bg-white/20 backdrop-blur-xl"></div>
-            </div>
-
             <!-- Vertical Interactive 3D Floor Elevator (Chap tomondagi Qavatlar Panel) -->
-            <div class="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-1.5 bg-white/90 backdrop-blur-md p-3 rounded-3xl shadow-2xl border border-slate-200/90 max-h-[85vh] overflow-y-auto w-48 sm:w-56">
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 pb-1 border-b border-slate-100 flex items-center justify-between">
+            <div class="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-1.5 bg-white/95 backdrop-blur-md p-3.5 rounded-3xl shadow-xl border border-slate-200/90 max-h-[85vh] overflow-y-auto w-52 sm:w-60">
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 pb-2 border-b border-slate-100 flex items-center justify-between">
                     <span>QAVATLAR RO'YXATI</span>
-                    <span class="text-orange-500 font-mono">{{ sortedFloors.length }} ta</span>
+                    <span class="text-orange-500 font-mono font-bold">{{ sortedFloors.length }} ta</span>
                 </div>
                 <button
                     v-for="floor in [...sortedFloors].reverse()"
@@ -747,9 +784,9 @@ onMounted(() => {
                     :class="hoveredFloor?.id === floor.id 
                         ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]' 
                         : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/60'"
-                    class="px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-between gap-2 cursor-pointer group text-left"
+                    class="px-3.5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-between gap-2 cursor-pointer group text-left"
                 >
-                    <span class="flex items-center gap-1.5 truncate">
+                    <span class="flex items-center gap-2 truncate">
                         <span class="text-xs">{{ floor.floor_number < 0 ? '🅿️' : '🏢' }}</span>
                         <span class="truncate">{{ floor.floor_number < 0 ? `${floor.floor_number}-yerto'la` : `${floor.floor_number}-qavat` }}</span>
                     </span>
@@ -763,9 +800,9 @@ onMounted(() => {
             </div>
 
             <!-- Central 3D Facade SVG with Floor Click Targets -->
-            <div class="relative z-10 w-full h-full p-3 md:p-6 flex items-center justify-center pl-56 sm:pl-64">
+            <div class="relative z-10 w-full h-full p-4 md:p-8 flex items-center justify-center pl-60 sm:pl-72">
                 <svg 
-                    class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl rounded-2xl" 
+                    class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-xl rounded-2xl bg-white" 
                     :viewBox="`0 0 ${facadeNaturalSize.width} ${facadeNaturalSize.height}`"
                     preserveAspectRatio="xMidYMid meet"
                 >
@@ -865,174 +902,310 @@ onMounted(() => {
         </div>
 
         <!-- ========================================================================= -->
-        <!-- 2. FULL SCREEN QAVAT & XONADONLAR (3D MODELLAR VA CHIZMA)                -->
+        <!-- 2. FULL SCREEN QAVAT & XONADONLAR (CHIZMA VA XONADONLAR)                 -->
         <!-- ========================================================================= -->
-        <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col w-full h-[calc(100vh-58px)] overflow-hidden bg-[#f1f5f9]">
+        <div v-else-if="viewMode === 'floor_plan'" class="flex-1 flex flex-col w-full h-[calc(100vh-60px)] overflow-hidden bg-[#f8fafc]">
             
-            <!-- Floor Plan Top Bar: Quick Floor Navigation Pills & Mode Switcher -->
-            <div class="bg-white border-b border-slate-200 px-4 md:px-6 py-2.5 flex items-center justify-between gap-4 shrink-0 z-30 shadow-xs">
+            <!-- Floor Plan Sub-header: Quick Floor Navigation & Display Mode -->
+            <div class="bg-white border-b border-slate-200 px-4 md:px-6 py-2 flex items-center justify-between gap-4 shrink-0 z-30 shadow-2xs">
                 
                 <!-- Floor selector pills: -1, 1, 2, ... 8 -->
-                <div class="flex items-center gap-1.5 overflow-x-auto">
+                <div class="flex items-center gap-1.5 overflow-x-auto py-0.5">
                     <button
                         v-for="fl in sortedFloors"
                         :key="'fl-pill-' + fl.id"
-                        @click="activeFloor = fl"
+                        @click="activeFloor = fl; resetZoom()"
                         :class="activeFloor?.id === fl.id 
                             ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20 font-black scale-105' 
                             : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold'"
-                        class="px-3 py-1.5 rounded-xl text-xs transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                        class="px-3 py-1.5 rounded-xl text-xs transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
                     >
                         <span>{{ fl.floor_number < 0 ? '🅿️' : '🏢' }}</span>
                         <span>{{ fl.floor_number < 0 ? `${fl.floor_number}-yerto'la` : `${fl.floor_number}-qavat` }}</span>
+                        <span 
+                            class="px-1.5 py-0.2 rounded-md text-[10px] font-mono"
+                            :class="activeFloor?.id === fl.id ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-600'"
+                        >
+                            {{ (fl.units || []).length }}
+                        </span>
                     </button>
                 </div>
 
-                <!-- Display mode: Split vs 3D Cards Grid -->
-                <div class="flex items-center gap-2 shrink-0">
-                    <button 
-                        @click="floorPlanDisplayMode = 'split'"
-                        :class="floorPlanDisplayMode === 'split' ? 'bg-orange-50 text-orange-600 border-orange-300 font-black' : 'bg-white text-slate-600 border-slate-200 font-bold'"
-                        class="px-3 py-1.5 rounded-xl text-xs border transition-all flex items-center gap-1.5 cursor-pointer"
-                        title="Chizma va Xonadonlar"
-                    >
-                        <span>📐</span>
-                        <span class="hidden sm:inline">Chizma + Ro'yxat</span>
-                    </button>
-                    <button 
-                        @click="floorPlanDisplayMode = 'cards'"
-                        :class="floorPlanDisplayMode === 'cards' ? 'bg-orange-50 text-orange-600 border-orange-300 font-black' : 'bg-white text-slate-600 border-slate-200 font-bold'"
-                        class="px-3 py-1.5 rounded-xl text-xs border transition-all flex items-center gap-1.5 cursor-pointer"
-                        title="Faqat 3D Kartochkalar"
-                    >
-                        <span>🏢</span>
-                        <span class="hidden sm:inline">3D Kartochkalar</span>
-                    </button>
+                <!-- Right Toolbar: Display mode + Zoom controls -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <!-- Display mode switch -->
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+                        <button 
+                            @click="floorPlanDisplayMode = 'split'"
+                            :class="floorPlanDisplayMode === 'split' ? 'bg-white text-orange-600 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                            class="px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                            title="Chizma va Xonadonlar"
+                        >
+                            <span>📐</span>
+                            <span class="hidden sm:inline">Chizma + Ro'yxat</span>
+                        </button>
+                        <button 
+                            @click="floorPlanDisplayMode = 'cards'"
+                            :class="floorPlanDisplayMode === 'cards' ? 'bg-white text-orange-600 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                            class="px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                            title="Faqat 3D Kartochkalar"
+                        >
+                            <span>🏢</span>
+                            <span class="hidden sm:inline">3D Kartochkalar</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Floor View Area: Split or Grid -->
             <div class="flex-1 w-full h-[calc(100vh-108px)] overflow-hidden flex">
                 
-                <!-- SPLIT MODE: Left SVG Blueprint (65%) + Right 3D Units List (35%) -->
+                <!-- SPLIT MODE: Left SVG Blueprint (65%) + Right Interactive Units List (35%) -->
                 <template v-if="floorPlanDisplayMode === 'split'">
-                    <!-- Left: Blueprint SVG -->
+                    <!-- Left: Blueprint Drafting Canvas -->
                     <div class="flex-1 h-full p-4 md:p-6 flex items-center justify-center relative overflow-hidden bg-[#f1f5f9]">
-                        <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                            <img 
-                                :src="activeFloorBlueprintUrl" 
-                                class="w-full h-full object-cover filter blur-3xl opacity-40 scale-110"
-                            />
-                            <div class="absolute inset-0 bg-white/30 backdrop-blur-xl"></div>
-                        </div>
-
-                        <div class="relative z-10 w-full h-full flex items-center justify-center">
-                            <svg 
-                                class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-2xl rounded-2xl" 
-                                :viewBox="`0 0 ${floorBlueprintNaturalSize.width} ${floorBlueprintNaturalSize.height}`"
-                                preserveAspectRatio="xMidYMid meet"
+                        
+                        <!-- SVG Blueprint Container -->
+                        <div 
+                            v-if="activeFloorBlueprintUrl"
+                            class="w-full h-full flex items-center justify-center relative overflow-hidden"
+                        >
+                            <div 
+                                class="w-full h-full flex items-center justify-center"
+                                :style="{ transform: `scale(${blueprintZoom})`, transformOrigin: 'center center', transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }"
                             >
-                                <image 
-                                    :href="activeFloorBlueprintUrl" 
-                                    x="0" 
-                                    y="0" 
-                                    :width="floorBlueprintNaturalSize.width" 
-                                    :height="floorBlueprintNaturalSize.height" 
+                                <svg 
+                                    class="w-full h-full max-h-full block select-none pointer-events-auto filter drop-shadow-xl rounded-2xl bg-white" 
+                                    :viewBox="`0 0 ${floorBlueprintNaturalSize.width} ${floorBlueprintNaturalSize.height}`"
                                     preserveAspectRatio="xMidYMid meet"
-                                />
-
-                                <!-- Unit SVG Polygons -->
-                                <g 
-                                    v-for="unit in (activeFloor?.units || [])" 
-                                    :key="'unit-svg-' + unit.id"
-                                    class="cursor-pointer transition-all duration-200"
-                                    @mouseenter="hoveredUnit = unit"
-                                    @mouseleave="hoveredUnit = null"
-                                    @click="openUnitModal(unit)"
                                 >
-                                    <template v-if="getUnitSvgShape(unit)">
-                                        <rect 
-                                            v-if="getUnitSvgShape(unit).type === 'rect'"
-                                            :x="getUnitSvgShape(unit).x"
-                                            :y="getUnitSvgShape(unit).y"
-                                            :width="getUnitSvgShape(unit).width"
-                                            :height="getUnitSvgShape(unit).height"
-                                            :fill="getUnitFillColor(unit, hoveredUnit?.id === unit.id)"
-                                            :stroke="hoveredUnit?.id === unit.id ? '#ffffff' : getUnitStrokeColor(unit)"
-                                            :stroke-width="hoveredUnit?.id === unit.id ? 4 : 2"
-                                            class="transition-all duration-200"
-                                        />
-                                        <polygon 
-                                            v-else-if="getUnitSvgShape(unit).type === 'polygon'"
-                                            :points="getUnitSvgShape(unit).points"
-                                            :fill="getUnitFillColor(unit, hoveredUnit?.id === unit.id)"
-                                            :stroke="hoveredUnit?.id === unit.id ? '#ffffff' : getUnitStrokeColor(unit)"
-                                            :stroke-width="hoveredUnit?.id === unit.id ? 4 : 2"
-                                            class="transition-all duration-200"
-                                        />
-                                    </template>
-                                </g>
-                            </svg>
+                                    <image 
+                                        :href="activeFloorBlueprintUrl" 
+                                        x="0" 
+                                        y="0" 
+                                        :width="floorBlueprintNaturalSize.width" 
+                                        :height="floorBlueprintNaturalSize.height" 
+                                        preserveAspectRatio="xMidYMid meet"
+                                    />
 
-                            <!-- Blueprint Hover Tooltip -->
-                            <transition
-                                enter-active-class="transition duration-150 ease-out"
-                                enter-from-class="opacity-0 scale-95"
-                                enter-to-class="opacity-100 scale-100"
-                                leave-active-class="transition duration-100 ease-in"
-                                leave-from-class="opacity-100 scale-100"
-                                leave-to-class="opacity-0 scale-95"
-                            >
-                                <div 
-                                    v-if="hoveredUnit"
-                                    class="absolute top-4 left-4 z-30 bg-white/95 backdrop-blur-md shadow-xl rounded-2xl p-4 border border-slate-200/90 pointer-events-none w-64"
-                                >
-                                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                                        <h4 class="font-black text-sm text-slate-900">№ {{ hoveredUnit.unit_number }}-xonadon</h4>
-                                        <span 
-                                            class="text-[10px] font-black px-2 py-0.5 rounded-full"
-                                            :class="hoveredUnit.status === 'sold' ? 'bg-red-100 text-red-700' : (hoveredUnit.status === 'reserved' || hoveredUnit.status === 'booked' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')"
+                                    <!-- Unit SVG Polygons (Semi-transparent so blueprint details show clearly!) -->
+                                    <g 
+                                        v-for="unit in (activeFloor?.units || [])" 
+                                        :key="'unit-svg-' + unit.id"
+                                        class="cursor-pointer transition-all duration-200"
+                                        @mouseenter="hoveredUnit = unit"
+                                        @mouseleave="hoveredUnit = null"
+                                        @click="openUnitModal(unit)"
+                                    >
+                                        <template v-if="getUnitSvgShape(unit)">
+                                            <rect 
+                                                v-if="getUnitSvgShape(unit).type === 'rect'"
+                                                :x="getUnitSvgShape(unit).x"
+                                                :y="getUnitSvgShape(unit).y"
+                                                :width="getUnitSvgShape(unit).width"
+                                                :height="getUnitSvgShape(unit).height"
+                                                :fill="getUnitFillColor(unit, hoveredUnit?.id === unit.id)"
+                                                :stroke="hoveredUnit?.id === unit.id ? '#ea580c' : getUnitStrokeColor(unit)"
+                                                :stroke-width="hoveredUnit?.id === unit.id ? 3.5 : 1.8"
+                                                class="transition-all duration-200"
+                                            />
+                                            <polygon 
+                                                v-else-if="getUnitSvgShape(unit).type === 'polygon'"
+                                                :points="getUnitSvgShape(unit).points"
+                                                :fill="getUnitFillColor(unit, hoveredUnit?.id === unit.id)"
+                                                :stroke="hoveredUnit?.id === unit.id ? '#ea580c' : getUnitStrokeColor(unit)"
+                                                :stroke-width="hoveredUnit?.id === unit.id ? 3.5 : 1.8"
+                                                class="transition-all duration-200"
+                                            />
+                                        </template>
+                                    </g>
+
+                                    <!-- On-Canvas Apartment Labels (Centroid Badges) -->
+                                    <g 
+                                        v-for="unit in (activeFloor?.units || [])" 
+                                        :key="'unit-badge-' + unit.id"
+                                        class="pointer-events-none select-none"
+                                    >
+                                        <g 
+                                            v-if="getUnitBadgeCenter(unit)" 
+                                            :transform="`translate(${getUnitBadgeCenter(unit).x}, ${getUnitBadgeCenter(unit).y})`"
+                                            class="transition-all duration-200"
                                         >
-                                            {{ hoveredUnit.status === 'sold' ? 'Sotilgan' : (hoveredUnit.status === 'reserved' || hoveredUnit.status === 'booked' ? 'Band' : 'Sotuvda') }}
-                                        </span>
-                                    </div>
-                                    <div class="pt-2 text-xs space-y-1 font-bold text-slate-600">
-                                        <div class="flex justify-between"><span>Xonalar:</span><span class="text-slate-900">{{ hoveredUnit.rooms_count }} xona</span></div>
-                                        <div class="flex justify-between"><span>Maydoni:</span><span class="text-slate-900">{{ hoveredUnit.area_sqm }} m²</span></div>
-                                        <div class="flex justify-between text-orange-600"><span>Narxi:</span><span class="font-black">{{ formatSoM(hoveredUnit.price) }}</span></div>
-                                    </div>
-                                </div>
-                            </transition>
+                                            <!-- Pill Background -->
+                                            <rect 
+                                                x="-44" 
+                                                y="-16" 
+                                                width="88" 
+                                                height="32" 
+                                                rx="8" 
+                                                ry="8" 
+                                                :fill="hoveredUnit?.id === unit.id ? '#ea580c' : '#ffffff'" 
+                                                :stroke="hoveredUnit?.id === unit.id ? '#ffffff' : (unit.status === 'sold' ? '#ef4444' : (unit.status === 'reserved' || unit.status === 'booked' ? '#f59e0b' : '#10b981'))"
+                                                stroke-width="1.8"
+                                                filter="drop-shadow(0 2px 5px rgba(0,0,0,0.14))"
+                                            />
+                                            <!-- Status dot -->
+                                            <circle 
+                                                cx="-32" 
+                                                cy="-4" 
+                                                r="3" 
+                                                :fill="hoveredUnit?.id === unit.id ? '#ffffff' : (unit.status === 'sold' ? '#ef4444' : (unit.status === 'reserved' || unit.status === 'booked' ? '#f59e0b' : '#10b981'))" 
+                                            />
+                                            <!-- Apartment Number -->
+                                            <text 
+                                                x="-24" 
+                                                y="0" 
+                                                :fill="hoveredUnit?.id === unit.id ? '#ffffff' : '#0f172a'" 
+                                                font-size="11" 
+                                                font-weight="900" 
+                                                font-family="sans-serif"
+                                            >№ {{ unit.unit_number }}</text>
+                                            <!-- Area & Rooms -->
+                                            <text 
+                                                x="0" 
+                                                y="10" 
+                                                :fill="hoveredUnit?.id === unit.id ? '#ffedd5' : '#64748b'" 
+                                                font-size="8.5" 
+                                                font-weight="700" 
+                                                font-family="sans-serif"
+                                                text-anchor="middle"
+                                            >{{ unit.rooms_count }}x • {{ unit.area_sqm }}m²</text>
+                                        </g>
+                                    </g>
+                                </svg>
+                            </div>
+
+                            <!-- Floating Zoom Controls in bottom-left of canvas -->
+                            <div class="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-1.5 rounded-2xl border border-slate-200 shadow-md">
+                                <button 
+                                    @click="zoomIn" 
+                                    class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-all cursor-pointer"
+                                    title="Kattalashtirish"
+                                >+</button>
+                                <span class="text-xs font-mono font-bold text-slate-600 px-1">{{ Math.round(blueprintZoom * 100) }}%</span>
+                                <button 
+                                    @click="zoomOut" 
+                                    class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center transition-all cursor-pointer"
+                                    title="Kichiklashtirish"
+                                >−</button>
+                                <div class="w-px h-4 bg-slate-200 mx-0.5"></div>
+                                <button 
+                                    @click="resetZoom" 
+                                    class="h-7 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center justify-center transition-all cursor-pointer"
+                                    title="Asliga qaytarish"
+                                >⟲ Asli</button>
+                            </div>
                         </div>
+
+                        <!-- Fallback if floor has no blueprint uploaded -->
+                        <div v-else class="flex flex-col items-center justify-center text-center p-8 bg-white rounded-3xl border border-slate-200 shadow-sm max-w-md">
+                            <span class="text-4xl mb-3">📐</span>
+                            <h4 class="text-base font-black text-slate-900 mb-1">Qavat chizmasi kiritilmagan</h4>
+                            <p class="text-xs text-slate-500 mb-4">Ushbu qavat uchun arxitektura chizmasi mavjud emas. Xonadonlar ro'yxatini 3D kartochkalar ko'rinishida ko'rishingiz mumkin.</p>
+                            <button 
+                                @click="floorPlanDisplayMode = 'cards'"
+                                class="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-xs font-black shadow-md cursor-pointer"
+                            >
+                                🏢 3D Kartochkalarga o'tish
+                            </button>
+                        </div>
+
+                        <!-- Blueprint Hover Tooltip -->
+                        <transition
+                            enter-active-class="transition duration-150 ease-out"
+                            enter-from-class="opacity-0 scale-95"
+                            enter-to-class="opacity-100 scale-100"
+                            leave-active-class="transition duration-100 ease-in"
+                            leave-from-class="opacity-100 scale-100"
+                            leave-to-class="opacity-0 scale-95"
+                        >
+                            <div 
+                                v-if="hoveredUnit"
+                                class="absolute top-4 left-4 z-30 bg-white/95 backdrop-blur-md shadow-xl rounded-2xl p-4 border border-slate-200/90 pointer-events-none w-64"
+                            >
+                                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                                    <h4 class="font-black text-sm text-slate-900">№ {{ hoveredUnit.unit_number }}-xonadon</h4>
+                                    <span 
+                                        class="text-[10px] font-black px-2 py-0.5 rounded-full"
+                                        :class="hoveredUnit.status === 'sold' ? 'bg-red-100 text-red-700' : (hoveredUnit.status === 'reserved' || hoveredUnit.status === 'booked' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')"
+                                    >
+                                        {{ hoveredUnit.status === 'sold' ? 'Sotilgan' : (hoveredUnit.status === 'reserved' || hoveredUnit.status === 'booked' ? 'Band' : 'Sotuvda') }}
+                                    </span>
+                                </div>
+                                <div class="pt-2 text-xs space-y-1 font-bold text-slate-600">
+                                    <div class="flex justify-between"><span>Xonalar:</span><span class="text-slate-900">{{ hoveredUnit.rooms_count }} xona</span></div>
+                                    <div class="flex justify-between"><span>Maydoni:</span><span class="text-slate-900">{{ hoveredUnit.area_sqm }} m²</span></div>
+                                    <div class="flex justify-between text-orange-600"><span>Narxi:</span><span class="font-black">{{ formatSoM(hoveredUnit.price) }}</span></div>
+                                </div>
+                            </div>
+                        </transition>
                     </div>
 
                     <!-- Right: Interactive Units List (35% width) -->
-                    <div class="w-80 sm:w-96 md:w-[420px] h-full bg-white border-l border-slate-200 flex flex-col shrink-0 z-20 shadow-lg">
-                        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                            <div>
-                                <h3 class="font-black text-sm text-slate-900">
-                                    {{ activeFloor?.floor_number < 0 ? `${activeFloor?.floor_number}-yerto'la` : `${activeFloor?.floor_number}-qavat` }} xonadonlari
-                                </h3>
-                                <p class="text-[11px] text-slate-400 font-medium">Barcha xonadonlar 3D modeli bilan</p>
+                    <div class="w-80 sm:w-96 md:w-[440px] h-full bg-white border-l border-slate-200 flex flex-col shrink-0 z-20 shadow-lg">
+                        <div class="p-4 border-b border-slate-100 flex flex-col gap-2.5">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="font-black text-sm text-slate-900">
+                                        {{ activeFloor?.floor_number < 0 ? `${activeFloor?.floor_number}-yerto'la` : `${activeFloor?.floor_number}-qavat` }} xonadonlari
+                                    </h3>
+                                    <p class="text-[11px] text-slate-400 font-medium">Barcha xonadonlar 3D modeli bilan</p>
+                                </div>
+                                <span class="px-2.5 py-1 bg-orange-50 text-orange-600 font-mono font-black text-xs rounded-xl border border-orange-200">
+                                    {{ filteredFloorUnits.length }} ta
+                                </span>
                             </div>
-                            <span class="px-2.5 py-1 bg-orange-50 text-orange-600 font-mono font-black text-xs rounded-xl border border-orange-200">
-                                {{ activeFloorUnits.length }} ta
-                            </span>
+
+                            <!-- Filter Chips in Right Sidebar -->
+                            <div class="flex items-center gap-1.5 overflow-x-auto pt-1">
+                                <button 
+                                    @click="sidebarStatusFilter = 'all'"
+                                    :class="sidebarStatusFilter === 'all' ? 'bg-slate-900 text-white font-black' : 'bg-slate-100 text-slate-600 font-bold hover:bg-slate-200'"
+                                    class="px-2.5 py-1 rounded-lg text-[11px] transition-all shrink-0 cursor-pointer"
+                                >
+                                    Hammasi ({{ (activeFloor?.units || []).length }})
+                                </button>
+                                <button 
+                                    @click="sidebarStatusFilter = 'available'"
+                                    :class="sidebarStatusFilter === 'available' ? 'bg-emerald-600 text-white font-black' : 'bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100'"
+                                    class="px-2.5 py-1 rounded-lg text-[11px] transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                                >
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" :class="sidebarStatusFilter === 'available' ? 'bg-white' : ''"></span>
+                                    Sotuvda ({{ (activeFloor?.units || []).filter(u => u.status === 'available').length }})
+                                </button>
+                                <button 
+                                    @click="sidebarStatusFilter = 'reserved'"
+                                    :class="sidebarStatusFilter === 'reserved' ? 'bg-amber-500 text-white font-black' : 'bg-amber-50 text-amber-700 font-bold hover:bg-amber-100'"
+                                    class="px-2.5 py-1 rounded-lg text-[11px] transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                                >
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500" :class="sidebarStatusFilter === 'reserved' ? 'bg-white' : ''"></span>
+                                    Band ({{ (activeFloor?.units || []).filter(u => u.status === 'reserved' || u.status === 'booked').length }})
+                                </button>
+                                <button 
+                                    @click="sidebarStatusFilter = 'sold'"
+                                    :class="sidebarStatusFilter === 'sold' ? 'bg-red-600 text-white font-black' : 'bg-red-50 text-red-700 font-bold hover:bg-red-100'"
+                                    class="px-2.5 py-1 rounded-lg text-[11px] transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                                >
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500" :class="sidebarStatusFilter === 'sold' ? 'bg-white' : ''"></span>
+                                    Sotilgan ({{ (activeFloor?.units || []).filter(u => u.status === 'sold').length }})
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Scrollable Units List -->
                         <div class="flex-1 overflow-y-auto p-4 space-y-3">
                             <div 
-                                v-for="unit in activeFloorUnits" 
+                                v-for="unit in filteredFloorUnits" 
                                 :key="'list-unit-' + unit.id"
                                 @click="openUnitModal(unit)"
                                 @mouseenter="hoveredUnit = unit"
                                 @mouseleave="hoveredUnit = null"
-                                class="bg-slate-50 hover:bg-orange-50/40 p-3 rounded-2xl border border-slate-200/80 hover:border-orange-300 transition-all cursor-pointer shadow-xs group"
+                                :class="hoveredUnit?.id === unit.id ? 'border-orange-400 bg-orange-50/50 shadow-md scale-[1.01]' : 'border-slate-200/80 bg-slate-50 hover:bg-orange-50/20 shadow-xs'"
+                                class="p-3 rounded-2xl border transition-all cursor-pointer group"
                             >
                                 <div class="flex items-center gap-3">
-                                    <!-- 3D Plan Thumbnail -->
-                                    <div class="w-18 h-18 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0 overflow-hidden group-hover:border-orange-400 transition-all">
+                                    <!-- Fixed 3D Plan Thumbnail -->
+                                    <div class="w-20 h-20 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0 overflow-hidden group-hover:border-orange-400 transition-all">
                                         <img 
                                             v-if="unit.model_3d_path" 
                                             :src="'/storage/' + unit.model_3d_path" 
@@ -1051,28 +1224,34 @@ onMounted(() => {
                                     <!-- Unit Details -->
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center justify-between gap-1 mb-1">
-                                            <span class="font-black text-sm text-slate-900">№ {{ unit.unit_number }}-xonadon</span>
+                                            <span class="font-black text-sm text-slate-900 truncate">№ {{ unit.unit_number }}-xonadon</span>
                                             <span 
-                                                class="text-[9px] font-black px-2 py-0.5 rounded-md uppercase"
+                                                class="text-[9px] font-black px-2 py-0.5 rounded-md uppercase shrink-0"
                                                 :class="unit.status === 'sold' ? 'bg-red-100 text-red-700' : (unit.status === 'reserved' || unit.status === 'booked' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')"
                                             >
                                                 {{ unit.status === 'sold' ? 'Sotilgan' : (unit.status === 'reserved' || unit.status === 'booked' ? 'Band' : 'Sotuvda') }}
                                             </span>
                                         </div>
 
-                                        <div class="flex items-center gap-3 text-xs font-bold text-slate-500 mb-1.5">
+                                        <div class="flex items-center gap-2 text-xs font-bold text-slate-500 mb-1.5 flex-wrap">
                                             <span>{{ unit.rooms_count }} xona</span>
                                             <span>•</span>
                                             <span>{{ unit.area_sqm }} m²</span>
                                             <span v-if="unit.podyezd">• {{ unit.podyezd }}-podyezd</span>
                                         </div>
 
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-xs font-black text-orange-600 font-mono">{{ formatSoM(unit.price) }}</span>
-                                            <span class="text-[10px] text-slate-400 group-hover:text-orange-600 font-bold transition-all">3D Ko'rish →</span>
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-xs font-black text-orange-600 font-mono truncate">{{ formatSoM(unit.price) }}</span>
+                                            <span class="text-[11px] text-slate-400 group-hover:text-orange-600 font-bold transition-all shrink-0 flex items-center gap-1">
+                                                3D Ko'rish →
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div v-if="filteredFloorUnits.length === 0" class="text-center py-10 text-slate-400 text-xs font-bold">
+                                Tanlangan filtr bo'yicha xonadonlar topilmadi
                             </div>
                         </div>
                     </div>
@@ -1150,9 +1329,9 @@ onMounted(() => {
         <!-- ========================================================================= -->
         <!-- 3. FULL SCREEN BLOK SHAXMATKASI                                          -->
         <!-- ========================================================================= -->
-        <div v-else-if="viewMode === 'shaxmatka'" class="flex-1 flex flex-col w-full h-[calc(100vh-58px)] overflow-hidden bg-[#f8fafc]">
+        <div v-else-if="viewMode === 'shaxmatka'" class="flex-1 flex flex-col w-full h-[calc(100vh-60px)] overflow-hidden bg-[#f8fafc]">
             <!-- Shaxmatka Top Toolbar -->
-            <div class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between gap-4 shrink-0 shadow-xs">
+            <div class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between gap-4 shrink-0 shadow-2xs">
                 <div class="flex items-center gap-3">
                     <button 
                         @click="viewMode = 'facade'"
@@ -1239,7 +1418,7 @@ onMounted(() => {
         <!-- ========================================================================= -->
         <!-- 4. FULL SCREEN 3D SHOWROOM RENDERS GALLERY                               -->
         <!-- ========================================================================= -->
-        <div v-else-if="viewMode === 'gallery'" class="flex-1 flex flex-col w-full h-[calc(100vh-58px)] overflow-hidden bg-slate-950">
+        <div v-else-if="viewMode === 'gallery'" class="flex-1 flex flex-col w-full h-[calc(100vh-60px)] overflow-hidden bg-slate-950">
             <div class="flex-1 flex items-center justify-center p-6 relative">
                 <img 
                     v-if="showroomImages.length > 0"
@@ -1307,7 +1486,7 @@ onMounted(() => {
                     <!-- Left: 3D Reja & 2D Chizma Display -->
                     <div class="flex flex-col gap-3">
                         <!-- Visual Mode Switcher (3D vs 2D) -->
-                        <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl self-start">
+                        <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl self-start border border-slate-200 shadow-2xs">
                             <button 
                                 v-if="selectedUnit.model_3d_path"
                                 @click="unitModalImageMode = '3d'"
@@ -1453,7 +1632,7 @@ onMounted(() => {
                                 <span>Shartnoma tuzish (Sotish)</span>
                             </Link>
                             <button 
-                                @click="showUnitDetailModal = false"
+                                @click="showUnitDetailModal = false" 
                                 class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-2xl transition-all cursor-pointer"
                             >
                                 Yopish

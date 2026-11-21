@@ -118,23 +118,24 @@ $getLeadFormData = function () {
     ];
 };
 
-Route::get('/', function () use ($getLeadFormData) {
-    if (auth()->check()) {
-        return redirect()->route('admin.dashboard');
-    }
-    return Inertia::render('Public/LeadForm', $getLeadFormData());
-})->name('landing');
-
-Route::get('/landing-legacy', function () {
+Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('admin.dashboard');
     }
     return Inertia::render('Public/Landing');
-})->name('landing.legacy');
+})->name('landing');
 
 Route::get('/promo/offers', function () use ($getLeadFormData) {
     return Inertia::render('Public/LeadForm', $getLeadFormData());
 })->name('promo.offers');
+
+Route::get('/katalog', function () use ($getLeadFormData) {
+    return Inertia::render('Public/LeadForm', $getLeadFormData());
+})->name('public.catalog');
+
+Route::get('/uylar', function () use ($getLeadFormData) {
+    return Inertia::render('Public/LeadForm', $getLeadFormData());
+})->name('public.uylar');
 
 // Dedicated High-Converting Target Landing Pages for Instagram & Social Media Ads
 $targetHandler = function () {

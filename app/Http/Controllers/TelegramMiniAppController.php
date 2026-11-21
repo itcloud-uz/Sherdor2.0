@@ -211,11 +211,42 @@ class TelegramMiniAppController extends Controller
         $machineOwners = MachineOwner::get(['id', 'name']);
 
         // Fetch Recent Transactions
-        $recentTransactions = Transaction::with(['category:id,name', 'cashRegister:id,name', 'creator:id,name'])
-            ->latest()
-            ->limit(20)
+        $recentTransactions = Transaction::with([
+            'category:id,name', 
+            'cashRegister:id,name', 
+            'creator:id,name', 
+            'contract.client:id,first_name,last_name',
+            'client:id,first_name,last_name',
+            'partner.user:id,name',
+            'worker:id,name',
+            'supplier:id,name',
+            'brigade:id,name',
+            'building:id,name'
+        ])
+            ->latest('id')
+            ->limit(50)
             ->get()
             ->map(function ($t) {
+                $targetLabel = '';
+                if ($t->contract && $t->contract->client) {
+                    $cNum = $t->contract->contract_number ?? $t->contract->id;
+                    $targetLabel = "Shartnoma #{$cNum} ({$t->contract->client->last_name} {$t->contract->client->first_name})";
+                } elseif ($t->client) {
+                    $targetLabel = "Mijoz: {$t->client->last_name} {$t->client->first_name}";
+                } elseif ($t->partner && $t->partner->user) {
+                    $targetLabel = "Ta'sischi: {$t->partner->user->name}";
+                } elseif ($t->worker) {
+                    $targetLabel = "Ishchi: {$t->worker->name}";
+                } elseif ($t->supplier) {
+                    $targetLabel = "Ta'minotchi: {$t->supplier->name}";
+                } elseif ($t->brigade) {
+                    $targetLabel = "Brigada: {$t->brigade->name}";
+                } elseif ($t->building) {
+                    $targetLabel = "Bino: {$t->building->name}";
+                }
+
+                $dateTimeFormatted = $t->created_at ? $t->created_at->format('Y-m-d H:i') : ($t->transaction_date ?: '-');
+
                 return [
                     'id' => $t->id,
                     'type' => $t->type,
@@ -225,9 +256,11 @@ class TelegramMiniAppController extends Controller
                     'payment_method' => $t->payment_method,
                     'category' => $t->category ? $t->category->name : ($t->category_display ?: '-'),
                     'register' => $t->cashRegister ? $t->cashRegister->name : '-',
-                    'date' => $t->transaction_date ?: $t->created_at->format('Y-m-d'),
+                    'date' => $t->transaction_date ?: ($t->created_at ? $t->created_at->format('Y-m-d') : '-'),
+                    'datetime' => $dateTimeFormatted,
                     'notes' => $t->notes ?: $t->description,
-                    'creator' => $t->creator ? $t->creator->name : '-'
+                    'creator' => $t->creator ? $t->creator->name : '-',
+                    'target_label' => $targetLabel
                 ];
             });
 
@@ -292,7 +325,8 @@ class TelegramMiniAppController extends Controller
             'target_type' => 'nullable|string',
             'target_id' => 'nullable|integer',
             'notes' => 'nullable|string|max:1000',
-            'transaction_date' => 'nullable|date',
+            'transaction_date' => 'nullable|string',
+            'transaction_datetime' => 'nullable|string',
             'attachment' => 'nullable|image|max:10240', // Max 10MB
         ]);
 
@@ -364,6 +398,21 @@ class TelegramMiniAppController extends Controller
         $roles = method_exists($user, 'getRoleNames') ? $user->getRoleNames()->toArray() : [];
         $isAdminOrPartner = in_array('Super_Admin', $roles) || in_array('Admin', $roles) || in_array('Partner', $roles);
 
+        // Process transaction date and time (current or manual)
+        $inputTime = $request->input('transaction_datetime') ?: $request->input('transaction_date');
+        if (!empty($inputTime)) {
+            try {
+                $txDateTime = \Carbon\Carbon::parse($inputTime);
+            } catch (\Exception $e) {
+                $txDateTime = now();
+            }
+        } else {
+            $txDateTime = now();
+        }
+
+        $txDate = $txDateTime->toDateString();
+        $txDateTimeStr = $txDateTime->toDateTimeString();
+
         $transaction = Transaction::create([
             'type' => $validated['type'],
             'amount' => $validated['amount'],
@@ -385,7 +434,9 @@ class TelegramMiniAppController extends Controller
             'created_by' => $user->id,
             'status' => 'pending',
             'source' => 'telegram_miniapp',
-            'transaction_date' => $validated['transaction_date'] ?? now()->toDateString(),
+            'transaction_date' => $txDate,
+            'created_at' => $txDateTimeStr,
+            'updated_at' => $txDateTimeStr,
             'requires_consensus' => $requiresConsensus,
         ]);
 

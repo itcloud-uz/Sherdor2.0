@@ -106,13 +106,13 @@
         <!-- ================= MAIN APP CONTENT ================= -->
         <main v-else class="flex-1 flex flex-col p-3 space-y-3">
 
-            <!-- TAB SWITCHER (Faqat Kirim va Chiqim) -->
+            <!-- TAB SWITCHER (Kirim / Chiqim / Tarix) -->
             <div class="bg-slate-200/70 p-1 rounded-2xl flex items-center gap-1.5 shadow-inner shrink-0">
                 <button
                     type="button"
                     @click="switchTab('income')"
-                    class="flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    :class="form.type === 'income' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-slate-600 hover:text-slate-900'"
+                    class="flex-1 py-2.5 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    :class="activeTab === 'income' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-slate-600 hover:text-slate-900'"
                 >
                     <span class="text-sm">🟢</span>
                     <span>Kirim</span>
@@ -121,16 +121,26 @@
                 <button
                     type="button"
                     @click="switchTab('expense')"
-                    class="flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    :class="form.type === 'expense' ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20' : 'text-slate-600 hover:text-slate-900'"
+                    class="flex-1 py-2.5 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    :class="activeTab === 'expense' ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20' : 'text-slate-600 hover:text-slate-900'"
                 >
                     <span class="text-sm">🔴</span>
                     <span>Chiqim</span>
                 </button>
+
+                <button
+                    type="button"
+                    @click="switchTab('history')"
+                    class="flex-1 py-2.5 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    :class="activeTab === 'history' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-600 hover:text-slate-900'"
+                >
+                    <span class="text-sm">📜</span>
+                    <span>Tarix</span>
+                </button>
             </div>
 
             <!-- ================= FORM (KIRIM / CHIQIM) ================= -->
-            <div class="space-y-3">
+            <div v-show="activeTab === 'income' || activeTab === 'expense'" class="space-y-3">
 
                 <!-- 1. SUMMA CARD (Hero Input) -->
                 <div class="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm space-y-3">
@@ -456,7 +466,66 @@
                     </div>
                 </div>
 
-                <!-- 4. SUBMIT BUTTON -->
+                <!-- 4. SANA VA VAQT (Joriy vaqt yoki qo'lda kiritish) -->
+                <div class="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-[11px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>🕒 Sana va Vaqt</span>
+                            <span v-if="timeMode === 'now'" class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] rounded-full font-bold">Joriy vaqt</span>
+                            <span v-else class="px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] rounded-full font-bold">Qo'lda kiritilgan</span>
+                        </label>
+
+                        <!-- Quick Switcher: Hozir vs Qo'lda -->
+                        <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                            <button
+                                type="button"
+                                @click="setTimeToNow(); triggerHaptic('light')"
+                                class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                                :class="timeMode === 'now' ? 'bg-white text-emerald-700 shadow-xs font-black' : 'text-slate-500 hover:text-slate-900'"
+                            >
+                                <span>⚡ Hozir</span>
+                            </button>
+                            <button
+                                type="button"
+                                @click="timeMode = 'manual'; triggerHaptic('light')"
+                                class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                                :class="timeMode === 'manual' ? 'bg-white text-amber-700 shadow-xs font-black' : 'text-slate-500 hover:text-slate-900'"
+                            >
+                                <span>📅 Qo'lda</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Datetime Input -->
+                    <div>
+                        <input
+                            type="datetime-local"
+                            v-model="form.transaction_datetime"
+                            @input="timeMode = 'manual'"
+                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer font-mono"
+                        />
+                    </div>
+
+                    <!-- Quick Date presets -->
+                    <div class="flex items-center gap-1.5 text-[11px]">
+                        <button
+                            type="button"
+                            @click="setTimeToNow()"
+                            class="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-center transition-colors"
+                        >
+                            Hozirgi vaqt
+                        </button>
+                        <button
+                            type="button"
+                            @click="setTimeToYesterday()"
+                            class="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-center transition-colors"
+                        >
+                            Kecha
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 5. SUBMIT BUTTON -->
                 <div class="pt-2">
                     <button
                         type="button"
@@ -470,6 +539,109 @@
                     </button>
                 </div>
 
+            </div>
+
+            <!-- ================= HISTORY TAB ================= -->
+            <div v-show="activeTab === 'history'" class="space-y-3">
+                <!-- Search & Filter Controls -->
+                <div class="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm space-y-3">
+                    <!-- Search Input -->
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+                        <input
+                            type="text"
+                            v-model="historySearch"
+                            placeholder="Qidirish (kategoriya, odam, kassa)..."
+                            class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                        <button
+                            v-if="historySearch"
+                            type="button"
+                            @click="historySearch = ''"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-black"
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    <!-- Filter Sub-tabs: Hammasi / Kirimlar / Chiqimlar -->
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                        <button
+                            type="button"
+                            @click="historyFilter = 'all'; triggerHaptic('light')"
+                            class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-center cursor-pointer"
+                            :class="historyFilter === 'all' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-500 hover:text-slate-900'"
+                        >
+                            Barchasi (@{{ filteredRecentTransactions.length }})
+                        </button>
+                        <button
+                            type="button"
+                            @click="historyFilter = 'income'; triggerHaptic('light')"
+                            class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-center cursor-pointer"
+                            :class="historyFilter === 'income' ? 'bg-emerald-500 text-white shadow-xs font-black' : 'text-slate-500 hover:text-slate-900'"
+                        >
+                            🟢 Kirimlar
+                        </button>
+                        <button
+                            type="button"
+                            @click="historyFilter = 'expense'; triggerHaptic('light')"
+                            class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-center cursor-pointer"
+                            :class="historyFilter === 'expense' ? 'bg-rose-500 text-white shadow-xs font-black' : 'text-slate-500 hover:text-slate-900'"
+                        >
+                            🔴 Chiqimlar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Transactions List -->
+                <div v-if="filteredRecentTransactions.length === 0" class="bg-white p-8 rounded-3xl border border-slate-200/90 text-center space-y-2 shadow-sm">
+                    <div class="text-3xl">📭</div>
+                    <p class="text-xs font-bold text-slate-600">Tranzaksiyalar topilmadi</p>
+                    <p class="text-[11px] text-slate-400">Tanlangan parametrlar bo'yicha amalyotlar mavjud emas.</p>
+                </div>
+
+                <div v-else class="space-y-2">
+                    <div
+                        v-for="tx in filteredRecentTransactions"
+                        :key="tx.id"
+                        class="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-sm space-y-2 hover:border-slate-300 transition-colors"
+                    >
+                        <!-- Top line: Category and Amount -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
+                                      :class="tx.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'">
+                                    @{{ tx.type === 'income' ? '🟢' : '🔴' }}
+                                </span>
+                                <div>
+                                    <div class="font-black text-xs text-slate-900 leading-tight">@{{ tx.category }}</div>
+                                    <div v-if="tx.target_label" class="text-[10px] font-semibold text-slate-500 mt-0.5">
+                                        @{{ tx.target_label }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-right">
+                                <div class="font-mono font-black text-xs tracking-tight"
+                                     :class="tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">
+                                    @{{ tx.type === 'income' ? '+' : '-' }}@{{ formatNumber(tx.amount) }} @{{ tx.currency }}
+                                </div>
+                                <div class="text-[10px] font-mono text-slate-400 mt-0.5">
+                                    @{{ tx.datetime || tx.date }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom line: Register, Payment Method, Status -->
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[10px] text-slate-500">
+                            <span class="font-medium">🏦 @{{ tx.register }}</span>
+                            <span class="px-2 py-0.5 rounded-md font-bold"
+                                  :class="tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : (tx.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700')">
+                                @{{ tx.status === 'approved' ? '✓ Bajarildi' : (tx.status === 'pending' ? '⏳ Kutilmoqda' : '✕ Rad etildi') }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </main>
@@ -500,6 +672,9 @@
                 const errorMessage = ref(null);
                 const chatId = ref(null);
 
+                const activeTab = ref('income'); // 'income', 'expense', 'history'
+                const timeMode = ref('now'); // 'now', 'manual'
+
                 const user = ref(null);
                 const registers = ref([]);
                 const categories = ref([]);
@@ -512,6 +687,9 @@
                 const workers = ref([]);
                 const brigades = ref([]);
                 const machineOwners = ref([]);
+                const recentTransactions = ref([]);
+                const historySearch = ref('');
+                const historyFilter = ref('all'); // 'all', 'income', 'expense'
 
                 const isSubmitting = ref(false);
                 const toastMessage = ref(null);
@@ -525,6 +703,7 @@
                     payment_method: 'cash',
                     account_id: null,
                     category_id: null,
+                    transaction_datetime: '',
                     contract_id: null,
                     building_id: null,
                     partner_id: null,
@@ -628,6 +807,52 @@
                     } catch(e) {}
                 };
 
+                // Helper: Format Date for datetime-local input
+                const formatDateForInput = (d) => {
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const year = d.getFullYear();
+                    const month = pad(d.getMonth() + 1);
+                    const day = pad(d.getDate());
+                    const hours = pad(d.getHours());
+                    const minutes = pad(d.getMinutes());
+                    return `${year}-${month}-${day}T${hours}:${minutes}`;
+                };
+
+                const setTimeToNow = () => {
+                    form.value.transaction_datetime = formatDateForInput(new Date());
+                    timeMode.value = 'now';
+                    triggerHaptic('light');
+                };
+
+                const setTimeToYesterday = () => {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    form.value.transaction_datetime = formatDateForInput(yesterday);
+                    timeMode.value = 'manual';
+                    triggerHaptic('light');
+                };
+
+                // Filtered Recent Transactions for History Tab
+                const filteredRecentTransactions = computed(() => {
+                    return recentTransactions.value.filter(t => {
+                        // Type filter
+                        if (historyFilter.value === 'income' && t.type !== 'income') return false;
+                        if (historyFilter.value === 'expense' && t.type !== 'expense') return false;
+
+                        // Search filter
+                        if (historySearch.value && historySearch.value.trim() !== '') {
+                            const q = historySearch.value.toLowerCase().trim();
+                            const matchCat = (t.category || '').toLowerCase().includes(q);
+                            const matchTarget = (t.target_label || '').toLowerCase().includes(q);
+                            const matchReg = (t.register || '').toLowerCase().includes(q);
+                            const matchNotes = (t.notes || '').toLowerCase().includes(q);
+                            const matchAmount = String(t.amount || '').includes(q);
+                            return matchCat || matchTarget || matchReg || matchNotes || matchAmount;
+                        }
+                        return true;
+                    });
+                });
+
                 // Helper: Show Toast
                 const showToast = (msg, type = 'success') => {
                     toastMessage.value = msg;
@@ -650,22 +875,25 @@
                     triggerHaptic('light');
                 };
 
-                // Switch Tab (Kirim / Chiqim)
+                // Switch Tab (Kirim / Chiqim / Tarix)
                 const switchTab = (tab) => {
                     triggerHaptic('light');
-                    form.value.type = tab;
-                    // Reset entity selections
-                    form.value.contract_id = null;
-                    form.value.worker_id = null;
-                    form.value.supplier_id = null;
-                    form.value.partner_id = null;
-                    form.value.brigade_id = null;
-                    form.value.machine_owner_id = null;
-                    form.value.building_id = null;
-                    // Auto-pick first matching category
-                    const first = filteredCategories.value[0];
-                    if (first) {
-                        form.value.category_id = first.id;
+                    activeTab.value = tab;
+                    if (tab === 'income' || tab === 'expense') {
+                        form.value.type = tab;
+                        // Reset entity selections
+                        form.value.contract_id = null;
+                        form.value.worker_id = null;
+                        form.value.supplier_id = null;
+                        form.value.partner_id = null;
+                        form.value.brigade_id = null;
+                        form.value.machine_owner_id = null;
+                        form.value.building_id = null;
+                        // Auto-pick first matching category
+                        const first = filteredCategories.value[0];
+                        if (first) {
+                            form.value.category_id = first.id;
+                        }
                     }
                 };
 
@@ -717,6 +945,7 @@
                         workers.value = res.workers || [];
                         brigades.value = res.brigades || [];
                         machineOwners.value = res.machine_owners || [];
+                        recentTransactions.value = res.recent_transactions || [];
 
                         // Default account
                         if (registers.value.length > 0 && !form.value.account_id) {
@@ -755,6 +984,7 @@
                             payment_method: form.value.payment_method,
                             account_id: form.value.account_id,
                             category_id: form.value.category_id,
+                            transaction_datetime: form.value.transaction_datetime,
                             target_mode: activeTargetType.value
                         };
 
@@ -790,6 +1020,7 @@
                             
                             // Reset form fields
                             form.value.amount = 0;
+                            setTimeToNow();
                             form.value.contract_id = null;
                             form.value.worker_id = null;
                             form.value.supplier_id = null;
@@ -799,7 +1030,10 @@
                             form.value.building_id = null;
 
                             // Refresh balances and lists
-                            initApp();
+                            await initApp();
+
+                            // Show newly added transaction in history
+                            activeTab.value = 'history';
                         } else {
                             showToast(res.error || res.message || "Xatolik yuz berdi", 'error');
                         }
@@ -821,6 +1055,7 @@
                         } catch(e) {}
                     }
 
+                    setTimeToNow();
                     initApp();
                 });
 
@@ -829,6 +1064,8 @@
                     loading,
                     errorMessage,
                     chatId,
+                    activeTab,
+                    timeMode,
                     user,
                     registers,
                     categories,
@@ -845,6 +1082,10 @@
                     workers,
                     brigades,
                     machineOwners,
+                    recentTransactions,
+                    historySearch,
+                    historyFilter,
+                    filteredRecentTransactions,
                     quickAmounts,
                     form,
                     isSubmitting,
@@ -853,6 +1094,8 @@
                     formatNumber,
                     addAmount,
                     switchTab,
+                    setTimeToNow,
+                    setTimeToYesterday,
                     onCategoryChange,
                     onCancelledContractSelect,
                     onOverpaidContractSelect,

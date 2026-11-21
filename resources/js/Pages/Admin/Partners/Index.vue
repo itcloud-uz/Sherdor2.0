@@ -586,11 +586,6 @@ function formatDate(dateString) {
                             </div>
                             <div>
                                 <span class="font-display font-black text-base tracking-wide uppercase">{{ partner.user?.name || 'TA\'SISCHI' }}</span>
-                                <div class="mt-0.5">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" :class="Number(partner.accountable_balance) < 0 ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'">
-                                        Hisob/Qarz: {{ Number(partner.accountable_balance) > 0 ? '+' : '' }}{{ formatCurrency(partner.accountable_balance) }} UZS
-                                    </span>
-                                </div>
                             </div>
                         </div>
                         <div class="flex gap-2 z-10">

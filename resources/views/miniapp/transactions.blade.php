@@ -31,7 +31,7 @@
             user-select: none;
         }
 
-        /* Hide scrollbar for tabs */
+        /* Hide scrollbar for pills */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -106,55 +106,31 @@
         <!-- ================= MAIN APP CONTENT ================= -->
         <main v-else class="flex-1 flex flex-col p-3 space-y-3">
 
-            <!-- TAB SWITCHER (Kirim / Chiqim / Tarix / Tasdiqlash) -->
-            <div class="bg-slate-200/70 p-1 rounded-2xl flex items-center gap-1 shadow-inner shrink-0">
+            <!-- TAB SWITCHER (Faqat Kirim va Chiqim) -->
+            <div class="bg-slate-200/70 p-1 rounded-2xl flex items-center gap-1.5 shadow-inner shrink-0">
                 <button
                     type="button"
                     @click="switchTab('income')"
-                    class="flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    :class="activeTab === 'income' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                    class="flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    :class="form.type === 'income' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-slate-600 hover:text-slate-900'"
                 >
-                    <span>🟢</span>
+                    <span class="text-sm">🟢</span>
                     <span>Kirim</span>
                 </button>
 
                 <button
                     type="button"
                     @click="switchTab('expense')"
-                    class="flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    :class="activeTab === 'expense' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                    class="flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    :class="form.type === 'expense' ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20' : 'text-slate-600 hover:text-slate-900'"
                 >
-                    <span>🔴</span>
+                    <span class="text-sm">🔴</span>
                     <span>Chiqim</span>
-                </button>
-
-                <button
-                    type="button"
-                    @click="switchTab('history')"
-                    class="flex-1 py-2 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    :class="activeTab === 'history' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-                >
-                    <span>📜</span>
-                    <span>Tarix</span>
-                </button>
-
-                <button
-                    v-if="user?.is_admin"
-                    type="button"
-                    @click="switchTab('pending')"
-                    class="flex-1 py-2 px-1.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer relative"
-                    :class="activeTab === 'pending' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-                >
-                    <span>⏳</span>
-                    <span>Tasdiq</span>
-                    <span v-if="pendingCount > 0" class="px-1.5 py-0.2 bg-red-600 text-white text-[9px] rounded-full font-black animate-pulse">
-                        @{{ pendingCount }}
-                    </span>
                 </button>
             </div>
 
             <!-- ================= FORM (KIRIM / CHIQIM) ================= -->
-            <div v-show="activeTab === 'income' || activeTab === 'expense'" class="space-y-3">
+            <div class="space-y-3">
 
                 <!-- 1. SUMMA CARD (Hero Input) -->
                 <div class="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm space-y-3">
@@ -202,7 +178,7 @@
                     <!-- Humanized Formatted Amount -->
                     <div class="flex items-center justify-between text-xs font-bold px-1" v-if="form.amount > 0">
                         <span class="text-slate-400 font-medium">Miqdor:</span>
-                        <span class="font-mono" :class="form.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">
+                        <span class="font-mono font-black text-sm" :class="form.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">
                             @{{ formatNumber(form.amount) }} @{{ form.currency }}
                         </span>
                     </div>
@@ -228,7 +204,7 @@
                     </div>
                 </div>
 
-                <!-- 2. PAYMENT METHOD & REGISTER -->
+                <!-- 2. PAYMENT METHOD, REGISTER & CATEGORY -->
                 <div class="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm space-y-3">
                     
                     <!-- Payment Method Pills -->
@@ -289,6 +265,7 @@
                         </label>
                         <select
                             v-model="form.category_id"
+                            @change="onCategoryChange"
                             class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
                         >
                             <option value="" disabled>-- Kategoriyani tanlang --</option>
@@ -299,128 +276,97 @@
                     </div>
                 </div>
 
-                <!-- 3. TARGET & RELATION SELECTION (Collapsible / Dynamic) -->
-                <div class="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm space-y-3">
-                    <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-black text-slate-500 uppercase tracking-wider">
-                            Yo'nalish / Kimdan - Kimga
-                        </span>
-                        <span class="text-[10px] text-slate-400 font-medium">(Ixtiyoriy)</span>
-                    </div>
-
-                    <!-- Target Type Selector Chips -->
-                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                        <button
-                            v-for="t in targetOptions"
-                            :key="t.key"
-                            type="button"
-                            @click="form.target_mode = (form.target_mode === t.key ? null : t.key); triggerHaptic('light')"
-                            class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all shrink-0 flex items-center gap-1 cursor-pointer"
-                            :class="form.target_mode === t.key ? 'bg-orange-500 text-white border-orange-600 shadow-xs font-black' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
-                        >
-                            <span>@{{ t.icon }}</span>
-                            <span>@{{ t.label }}</span>
-                        </button>
-                    </div>
-
-                    <!-- Dynamic Dropdown based on Target Mode -->
-                    <div v-if="form.target_mode === 'contract'" class="space-y-1">
-                        <label class="block text-[11px] font-bold text-slate-600">Shartnoma / Xonadon / Mijoz:</label>
+                <!-- 3. DYNAMIC TARGET ENTITY SELECTION (Kategoriyaga mos odamlar/shartnomalar) -->
+                <div v-if="activeTargetType" class="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm space-y-3">
+                    
+                    <!-- A. Bekor qilingan shartnomalar va mijozlar -->
+                    <div v-if="activeTargetType === 'cancelled_contract'" class="space-y-2">
+                        <label class="block text-[11px] font-black text-rose-700 flex items-center justify-between uppercase tracking-wider">
+                            <span>🔄 Bekor qilingan shartnoma & mijoz <span class="text-rose-500">*</span></span>
+                            <span class="text-[10px] text-slate-500 font-normal">(@{{ cancelledContracts.length }} ta mavjud)</span>
+                        </label>
                         <select
                             v-model="form.contract_id"
-                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
+                            @change="onCancelledContractSelect"
+                            class="w-full px-3 py-2.5 bg-rose-50/60 border border-rose-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500 cursor-pointer"
                         >
-                            <option :value="null">-- Shartnomani tanlang --</option>
+                            <option :value="null">-- Shartnoma egasini tanlang --</option>
+                            <option v-for="c in cancelledContracts" :key="c.id" :value="c.id">
+                                @{{ c.label }}
+                            </option>
+                        </select>
+                        <div v-if="selectedCancelledContract" class="p-3 bg-rose-50 rounded-2xl border border-rose-200 text-[11px] text-rose-900 space-y-1">
+                            <div class="font-bold flex justify-between">
+                                <span>👤 @{{ selectedCancelledContract.client_name }}</span>
+                                <span>🏠 @{{ selectedCancelledContract.unit_number }}-xonadon</span>
+                            </div>
+                            <div class="flex justify-between text-[10px] text-rose-600">
+                                <span>Jami qaytarilishi kerak: @{{ formatNumber(selectedCancelledContract.refund_target) }} UZS</span>
+                                <span>To'langan: @{{ formatNumber(selectedCancelledContract.refunded_amount) }} UZS</span>
+                            </div>
+                            <div class="font-black text-xs text-rose-700 pt-1 border-t border-rose-200/70 flex justify-between">
+                                <span>Hozirgi qarz/qoldiq:</span>
+                                <span>@{{ formatNumber(selectedCancelledContract.remaining_refund) }} UZS</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- B. Ortiqcha to'langan shartnomalar va mijozlar -->
+                    <div v-else-if="activeTargetType === 'overpayment'" class="space-y-2">
+                        <label class="block text-[11px] font-black text-amber-700 flex items-center justify-between uppercase tracking-wider">
+                            <span>💸 Ortiqcha to'langan shartnoma & mijoz <span class="text-amber-500">*</span></span>
+                            <span class="text-[10px] text-slate-500 font-normal">(@{{ overpaidContracts.length }} ta)</span>
+                        </label>
+                        <select
+                            v-model="form.contract_id"
+                            @change="onOverpaidContractSelect"
+                            class="w-full px-3 py-2.5 bg-amber-50/60 border border-amber-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                        >
+                            <option :value="null">-- Shartnoma egasini tanlang --</option>
+                            <option v-for="c in overpaidContracts" :key="c.id" :value="c.id">
+                                @{{ c.label }}
+                            </option>
+                        </select>
+                        <div v-if="selectedOverpaidContract" class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-[11px] text-amber-900 space-y-1">
+                            <div class="font-bold flex justify-between">
+                                <span>👤 @{{ selectedOverpaidContract.client_name }}</span>
+                                <span>🏠 @{{ selectedOverpaidContract.unit_number }}-xonadon</span>
+                            </div>
+                            <div class="flex justify-between text-[10px] text-amber-700">
+                                <span>Shartnoma qiymati: @{{ formatNumber(selectedOverpaidContract.total_amount) }} UZS</span>
+                                <span>To'langan: @{{ formatNumber(selectedOverpaidContract.paid_amount) }} UZS</span>
+                            </div>
+                            <div class="font-black text-xs text-amber-700 pt-1 border-t border-amber-200/70 flex justify-between">
+                                <span>Ortiqcha to'lov summasi:</span>
+                                <span>+@{{ formatNumber(selectedOverpaidContract.overpaid_amount) }} UZS</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- C. Faol shartnomalar / Mijozlar -->
+                    <div v-else-if="activeTargetType === 'contract'" class="space-y-1.5">
+                        <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                            📑 Shartnoma / Mijoz <span class="text-rose-500">*</span>
+                        </label>
+                        <select
+                            v-model="form.contract_id"
+                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
+                        >
+                            <option :value="null">-- Shartnoma / Mijozni tanlang --</option>
                             <option v-for="c in contracts" :key="c.id" :value="c.id">
                                 @{{ c.label }}
                             </option>
                         </select>
                     </div>
 
-                    <div v-else-if="form.target_mode === 'cancelled_contract'" class="space-y-1">
-                        <label class="block text-[11px] font-bold text-rose-700 flex items-center justify-between">
-                            <span>🔄 Bekor qilingan shartnoma:</span>
-                            <span class="text-[10px] text-slate-500 font-normal">(@{{ cancelledContracts.length }} ta mavjud)</span>
+                    <!-- D. Ishchilar / Ustalar -->
+                    <div v-else-if="activeTargetType === 'worker'" class="space-y-1.5">
+                        <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                            👷 Ishchi / Usta <span class="text-rose-500">*</span>
                         </label>
-                        <select
-                            v-model="form.contract_id"
-                            @change="onCancelledContractSelect"
-                            class="w-full px-3 py-2.5 bg-rose-50/50 border border-rose-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-rose-500"
-                        >
-                            <option :value="null">-- Bekor qilingan shartnomani tanlang --</option>
-                            <option v-for="c in cancelledContracts" :key="c.id" :value="c.id">
-                                @{{ c.label }}
-                            </option>
-                        </select>
-                        <p v-if="selectedCancelledContract" class="text-[11px] text-rose-600 font-medium pt-1">
-                            Qaytarilishi kerak: <b>@{{ formatNumber(selectedCancelledContract.remaining_refund) }} UZS</b> (Jami maqsad: @{{ formatNumber(selectedCancelledContract.refund_target) }} UZS, Qaytarilgan: @{{ formatNumber(selectedCancelledContract.refunded_amount) }} UZS)
-                        </p>
-                    </div>
-
-                    <div v-else-if="form.target_mode === 'overpayment'" class="space-y-1">
-                        <label class="block text-[11px] font-bold text-amber-700 flex items-center justify-between">
-                            <span>💸 Ortiqcha to'langan shartnoma:</span>
-                            <span class="text-[10px] text-slate-500 font-normal">(@{{ overpaidContracts.length }} ta)</span>
-                        </label>
-                        <select
-                            v-model="form.contract_id"
-                            @change="onOverpaidContractSelect"
-                            class="w-full px-3 py-2.5 bg-amber-50/50 border border-amber-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500"
-                        >
-                            <option :value="null">-- Ortiqcha to'langan shartnomani tanlang --</option>
-                            <option v-for="c in overpaidContracts" :key="c.id" :value="c.id">
-                                @{{ c.label }}
-                            </option>
-                        </select>
-                        <p v-if="selectedOverpaidContract" class="text-[11px] text-amber-700 font-medium pt-1">
-                            Ortiqcha to'lov: <b>@{{ formatNumber(selectedOverpaidContract.overpaid_amount) }} UZS</b> (Shartnoma: @{{ formatNumber(selectedOverpaidContract.total_amount) }} UZS, To'langan: @{{ formatNumber(selectedOverpaidContract.paid_amount) }} UZS)
-                        </p>
-                    </div>
-
-                    <div v-else-if="form.target_mode === 'building'" class="space-y-1">
-                        <label class="block text-[11px] font-bold text-slate-600">Obyekt / Bino:</label>
-                        <select
-                            v-model="form.building_id"
-                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
-                        >
-                            <option :value="null">-- Binoni tanlang --</option>
-                            <option v-for="b in buildings" :key="b.id" :value="b.id">
-                                @{{ b.name }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div v-else-if="form.target_mode === 'partner'" class="space-y-1">
-                        <label class="block text-[11px] font-bold text-slate-600">Hamkor:</label>
-                        <select
-                            v-model="form.partner_id"
-                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
-                        >
-                            <option :value="null">-- Hamkorni tanlang --</option>
-                            <option v-for="p in partners" :key="p.id" :value="p.id">
-                                @{{ p.name }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div v-else-if="form.target_mode === 'supplier'" class="space-y-1">
-                        <label class="block text-[11px] font-bold text-slate-600">Ta'minotchi:</label>
-                        <select
-                            v-model="form.supplier_id"
-                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
-                        >
-                            <option :value="null">-- Ta'minotchini tanlang --</option>
-                            <option v-for="s in suppliers" :key="s.id" :value="s.id">
-                                @{{ s.name }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div v-else-if="form.target_mode === 'worker'" class="space-y-1">
-                        <label class="block text-[11px] font-bold text-slate-600">Ishchi / Usta:</label>
                         <select
                             v-model="form.worker_id"
-                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
+                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
                         >
                             <option :value="null">-- Ishchini tanlang --</option>
                             <option v-for="w in workers" :key="w.id" :value="w.id">
@@ -429,11 +375,46 @@
                         </select>
                     </div>
 
-                    <div v-else-if="form.target_mode === 'brigade'" class="space-y-1">
-                        <label class="block text-[11px] font-bold text-slate-600">Brigada:</label>
+                    <!-- E. Ta'minotchilar -->
+                    <div v-else-if="activeTargetType === 'supplier'" class="space-y-1.5">
+                        <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                            🚚 Ta'minotchi <span class="text-rose-500">*</span>
+                        </label>
+                        <select
+                            v-model="form.supplier_id"
+                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
+                        >
+                            <option :value="null">-- Ta'minotchini tanlang --</option>
+                            <option v-for="s in suppliers" :key="s.id" :value="s.id">
+                                @{{ s.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- F. Hamkorlar / Ta'sischilar -->
+                    <div v-else-if="activeTargetType === 'partner'" class="space-y-1.5">
+                        <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                            🤝 Hamkor / Ta'sischi <span class="text-rose-500">*</span>
+                        </label>
+                        <select
+                            v-model="form.partner_id"
+                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
+                        >
+                            <option :value="null">-- Hamkorni tanlang --</option>
+                            <option v-for="p in partners" :key="p.id" :value="p.id">
+                                @{{ p.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- G. Brigadalar -->
+                    <div v-else-if="activeTargetType === 'brigade'" class="space-y-1.5">
+                        <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                            🏗️ Brigada <span class="text-rose-500">*</span>
+                        </label>
                         <select
                             v-model="form.brigade_id"
-                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
+                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
                         >
                             <option :value="null">-- Brigadani tanlang --</option>
                             <option v-for="br in brigades" :key="br.id" :value="br.id">
@@ -442,11 +423,14 @@
                         </select>
                     </div>
 
-                    <div v-else-if="form.target_mode === 'machine_owner'" class="space-y-1">
-                        <label class="block text-[11px] font-bold text-slate-600">Texnika Egasi:</label>
+                    <!-- H. Texnika Egalari -->
+                    <div v-else-if="activeTargetType === 'machine_owner'" class="space-y-1.5">
+                        <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                            🚜 Texnika Egasi <span class="text-rose-500">*</span>
+                        </label>
                         <select
                             v-model="form.machine_owner_id"
-                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
+                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
                         >
                             <option :value="null">-- Texnika egasini tanlang --</option>
                             <option v-for="mo in machineOwners" :key="mo.id" :value="mo.id">
@@ -454,181 +438,43 @@
                             </option>
                         </select>
                     </div>
-                </div>
 
-                <!-- 4. NOTES & ATTACHMENT -->
-                <div class="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-sm space-y-3">
-                    <div>
-                        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">
-                            Izoh / Tavsif
+                    <!-- I. Obyekt / Bino -->
+                    <div v-else-if="activeTargetType === 'building'" class="space-y-1.5">
+                        <label class="block text-[11px] font-black text-slate-600 uppercase tracking-wider">
+                            🏢 Obyekt / Bino <span class="text-rose-500">*</span>
                         </label>
-                        <textarea
-                            v-model="form.notes"
-                            rows="2"
-                            placeholder="Qo'shimcha eslatma yoki ma'lumot..."
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        ></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-1">
-                            Kvitansiya / Chek Rasmi
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <label class="flex-1 py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-300 rounded-xl text-xs font-bold text-slate-700 flex items-center justify-center gap-1.5 cursor-pointer">
-                                <span>📷</span>
-                                <span class="truncate">@{{ attachmentFileName || "Rasm yuklash" }}</span>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    capture="environment"
-                                    @change="handleFileUpload"
-                                    class="hidden"
-                                />
-                            </label>
-                            <button
-                                v-if="attachmentFileName"
-                                type="button"
-                                @click="clearAttachment"
-                                class="w-8 h-8 rounded-xl bg-red-50 text-red-600 border border-red-200 flex items-center justify-center text-xs cursor-pointer font-bold"
-                            >
-                                ✕
-                            </button>
-                        </div>
+                        <select
+                            v-model="form.building_id"
+                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
+                        >
+                            <option :value="null">-- Binoni tanlang --</option>
+                            <option v-for="b in buildings" :key="b.id" :value="b.id">
+                                @{{ b.name }}
+                            </option>
+                        </select>
                     </div>
                 </div>
 
-                <!-- SUBMIT BUTTON -->
-                <div class="pt-1">
+                <!-- 4. SUBMIT BUTTON -->
+                <div class="pt-2">
                     <button
                         type="button"
                         @click="submitTransaction"
                         :disabled="isSubmitting || form.amount <= 0 || !form.account_id || !form.category_id"
-                        class="w-full py-3.5 px-4 rounded-2xl text-white font-black text-sm shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        :class="form.type === 'income' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-500/20' : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 shadow-rose-500/20'"
+                        class="w-full py-4 px-4 rounded-2xl text-white font-black text-sm shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
+                        :class="form.type === 'income' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-500/25' : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 shadow-rose-500/25'"
                     >
                         <span>@{{ isSubmitting ? '⏳' : (form.type === 'income' ? '🟢' : '🔴') }}</span>
-                        <span>@{{ isSubmitting ? 'Yuborilmoqda...' : (form.type === 'income' ? 'Kirimni Saqlash' : 'Chiqimni Saqlash') }}</span>
+                        <span>@{{ isSubmitting ? 'Bazaga saqlanmoqda...' : (form.type === 'income' ? 'Kirimni Saqlash' : 'Chiqimni Saqlash') }}</span>
                     </button>
                 </div>
-            </div>
 
-            <!-- ================= HISTORY TAB ================= -->
-            <div v-show="activeTab === 'history'" class="space-y-2.5">
-                <div class="flex items-center justify-between px-1">
-                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Oxirgi Tranzaksiyalar</h3>
-                    <span class="text-[11px] font-mono text-slate-400">@{{ recentTransactions.length }} ta</span>
-                </div>
-
-                <div v-if="recentTransactions.length === 0" class="bg-white p-6 rounded-2xl border border-slate-200 text-center text-slate-400 text-xs">
-                    Hozircha tranzaksiyalar mavjud emas.
-                </div>
-
-                <div
-                    v-for="tx in recentTransactions"
-                    :key="tx.id"
-                    class="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs space-y-1.5"
-                >
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-sm">@{{ tx.type === 'income' ? '🟢' : '🔴' }}</span>
-                            <span class="font-bold text-xs text-slate-900">@{{ tx.category }}</span>
-                        </div>
-                        <span
-                            class="font-mono font-black text-xs"
-                            :class="tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'"
-                        >
-                            @{{ tx.type === 'income' ? '+' : '-' }}@{{ formatNumber(tx.amount) }} @{{ tx.currency }}
-                        </span>
-                    </div>
-
-                    <div class="flex items-center justify-between text-[11px] text-slate-500">
-                        <span>🏦 @{{ tx.register }}</span>
-                        <span
-                            class="px-2 py-0.5 rounded-md font-bold text-[10px]"
-                            :class="tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : (tx.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700')"
-                        >
-                            @{{ tx.status === 'approved' ? '✓ Tasdiqlangan' : (tx.status === 'pending' ? '⏳ Kutilmoqda' : '✕ Rad etilgan') }}
-                        </span>
-                    </div>
-
-                    <div v-if="tx.notes" class="text-[11px] text-slate-600 italic bg-slate-50 p-1.5 rounded-lg">
-                        "@{{ tx.notes }}"
-                    </div>
-
-                    <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
-                        <span>👤 @{{ tx.creator }}</span>
-                        <span>📅 @{{ tx.date }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ================= PENDING APPROVALS TAB ================= -->
-            <div v-show="activeTab === 'pending'" class="space-y-2.5">
-                <div class="flex items-center justify-between px-1">
-                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Tasdiq Kutayotganlar</h3>
-                    <span class="text-[11px] font-mono text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded">@{{ pendingTransactions.length }} ta</span>
-                </div>
-
-                <div v-if="pendingTransactions.length === 0" class="bg-white p-6 rounded-2xl border border-slate-200 text-center text-slate-400 text-xs">
-                    🎉 Barcha tranzaksiyalar tasdiqlangan!
-                </div>
-
-                <div
-                    v-for="ptx in pendingTransactions"
-                    :key="ptx.id"
-                    class="bg-white p-3.5 rounded-2xl border border-orange-200 shadow-xs space-y-2.5"
-                >
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-sm">@{{ ptx.type === 'income' ? '🟢' : '🔴' }}</span>
-                            <span class="font-bold text-xs text-slate-900">@{{ ptx.category }}</span>
-                        </div>
-                        <span
-                            class="font-mono font-black text-sm"
-                            :class="ptx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'"
-                        >
-                            @{{ formatNumber(ptx.amount) }} @{{ ptx.currency }}
-                        </span>
-                    </div>
-
-                    <div class="text-[11px] text-slate-600 space-y-0.5 bg-slate-50 p-2 rounded-xl">
-                        <div>🏦 Kassa: <b>@{{ ptx.register }}</b></div>
-                        <div>👤 Kiritdi: <b>@{{ ptx.creator }}</b></div>
-                        <div>📅 Sana: @{{ ptx.date }}</div>
-                        <div v-if="ptx.notes">💬 Izoh: <i>@{{ ptx.notes }}</i></div>
-                        <div v-if="ptx.attachment_url" class="pt-1">
-                            <a :href="ptx.attachment_url" target="_blank" class="text-blue-600 font-bold flex items-center gap-1">
-                                📎 Chek rasmini ko'rish →
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="flex items-center gap-2 pt-1">
-                        <button
-                            type="button"
-                            @click="handleApproval(ptx.id, 'reject')"
-                            :disabled="isProcessingApproval"
-                            class="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 transition-all cursor-pointer"
-                        >
-                            ✕ Rad etish
-                        </button>
-                        <button
-                            type="button"
-                            @click="handleApproval(ptx.id, 'approve')"
-                            :disabled="isProcessingApproval"
-                            class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
-                        >
-                            ✓ Tasdiqlash
-                        </button>
-                    </div>
-                </div>
             </div>
 
         </main>
 
-        <!-- ================= SUCCESS TOAST NOTIFICATION ================= -->
+        <!-- ================= SUCCESS / ERROR TOAST ================= -->
         <div
             v-if="toastMessage"
             class="fixed bottom-6 left-4 right-4 z-50 p-3.5 rounded-2xl bg-slate-900/95 text-white text-xs font-bold shadow-2xl flex items-center justify-between backdrop-blur-md animate-in fade-in slide-in-from-bottom duration-200"
@@ -666,17 +512,27 @@
                 const workers = ref([]);
                 const brigades = ref([]);
                 const machineOwners = ref([]);
-                const recentTransactions = ref([]);
-                const pendingTransactions = ref([]);
-                const pendingCount = ref(0);
 
-                const activeTab = ref('income'); // 'income', 'expense', 'history', 'pending'
                 const isSubmitting = ref(false);
-                const isProcessingApproval = ref(false);
                 const toastMessage = ref(null);
                 const toastType = ref('success');
-                const attachmentFile = ref(null);
-                const attachmentFileName = ref(null);
+
+                // Main Form State
+                const form = ref({
+                    type: 'income',
+                    amount: 0,
+                    currency: 'UZS',
+                    payment_method: 'cash',
+                    account_id: null,
+                    category_id: null,
+                    contract_id: null,
+                    building_id: null,
+                    partner_id: null,
+                    supplier_id: null,
+                    worker_id: null,
+                    brigade_id: null,
+                    machine_owner_id: null
+                });
 
                 // Quick Increment Amounts
                 const quickAmounts = computed(() => {
@@ -699,43 +555,45 @@
                     ];
                 });
 
-                // Target category tabs (Dynamic based on income/expense)
-                const targetOptions = computed(() => {
-                    if (form.value.type === 'expense') {
-                        return [
-                            { key: 'cancelled_contract', label: 'Bekor qilingan shartnoma', icon: '🔄' },
-                            { key: 'overpayment', label: "Ortiqcha to'lov", icon: '💸' },
-                            { key: 'contract', label: 'Shartnoma / Mijoz', icon: '📑' },
-                            { key: 'building', label: 'Obyekt / Bino', icon: '🏢' },
-                            { key: 'partner', label: 'Hamkor', icon: '🤝' },
-                            { key: 'supplier', label: "Ta'minotchi", icon: '🚚' },
-                            { key: 'worker', label: 'Ishchi / Usta', icon: '👷' },
-                            { key: 'brigade', label: 'Brigada', icon: '🏗️' },
-                            { key: 'machine_owner', label: 'Texnika Egasi', icon: '🚜' },
-                        ];
-                    }
-                    return [
-                        { key: 'contract', label: 'Shartnoma / Mijoz', icon: '📑' },
-                        { key: 'building', label: 'Obyekt / Bino', icon: '🏢' },
-                        { key: 'partner', label: 'Hamkor', icon: '🤝' },
-                        { key: 'supplier', label: "Ta'minotchi", icon: '🚚' },
-                        { key: 'worker', label: 'Ishchi / Usta', icon: '👷' },
-                        { key: 'brigade', label: 'Brigada', icon: '🏗️' },
-                        { key: 'machine_owner', label: 'Texnika Egasi', icon: '🚜' },
-                    ];
+                // Filter categories based on income / expense
+                const filteredCategories = computed(() => {
+                    return categories.value.filter(c => c.type === form.value.type || c.type === 'both');
                 });
 
-                // Helpers for Cancelled and Overpaid Contracts
+                // Detect Active Target Type based on chosen Category
+                const activeTargetType = computed(() => {
+                    if (!form.value.category_id) return null;
+                    const cat = categories.value.find(c => c.id === form.value.category_id);
+                    if (!cat) return null;
+                    return cat.target_type || null;
+                });
+
+                // Selected Cancelled Contract details
                 const selectedCancelledContract = computed(() => {
                     if (!form.value.contract_id) return null;
                     return cancelledContracts.value.find(c => c.id === form.value.contract_id);
                 });
 
+                // Selected Overpaid Contract details
                 const selectedOverpaidContract = computed(() => {
                     if (!form.value.contract_id) return null;
                     return overpaidContracts.value.find(c => c.id === form.value.contract_id);
                 });
 
+                // When Category Changes
+                const onCategoryChange = () => {
+                    triggerHaptic('light');
+                    // Reset linked entity IDs
+                    form.value.contract_id = null;
+                    form.value.worker_id = null;
+                    form.value.supplier_id = null;
+                    form.value.partner_id = null;
+                    form.value.brigade_id = null;
+                    form.value.machine_owner_id = null;
+                    form.value.building_id = null;
+                };
+
+                // When Cancelled Contract is selected
                 const onCancelledContractSelect = () => {
                     triggerHaptic('medium');
                     const c = selectedCancelledContract.value;
@@ -743,17 +601,10 @@
                         if (!form.value.amount || form.value.amount === 0) {
                             form.value.amount = c.remaining_refund || c.refund_target || 0;
                         }
-                        // Find matching category: "Bekor qilingan shartnoma to'lovi"
-                        const matchCat = categories.value.find(cat => 
-                            cat.id === 44 || 
-                            cat.name.toLowerCase().includes('bekor')
-                        );
-                        if (matchCat) {
-                            form.value.category_id = matchCat.id;
-                        }
                     }
                 };
 
+                // When Overpaid Contract is selected
                 const onOverpaidContractSelect = () => {
                     triggerHaptic('medium');
                     const c = selectedOverpaidContract.value;
@@ -761,40 +612,8 @@
                         if (!form.value.amount || form.value.amount === 0) {
                             form.value.amount = c.overpaid_amount || 0;
                         }
-                        // Find matching category: "Ortiqcha to'lovni qaytarish"
-                        const matchCat = categories.value.find(cat => 
-                            cat.id === 43 || 
-                            cat.name.toLowerCase().includes('ortiqcha')
-                        );
-                        if (matchCat) {
-                            form.value.category_id = matchCat.id;
-                        }
                     }
                 };
-
-                // Main Form State
-                const form = ref({
-                    type: 'income',
-                    amount: 0,
-                    currency: 'UZS',
-                    payment_method: 'cash',
-                    account_id: null,
-                    category_id: null,
-                    target_mode: null,
-                    contract_id: null,
-                    building_id: null,
-                    partner_id: null,
-                    supplier_id: null,
-                    worker_id: null,
-                    brigade_id: null,
-                    machine_owner_id: null,
-                    notes: ''
-                });
-
-                // Filter categories based on income / expense
-                const filteredCategories = computed(() => {
-                    return categories.value.filter(c => c.type === form.value.type || c.type === 'both');
-                });
 
                 // Helper: Haptic Feedback
                 const triggerHaptic = (type = 'light') => {
@@ -831,33 +650,23 @@
                     triggerHaptic('light');
                 };
 
-                // Switch Tab
+                // Switch Tab (Kirim / Chiqim)
                 const switchTab = (tab) => {
-                    activeTab.value = tab;
                     triggerHaptic('light');
-                    if (tab === 'income' || tab === 'expense') {
-                        form.value.type = tab;
-                        // Select first matching category if available
-                        const first = filteredCategories.value[0];
-                        if (first) form.value.category_id = first.id;
-                    } else if (tab === 'pending') {
-                        loadPendingTransactions();
+                    form.value.type = tab;
+                    // Reset entity selections
+                    form.value.contract_id = null;
+                    form.value.worker_id = null;
+                    form.value.supplier_id = null;
+                    form.value.partner_id = null;
+                    form.value.brigade_id = null;
+                    form.value.machine_owner_id = null;
+                    form.value.building_id = null;
+                    // Auto-pick first matching category
+                    const first = filteredCategories.value[0];
+                    if (first) {
+                        form.value.category_id = first.id;
                     }
-                };
-
-                // File Upload
-                const handleFileUpload = (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                        attachmentFile.value = file;
-                        attachmentFileName.value = file.name;
-                        triggerHaptic('medium');
-                    }
-                };
-
-                const clearAttachment = () => {
-                    attachmentFile.value = null;
-                    attachmentFileName.value = null;
                 };
 
                 // Initialize App
@@ -908,8 +717,6 @@
                         workers.value = res.workers || [];
                         brigades.value = res.brigades || [];
                         machineOwners.value = res.machine_owners || [];
-                        recentTransactions.value = res.recent_transactions || [];
-                        pendingCount.value = res.pending_count || 0;
 
                         // Default account
                         if (registers.value.length > 0 && !form.value.account_id) {
@@ -930,51 +737,7 @@
                     }
                 };
 
-                // Load Pending Transactions
-                const loadPendingTransactions = async () => {
-                    if (!chatId.value) return;
-                    try {
-                        const res = await fetch(`/miniapp/api/pending?chat_id=${chatId.value}`);
-                        const data = await res.json();
-                        if (data.ok) {
-                            pendingTransactions.value = data.transactions || [];
-                            pendingCount.value = pendingTransactions.value.length;
-                        }
-                    } catch(err) {}
-                };
-
-                // Handle Approval (Approve / Reject)
-                const handleApproval = async (id, action) => {
-                    if (isProcessingApproval.value) return;
-                    isProcessingApproval.value = true;
-                    try {
-                        const res = await fetch('/miniapp/api/approve', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                chat_id: chatId.value,
-                                transaction_id: id,
-                                action: action
-                            })
-                        });
-                        const data = await res.json();
-                        if (data.ok) {
-                            showToast(data.message, 'success');
-                            loadPendingTransactions();
-                        } else {
-                            showToast(data.error || "Xatolik yuz berdi", 'error');
-                        }
-                    } catch(err) {
-                        showToast("Server xatosi", 'error');
-                    } finally {
-                        isProcessingApproval.value = false;
-                    }
-                };
-
-                // Submit Transaction
+                // Submit Transaction (Darhol bazaga biriktiriladi)
                 const submitTransaction = async () => {
                     if (form.value.amount <= 0 || !form.value.account_id || !form.value.category_id) {
                         showToast("Iltimos, summa, kassa va kategoriyani tanlang", 'warning');
@@ -984,46 +747,40 @@
                     isSubmitting.value = true;
 
                     try {
-                        const formData = new FormData();
-                        formData.append('chat_id', chatId.value);
-                        formData.append('type', form.value.type);
-                        formData.append('amount', form.value.amount);
-                        formData.append('currency', form.value.currency);
-                        formData.append('payment_method', form.value.payment_method);
-                        formData.append('account_id', form.value.account_id);
-                        formData.append('category_id', form.value.category_id);
-                        
-                        if ((form.value.target_mode === 'contract' || form.value.target_mode === 'cancelled_contract' || form.value.target_mode === 'overpayment') && form.value.contract_id) {
-                            formData.append('contract_id', form.value.contract_id);
-                            formData.append('target_mode', form.value.target_mode);
-                        } else if (form.value.target_mode === 'building' && form.value.building_id) {
-                            formData.append('building_id', form.value.building_id);
-                        } else if (form.value.target_mode === 'partner' && form.value.partner_id) {
-                            formData.append('partner_id', form.value.partner_id);
-                        } else if (form.value.target_mode === 'supplier' && form.value.supplier_id) {
-                            formData.append('supplier_id', form.value.supplier_id);
-                        } else if (form.value.target_mode === 'worker' && form.value.worker_id) {
-                            formData.append('worker_id', form.value.worker_id);
-                        } else if (form.value.target_mode === 'brigade' && form.value.brigade_id) {
-                            formData.append('brigade_id', form.value.brigade_id);
-                        } else if (form.value.target_mode === 'machine_owner' && form.value.machine_owner_id) {
-                            formData.append('machine_owner_id', form.value.machine_owner_id);
-                        }
+                        const payload = {
+                            chat_id: chatId.value,
+                            type: form.value.type,
+                            amount: form.value.amount,
+                            currency: form.value.currency,
+                            payment_method: form.value.payment_method,
+                            account_id: form.value.account_id,
+                            category_id: form.value.category_id,
+                            target_mode: activeTargetType.value
+                        };
 
-                        if (form.value.notes) {
-                            formData.append('notes', form.value.notes);
-                        }
-
-                        if (attachmentFile.value) {
-                            formData.append('attachment', attachmentFile.value);
+                        if (activeTargetType.value === 'cancelled_contract' || activeTargetType.value === 'overpayment' || activeTargetType.value === 'contract') {
+                            payload.contract_id = form.value.contract_id;
+                        } else if (activeTargetType.value === 'worker') {
+                            payload.worker_id = form.value.worker_id;
+                        } else if (activeTargetType.value === 'supplier') {
+                            payload.supplier_id = form.value.supplier_id;
+                        } else if (activeTargetType.value === 'partner') {
+                            payload.partner_id = form.value.partner_id;
+                        } else if (activeTargetType.value === 'brigade') {
+                            payload.brigade_id = form.value.brigade_id;
+                        } else if (activeTargetType.value === 'machine_owner') {
+                            payload.machine_owner_id = form.value.machine_owner_id;
+                        } else if (activeTargetType.value === 'building') {
+                            payload.building_id = form.value.building_id;
                         }
 
                         const response = await fetch('/miniapp/api/transactions', {
                             method: 'POST',
                             headers: {
+                                'Content-Type': 'application/json',
                                 'Accept': 'application/json'
                             },
-                            body: formData
+                            body: JSON.stringify(payload)
                         });
 
                         const res = await response.json();
@@ -1031,15 +788,18 @@
                         if (res.ok) {
                             showToast(res.message, 'success');
                             
-                            // Reset amount and notes
+                            // Reset form fields
                             form.value.amount = 0;
-                            form.value.notes = '';
-                            form.value.target_mode = null;
-                            clearAttachment();
+                            form.value.contract_id = null;
+                            form.value.worker_id = null;
+                            form.value.supplier_id = null;
+                            form.value.partner_id = null;
+                            form.value.brigade_id = null;
+                            form.value.machine_owner_id = null;
+                            form.value.building_id = null;
 
-                            // Refresh history
+                            // Refresh balances and lists
                             initApp();
-                            activeTab.value = 'history';
                         } else {
                             showToast(res.error || res.message || "Xatolik yuz berdi", 'error');
                         }
@@ -1073,32 +833,30 @@
                     registers,
                     categories,
                     filteredCategories,
+                    activeTargetType,
                     contracts,
+                    cancelledContracts,
+                    overpaidContracts,
+                    selectedCancelledContract,
+                    selectedOverpaidContract,
                     partners,
                     buildings,
                     suppliers,
                     workers,
                     brigades,
                     machineOwners,
-                    recentTransactions,
-                    pendingTransactions,
-                    pendingCount,
-                    activeTab,
                     quickAmounts,
-                    targetOptions,
                     form,
                     isSubmitting,
-                    isProcessingApproval,
                     toastMessage,
                     toastType,
-                    attachmentFileName,
                     formatNumber,
                     addAmount,
                     switchTab,
-                    handleFileUpload,
-                    clearAttachment,
+                    onCategoryChange,
+                    onCancelledContractSelect,
+                    onOverpaidContractSelect,
                     initApp,
-                    handleApproval,
                     submitTransaction,
                     triggerHaptic
                 };

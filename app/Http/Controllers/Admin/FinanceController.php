@@ -936,7 +936,18 @@ class FinanceController extends Controller
             }
         } elseif ($transaction->contract_id && $transaction->type === 'expense') {
             $contract = \App\Models\Contract::find($transaction->contract_id);
-            if ($contract && $transaction->category && in_array($transaction->category->name, ['Mijozga pulni qaytarish', 'Mijozga to\'lov qilish'])) {
+            $catName = $transaction->category ? $transaction->category->name : '';
+            $isRefundCategory = in_array($catName, [
+                'Mijozga pulni qaytarish',
+                'Mijozga to\'lov qilish',
+                'Bekor qilingan shartnoma to\'lovi',
+                'Ortiqcha to\'lovni qaytarish'
+            ])
+            || stripos($catName, 'bekor') !== false
+            || stripos($catName, 'qaytarish') !== false
+            || stripos($catName, 'ortiqcha') !== false;
+
+            if ($contract && $isRefundCategory) {
                 $contract->increment('refunded_amount', $transaction->amount);
             }
 

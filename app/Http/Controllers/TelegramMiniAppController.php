@@ -70,9 +70,42 @@ class TelegramMiniAppController extends Controller
                 ];
             });
 
-        // Fetch Categories
+        // Fetch Categories with target_type
         $categories = TransactionCategory::orderBy('name')
-            ->get(['id', 'name', 'type']);
+            ->get(['id', 'name', 'type', 'target_type'])
+            ->map(function ($cat) {
+                $targetType = $cat->target_type;
+                $nameLower = mb_strtolower($cat->name);
+                if (!$targetType) {
+                    if ($cat->id == 44 || str_contains($nameLower, 'bekor')) {
+                        $targetType = 'cancelled_contract';
+                    } elseif ($cat->id == 43 || str_contains($nameLower, 'ortiqcha')) {
+                        $targetType = 'overpayment';
+                    } elseif ($cat->id == 2 || $cat->id == 16 || str_contains($nameLower, 'shartnoma') || str_contains($nameLower, 'mijoz')) {
+                        $targetType = 'contract';
+                    } elseif ($cat->id == 6 || str_contains($nameLower, 'ishchi') || str_contains($nameLower, 'oylik') || str_contains($nameLower, 'avans')) {
+                        $targetType = 'worker';
+                    } elseif ($cat->id == 10 || $cat->id == 27 || str_contains($nameLower, 'ta\'minotchi') || str_contains($nameLower, 'material')) {
+                        $targetType = 'supplier';
+                    } elseif ($cat->id == 23 || $cat->id == 41 || str_contains($nameLower, 'hamkor') || str_contains($nameLower, 'ta\'sischi') || str_contains($nameLower, 'sarmoya')) {
+                        $targetType = 'partner';
+                    } elseif ($cat->id == 22 || str_contains($nameLower, 'brigada')) {
+                        $targetType = 'brigade';
+                    } elseif ($cat->id == 7 || str_contains($nameLower, 'texnika')) {
+                        $targetType = 'machine_owner';
+                    } elseif ($cat->id == 9 || str_contains($nameLower, 'obyekt') || str_contains($nameLower, 'bino')) {
+                        $targetType = 'building';
+                    }
+                } elseif ($targetType === 'client') {
+                    $targetType = 'contract';
+                }
+                return [
+                    'id' => $cat->id,
+                    'name' => $cat->name,
+                    'type' => $cat->type,
+                    'target_type' => $targetType,
+                ];
+            });
 
         // Fetch Active Contracts (Kirim uchun)
         $contracts = Contract::with(['client:id,first_name,last_name,phone', 'unit:id,unit_number'])
@@ -120,6 +153,7 @@ class TelegramMiniAppController extends Controller
         // Fetch Overpaid Contracts (Ortiqcha to'lovni qaytarish uchun)
         $overpaidContracts = Contract::with(['client:id,first_name,last_name,phone', 'unit:id,unit_number'])
             ->whereNotIn('status', ['cancelled', 'canceled'])
+            ->whereRaw('paid_amount > total_amount')
             ->latest()
             ->limit(150)
             ->get()
@@ -138,7 +172,7 @@ class TelegramMiniAppController extends Controller
                     'total_amount' => $total,
                     'paid_amount' => $paid,
                     'overpaid_amount' => $overpaid,
-                    'label' => "№{$c->contract_number} — {$clientName} ({$unitNum}-uy)" . ($overpaid > 0 ? " [Ortiqcha: " . number_format($overpaid, 0, '.', ' ') . "]" : "")
+                    'label' => "№{$c->contract_number} — {$clientName} ({$unitNum}-uy) [Ortiqcha: " . number_format($overpaid, 0, '.', ' ') . "]"
                 ];
             });
 
@@ -358,21 +392,28 @@ class TelegramMiniAppController extends Controller
                     'vote' => 'pending'
                 ]);
             }
-        } elseif ($isAdminOrPartner && ($request->input('auto_approve') == '1' || $request->input('auto_approve') === true)) {
-            // Admin/Partner avtomatik tasdiqlashni tanlagan bo'lsa darhol tasdiqlash
-            auth()->login($user);
-            try {
-                app(\App\Http\Controllers\Admin\FinanceController::class)->approveTransaction($request, $transaction);
-            } catch (\Exception $e) {
-                Log::warning('MiniApp auto-approve error: ' . $e->getMessage());
-            } finally {
-                auth()->logout();
-            }
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Tranzaksiya 100 mln dan yuqori bo\'lgani sababli ta\'sischilar konsensusiga yuborildi!',
+                'transaction_id' => $transaction->id
+            ]);
+        }
+
+        // Amalyotni darhol bazaga biriktirish va tasdiqlash
+        auth()->login($user);
+        try {
+            $financeController = app(\App\Http\Controllers\Admin\FinanceController::class);
+            $financeController->approveTransaction(new Request(), $transaction);
+        } catch (\Exception $e) {
+            Log::warning('MiniApp auto-approve error: ' . $e->getMessage());
+        } finally {
+            auth()->logout();
         }
 
         return response()->json([
             'ok' => true,
-            'message' => 'Tranzaksiya muvaffaqiyatli qabul qilindi va tasdiqlash uchun yuborildi!',
+            'message' => 'Tranzaksiya muvaffaqiyatli saqlandi va bazaga biriktirildi!',
             'transaction_id' => $transaction->id
         ]);
     }

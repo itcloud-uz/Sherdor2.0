@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import axios from 'axios';
 
@@ -16,7 +16,7 @@ const props = defineProps({
     }
 });
 
-// Scene list definition (GTA VI Style Chapters)
+// Scene list definition (GTA VI Style Continuous Flow)
 const scenes = [
     {
         id: 'scene-01',
@@ -84,7 +84,6 @@ const scenes = [
 ];
 
 const currentSceneIndex = ref(0);
-const scrollContainer = ref(null);
 
 // Apartment Plan Selector State (Scene 04)
 const activePlanTab = ref(0);
@@ -169,12 +168,11 @@ const submitLead = async () => {
     }
 };
 
-// Scroll navigation
+// Silliq (Smooth) uzluksiz scroll harakati
 const scrollToScene = (index) => {
-    if (!scrollContainer.value) return;
     const targetEl = document.getElementById(scenes[index].id);
     if (targetEl) {
-        targetEl.scrollIntoView({ behavior: 'smooth' });
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         currentSceneIndex.value = index;
     }
 };
@@ -191,8 +189,18 @@ const prevScene = () => {
     }
 };
 
-// Intersection Observer to track active scene
-let observer = null;
+// Scroll kuzatuvchisi - foydalanuvchi erkin va silliq scroll qilganda hozirgi sahnani aniqlash
+const handleWindowScroll = () => {
+    const scrollPos = window.scrollY + window.innerHeight * 0.35;
+    for (let i = scenes.length - 1; i >= 0; i--) {
+        const el = document.getElementById(scenes[i].id);
+        if (el && el.offsetTop <= scrollPos) {
+            currentSceneIndex.value = i;
+            break;
+        }
+    }
+};
+
 onMounted(() => {
     // Capture UTM parameters from Instagram
     const params = new URLSearchParams(window.location.search);
@@ -212,46 +220,14 @@ onMounted(() => {
         window.fbq('track', 'PageView');
     }
 
-    const options = {
-        root: scrollContainer.value,
-        threshold: 0.55
-    };
-    observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-                const idx = scenes.findIndex(s => s.id === entry.target.id);
-                if (idx !== -1) {
-                    currentSceneIndex.value = idx;
-                }
-            }
-        });
-    }, options);
-
-    scenes.forEach(scene => {
-        const el = document.getElementById(scene.id);
-        if (el) observer.observe(el);
-    });
-
-    // Keyboard navigation
-    window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    handleWindowScroll();
 });
 
 onUnmounted(() => {
-    if (observer) observer.disconnect();
-    window.removeEventListener('keydown', handleKeydown);
+    window.removeEventListener('scroll', handleWindowScroll);
     stopAudio();
 });
-
-const handleKeydown = (e) => {
-    if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-    if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-        e.preventDefault();
-        nextScene();
-    } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-        e.preventDefault();
-        prevScene();
-    }
-};
 
 // Ambient Audio Synthesizer (Web Audio API - GTA VI Trailer Cinema Style Ambient)
 const isAudioActive = ref(false);
@@ -325,7 +301,7 @@ const stopAudio = () => {
 <template>
     <Head title="Sher-Dor Residence — Instagram Maxsus Taklif" />
 
-    <div class="relative w-full h-screen bg-[#06070a] text-white font-sans overflow-hidden select-none">
+    <div class="relative w-full min-h-screen bg-[#06070a] text-white font-sans selection:bg-amber-500 selection:text-black">
         
         <!-- ========================================== -->
         <!-- CINEMATIC SCANLINE & NOISE OVERLAY         -->
@@ -446,7 +422,7 @@ const stopAudio = () => {
                 class="pointer-events-auto flex flex-col items-center gap-1 cursor-pointer group text-zinc-400 hover:text-amber-400 transition-colors"
             >
                 <span class="text-[10px] font-mono tracking-[0.25em] uppercase text-zinc-400 group-hover:text-amber-300 transition-colors">
-                    SURISH // SCROLL
+                    SILLIQ SURISH // SCROLL
                 </span>
                 <div class="w-5 h-8 rounded-full border-2 border-white/30 group-hover:border-amber-400 flex items-start justify-center p-1 transition-colors">
                     <div class="w-1 h-2 rounded-full bg-amber-400 animate-bounce"></div>
@@ -475,30 +451,27 @@ const stopAudio = () => {
         </div>
 
         <!-- ========================================== -->
-        <!-- SCROLLYTELLING CONTAINER (SNAP SCROLL)      -->
+        <!-- CONTINUOUS SEAMLESS SCROLL BODY            -->
         <!-- ========================================== -->
-        <main 
-            ref="scrollContainer"
-            class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative z-10"
-        >
+        <main class="relative z-10 w-full">
             
             <!-- ==================================================== -->
             <!-- SCENE 01: CINEMATIC INTRO & HERO TRAILER             -->
             <!-- ==================================================== -->
             <section 
                 id="scene-01" 
-                class="h-screen w-full snap-start relative flex flex-col justify-center items-center px-6 sm:px-12 text-center overflow-hidden"
+                class="min-h-screen relative flex flex-col justify-center items-center py-24 sm:py-32 px-6 sm:px-12 text-center overflow-hidden"
             >
-                <!-- Background with Ken Burns Zoom -->
+                <!-- Background Layer -->
                 <div class="absolute inset-0 z-0">
                     <img 
                         :src="scenes[0].bgImage" 
-                        class="w-full h-full object-cover scale-105 animate-[pulse_10s_ease-in-out_infinite]"
+                        class="w-full h-full object-cover scale-105 transition-transform duration-1000"
                         alt="Sher-Dor Residence"
                         @error="$event.target.src = scenes[0].fallbackBg"
                     />
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/80"></div>
-                    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(0,0,0,0.85)_100%)]"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#06070a] via-black/65 to-black/85"></div>
+                    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,rgba(6,7,10,0.9)_100%)]"></div>
                 </div>
 
                 <!-- Scene Content -->
@@ -555,6 +528,9 @@ const stopAudio = () => {
                         <span>↓</span>
                     </button>
                 </div>
+                
+                <!-- Seamless Bottom Blend Gradient -->
+                <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
             </section>
 
 
@@ -563,8 +539,11 @@ const stopAudio = () => {
             <!-- ==================================================== -->
             <section 
                 id="scene-02" 
-                class="h-screen w-full snap-start relative flex flex-col justify-center px-6 sm:px-16 lg:px-24 overflow-hidden"
+                class="min-h-screen relative flex flex-col justify-center py-24 sm:py-32 px-6 sm:px-16 lg:px-24 overflow-hidden border-t border-white/5"
             >
+                <!-- Seamless Top Blend Gradient -->
+                <div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
+
                 <!-- Background -->
                 <div class="absolute inset-0 z-0">
                     <img 
@@ -573,8 +552,8 @@ const stopAudio = () => {
                         alt="Architecture"
                         @error="$event.target.src = scenes[1].fallbackBg"
                     />
-                    <div class="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/50"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/70"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-[#06070a] via-[#06070a]/90 to-[#06070a]/60"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#06070a] via-transparent to-[#06070a]/80"></div>
                 </div>
 
                 <!-- Scene Content -->
@@ -632,6 +611,9 @@ const stopAudio = () => {
                         <span>→</span>
                     </button>
                 </div>
+
+                <!-- Seamless Bottom Blend Gradient -->
+                <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
             </section>
 
 
@@ -640,8 +622,11 @@ const stopAudio = () => {
             <!-- ==================================================== -->
             <section 
                 id="scene-03" 
-                class="h-screen w-full snap-start relative flex flex-col justify-center px-6 sm:px-16 lg:px-24 overflow-hidden"
+                class="min-h-screen relative flex flex-col justify-center py-24 sm:py-32 px-6 sm:px-16 lg:px-24 overflow-hidden border-t border-white/5"
             >
+                <!-- Seamless Top Blend Gradient -->
+                <div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
+
                 <!-- Background -->
                 <div class="absolute inset-0 z-0">
                     <img 
@@ -650,8 +635,8 @@ const stopAudio = () => {
                         alt="Interior"
                         @error="$event.target.src = scenes[2].fallbackBg"
                     />
-                    <div class="absolute inset-0 bg-gradient-to-l from-black via-black/80 to-black/60"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/70"></div>
+                    <div class="absolute inset-0 bg-gradient-to-l from-[#06070a] via-[#06070a]/85 to-[#06070a]/65"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#06070a] via-transparent to-[#06070a]/80"></div>
                 </div>
 
                 <!-- Scene Content -->
@@ -717,6 +702,9 @@ const stopAudio = () => {
                         <span>→</span>
                     </button>
                 </div>
+
+                <!-- Seamless Bottom Blend Gradient -->
+                <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
             </section>
 
 
@@ -725,8 +713,11 @@ const stopAudio = () => {
             <!-- ==================================================== -->
             <section 
                 id="scene-04" 
-                class="h-screen w-full snap-start relative flex flex-col justify-center px-6 sm:px-16 lg:px-24 overflow-hidden"
+                class="min-h-screen relative flex flex-col justify-center py-24 sm:py-32 px-6 sm:px-16 lg:px-24 overflow-hidden border-t border-white/5"
             >
+                <!-- Seamless Top Blend Gradient -->
+                <div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
+
                 <!-- Background -->
                 <div class="absolute inset-0 z-0">
                     <img 
@@ -735,7 +726,7 @@ const stopAudio = () => {
                         alt="Apartments"
                         @error="$event.target.src = scenes[3].fallbackBg"
                     />
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/70"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#06070a] via-[#06070a]/90 to-[#06070a]/75"></div>
                 </div>
 
                 <!-- Scene Content -->
@@ -813,6 +804,9 @@ const stopAudio = () => {
                         </div>
                     </div>
                 </div>
+
+                <!-- Seamless Bottom Blend Gradient -->
+                <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
             </section>
 
 
@@ -821,8 +815,11 @@ const stopAudio = () => {
             <!-- ==================================================== -->
             <section 
                 id="scene-05" 
-                class="h-screen w-full snap-start relative flex flex-col justify-center px-6 sm:px-16 lg:px-24 overflow-hidden"
+                class="min-h-screen relative flex flex-col justify-center py-24 sm:py-32 px-6 sm:px-16 lg:px-24 overflow-hidden border-t border-white/5"
             >
+                <!-- Seamless Top Blend Gradient -->
+                <div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
+
                 <!-- Background -->
                 <div class="absolute inset-0 z-0">
                     <img 
@@ -831,8 +828,8 @@ const stopAudio = () => {
                         alt="Courtyard"
                         @error="$event.target.src = scenes[4].fallbackBg"
                     />
-                    <div class="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/60"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/70"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-[#06070a] via-[#06070a]/90 to-[#06070a]/65"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#06070a] via-transparent to-[#06070a]/80"></div>
                 </div>
 
                 <!-- Scene Content -->
@@ -884,6 +881,9 @@ const stopAudio = () => {
                         <span>→</span>
                     </button>
                 </div>
+
+                <!-- Seamless Bottom Blend Gradient -->
+                <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
             </section>
 
 
@@ -892,8 +892,11 @@ const stopAudio = () => {
             <!-- ==================================================== -->
             <section 
                 id="scene-06" 
-                class="h-screen w-full snap-start relative flex flex-col justify-center px-6 sm:px-16 lg:px-24 overflow-hidden"
+                class="min-h-screen relative flex flex-col justify-center py-24 sm:py-32 px-6 sm:px-16 lg:px-24 overflow-hidden border-t border-white/5"
             >
+                <!-- Seamless Top Blend Gradient -->
+                <div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
+
                 <!-- Background -->
                 <div class="absolute inset-0 z-0">
                     <img 
@@ -902,8 +905,8 @@ const stopAudio = () => {
                         alt="Location"
                         @error="$event.target.src = scenes[5].fallbackBg"
                     />
-                    <div class="absolute inset-0 bg-gradient-to-l from-black via-black/85 to-black/60"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/70"></div>
+                    <div class="absolute inset-0 bg-gradient-to-l from-[#06070a] via-[#06070a]/90 to-[#06070a]/65"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#06070a] via-transparent to-[#06070a]/80"></div>
                 </div>
 
                 <!-- Scene Content -->
@@ -960,6 +963,9 @@ const stopAudio = () => {
                         <span>→</span>
                     </button>
                 </div>
+
+                <!-- Seamless Bottom Blend Gradient -->
+                <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
             </section>
 
 
@@ -968,8 +974,11 @@ const stopAudio = () => {
             <!-- ==================================================== -->
             <section 
                 id="scene-07" 
-                class="h-screen w-full snap-start relative flex flex-col justify-center items-center px-6 sm:px-12 overflow-hidden"
+                class="min-h-screen relative flex flex-col justify-center items-center py-24 sm:py-32 px-6 sm:px-12 overflow-hidden border-t border-white/5"
             >
+                <!-- Seamless Top Blend Gradient -->
+                <div class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#06070a] to-transparent pointer-events-none z-[1]"></div>
+
                 <!-- Background -->
                 <div class="absolute inset-0 z-0">
                     <img 
@@ -978,7 +987,7 @@ const stopAudio = () => {
                         alt="Finale"
                         @error="$event.target.src = scenes[6].fallbackBg"
                     />
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/85 to-black/70"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#06070a] via-[#06070a]/90 to-[#06070a]/80"></div>
                 </div>
 
                 <!-- Scene Content -->
@@ -1100,27 +1109,14 @@ const stopAudio = () => {
     </div>
 </template>
 
-<style scoped>
-/* Smooth snap scroll layout */
-html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
+<style>
+/* Silk-smooth native page scrolling */
+html {
+    scroll-behavior: smooth;
     background-color: #06070a;
 }
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-    width: 4px;
-}
-::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.4);
-}
-::-webkit-scrollbar-thumb {
-    background: rgba(245, 158, 11, 0.4);
-    border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(245, 158, 11, 0.8);
+body {
+    background-color: #06070a;
+    overflow-x: hidden;
 }
 </style>

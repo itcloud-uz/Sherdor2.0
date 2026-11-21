@@ -603,50 +603,50 @@ function formatDate(dateString) {
                         </div>
                     </div>
 
-                    <!-- Modern Premium Grid (4 Cards: Sarmoya, Olingan, Ulush, Hisob/Qarz) -->
-                    <div class="p-5 grid grid-cols-2 sm:grid-cols-4 gap-3.5 bg-slate-50/50 border-b border-slate-100">
+                    <!-- Modern Premium Grid (2x2: 2 ta tepada, 2 ta tagida) -->
+                    <div class="p-6 grid grid-cols-2 gap-4 bg-slate-50/50 border-b border-slate-100">
                         <!-- Card 1: Sarmoya -->
-                        <div @click="openAnalytics(partner, 'expenses')" class="bg-white border border-slate-200/80 rounded-2xl p-4 text-center cursor-pointer hover:shadow-lg hover:border-amber-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[140px] group/card shadow-sm">
+                        <div @click="openAnalytics(partner, 'expenses')" class="bg-white border border-slate-200/80 rounded-2xl p-5 text-center cursor-pointer hover:shadow-lg hover:border-amber-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[145px] group/card shadow-sm">
                             <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3 group-hover/card:bg-amber-500 group-hover/card:text-white transition-colors duration-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                             </div>
                             <div>
-                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Jami Sarmoya</span>
-                                <span class="block text-sm font-black text-slate-800 font-mono leading-none">{{ formatCurrency(partner.total_sarmoya) }}</span>
-                                <span v-if="partner.sarmoya_count" class="block text-[9px] text-slate-400 font-mono mt-1 font-semibold">({{ partner.sarmoya_count }} ta sarmoya)</span>
+                                <span class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Jami Sarmoya</span>
+                                <span class="block text-base font-black text-slate-800 font-mono leading-none">{{ formatCurrency(partner.total_sarmoya) }}</span>
+                                <span v-if="partner.sarmoya_count" class="block text-[10px] text-slate-400 font-mono mt-1.5 font-semibold">({{ partner.sarmoya_count }} ta sarmoya)</span>
                             </div>
-                            <span class="text-[8px] text-slate-400 mt-2 block group-hover/card:text-amber-600 font-bold transition-colors">Ko'rish &rarr;</span>
+                            <span class="text-[9px] text-slate-400 mt-2 block group-hover/card:text-amber-600 font-bold transition-colors">Ko'rish &rarr;</span>
                         </div>
 
                         <!-- Card 2: Olingan -->
-                        <div @click="openAnalytics(partner, 'advances')" class="bg-white border border-slate-200/80 rounded-2xl p-4 text-center cursor-pointer hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[140px] group/card shadow-sm">
+                        <div @click="openAnalytics(partner, 'advances')" class="bg-white border border-slate-200/80 rounded-2xl p-5 text-center cursor-pointer hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[145px] group/card shadow-sm">
                             <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 group-hover/card:bg-emerald-500 group-hover/card:text-white transition-colors duration-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                             </div>
                             <div>
-                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Olingan pul</span>
-                                <span class="block text-sm font-black text-slate-800 font-mono leading-none">{{ formatCurrency(partner.total_olingan) }}</span>
-                                <span v-if="partner.olingan_count" class="block text-[9px] text-slate-400 font-mono mt-1 font-semibold">({{ partner.olingan_count }} ta to'lov)</span>
+                                <span class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Olingan pul</span>
+                                <span class="block text-base font-black text-slate-800 font-mono leading-none">{{ formatCurrency(partner.total_olingan) }}</span>
+                                <span v-if="partner.olingan_count" class="block text-[10px] text-slate-400 font-mono mt-1.5 font-semibold">({{ partner.olingan_count }} ta to'lov)</span>
                             </div>
-                            <span class="text-[8px] text-slate-400 mt-2 block group-hover/card:text-emerald-600 font-bold transition-colors">Ko'rish &rarr;</span>
+                            <span class="text-[9px] text-slate-400 mt-2 block group-hover/card:text-emerald-600 font-bold transition-colors">Ko'rish &rarr;</span>
                         </div>
 
                         <!-- Card 3: Ulush -->
-                        <div @click="openAnalytics(partner, 'analytics')" class="bg-white border border-slate-200/80 rounded-2xl p-4 text-center cursor-pointer hover:shadow-lg hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[140px] group/card shadow-sm">
+                        <div @click="openAnalytics(partner, 'analytics')" class="bg-white border border-slate-200/80 rounded-2xl p-5 text-center cursor-pointer hover:shadow-lg hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[145px] group/card shadow-sm">
                             <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3 group-hover/card:bg-blue-500 group-hover/card:text-white transition-colors duration-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
                             </div>
                             <div>
-                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ulush {{ Number(partner.investment_share_percentage) }}%</span>
-                                <span class="block text-sm font-black text-blue-700 font-mono leading-none">{{ formatCurrency(partner.calculated_share) }}</span>
-                                <span class="block text-[9px] text-slate-400 font-mono mt-1 font-semibold">(Sof foydadan)</span>
+                                <span class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ulush {{ Number(partner.investment_share_percentage) }}%</span>
+                                <span class="block text-base font-black text-blue-700 font-mono leading-none">{{ formatCurrency(partner.calculated_share) }}</span>
+                                <span class="block text-[10px] text-slate-400 font-mono mt-1.5 font-semibold">(Sof foydadan)</span>
                             </div>
-                            <span class="text-[8px] text-slate-400 mt-2 block group-hover/card:text-blue-600 font-bold transition-colors">Hisobot &rarr;</span>
+                            <span class="text-[9px] text-slate-400 mt-2 block group-hover/card:text-blue-600 font-bold transition-colors">Hisobot &rarr;</span>
                         </div>
 
                         <!-- Card 4: Hisob / Qarz (Ulush yonida) -->
                         <div @click="openAnalytics(partner, 'analytics')" 
-                             class="bg-white border rounded-2xl p-4 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[140px] group/card shadow-sm"
+                             class="bg-white border rounded-2xl p-5 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between min-h-[145px] group/card shadow-sm"
                              :class="Number(partner.accountable_balance) < 0 ? 'border-rose-200/90 hover:border-rose-400' : 'border-emerald-200/90 hover:border-emerald-400'">
                             <div class="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3 transition-colors duration-300"
                                  :class="Number(partner.accountable_balance) < 0 ? 'bg-rose-50 text-rose-600 group-hover/card:bg-rose-500 group-hover/card:text-white' : 'bg-emerald-50 text-emerald-600 group-hover/card:bg-emerald-500 group-hover/card:text-white'">
@@ -655,17 +655,17 @@ function formatDate(dateString) {
                                 </svg>
                             </div>
                             <div>
-                                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hisob / Qarz</span>
-                                <span class="block text-sm font-black font-mono leading-none"
+                                <span class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Hisob / Qarz</span>
+                                <span class="block text-base font-black font-mono leading-none"
                                       :class="Number(partner.accountable_balance) < 0 ? 'text-rose-600' : 'text-emerald-600'">
                                     {{ Number(partner.accountable_balance) > 0 ? '+' : '' }}{{ formatCurrency(partner.accountable_balance) }}
                                 </span>
-                                <span class="block text-[9px] font-mono mt-1 font-semibold"
-                                      :class="Number(partner.accountable_balance) < 0 ? 'text-rose-400' : 'text-emerald-500'">
+                                <span class="block text-[10px] font-mono mt-1.5 font-semibold"
+                                      :class="Number(partner.accountable_balance) < 0 ? 'text-rose-500' : 'text-emerald-600'">
                                     {{ Number(partner.accountable_balance) >= 0 ? '(Ulush qoldig\'i)' : '(Ortiqcha olingan)' }}
                                 </span>
                             </div>
-                            <span class="text-[8px] mt-2 block font-bold transition-colors"
+                            <span class="text-[9px] mt-2 block font-bold transition-colors"
                                   :class="Number(partner.accountable_balance) < 0 ? 'text-rose-400 group-hover/card:text-rose-600' : 'text-emerald-500 group-hover/card:text-emerald-600'">
                                 Batafsil &rarr;
                             </span>

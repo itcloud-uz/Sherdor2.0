@@ -566,28 +566,52 @@ def apply_replacements(docx_path, replacements, output_path):
         "Mamanov Abdulla Xursanmurotovich": "MIJOZ_FISH",
         "A. Mamanov": "MIJOZ_FISH_QISQA",
         "A.Mamanov": "MIJOZ_FISH_QISQA",
+        "Рахмонов Жахонгир Туроб ўғли": "MIJOZ_FISH",
+        "Ж. Рахмонов": "MIJOZ_FISH_QISQA",
+        "Ж.Рахмонов": "MIJOZ_FISH_QISQA",
         
         # Client PINFL
         "32601823990061": "MIJOZ_JSHSHIR",
+        "32308703990033": "MIJOZ_JSHSHIR",
+        "30712856130011": "MIJOZ_JSHSHIR",
         
         # Client Passport
         "AD №9160055": "PASPORT_SERIYA",
         "AD № 9160055": "PASPORT_SERIYA",
         "AD№9160055": "PASPORT_SERIYA",
         "AD 9160055": "PASPORT_SERIYA",
+        "AD №5716836": "PASPORT_SERIYA",
+        "AD № 5716836": "PASPORT_SERIYA",
+        "AD№5716836": "PASPORT_SERIYA",
+        "AD 5716836": "PASPORT_SERIYA",
+        "AB №3407230": "PASPORT_SERIYA",
+        "AB № 3407230": "PASPORT_SERIYA",
+        "AB№3407230": "PASPORT_SERIYA",
+        "AB 3407230": "PASPORT_SERIYA",
         "26/10/2024": "PASPORT_SANA",
+        "11/01/2024": "PASPORT_SANA",
+        "15/03/2016": "PASPORT_SANA",
         "Samarqand viloyati Urgut tumani I.I.B": "PASPORT_JOYI",
         "Samarqand viloyati Urgut tumani I.I.B tomonidan berilgan": "PASPORT_JOYI",
+        "Самарқанд вилояти Ургут тумани И.И.Б": "PASPORT_JOYI",
+        "Самарқанд вилояти Ургут тумани И.И.Б томонидан берилган": "PASPORT_JOYI",
+        "Ургут туман И.И.Б": "PASPORT_JOYI",
+        "Ургут туман И.И.Б томонидан берилган": "PASPORT_JOYI",
         
         # Client Address
         "Samarqand viloyati, Urgut tuman Yuqori Tegana Do`stlik maxallasida, ro`yxatda turuvchi": "MIJOZ_MANZILI",
         "Samarqand viloyati, Urgut tuman Yuqori Tegana Do`stlik maxallasida": "MIJOZ_MANZILI",
         "Samarqand viloyati Urgut tumani Yuqori Tegana mahalla": "MIJOZ_MANZILI",
+        "Ургут туман Дўстлик махалласида, рўйхатда турувчи": "MIJOZ_MANZILI",
+        "Самарқанд вилояти Ургут тумани Юқори Тегана маҳалла": "MIJOZ_MANZILI",
         
         # Client Phone
         "(94) 633-04-00, (93) 114-82-72": "MIJOZ_TELEFON",
         "(94) 633-04-00": "MIJOZ_TELEFON",
         "(93) 114-82-72": "MIJOZ_TELEFON",
+        "(93) 196-07-21, (94) 180-00-15": "MIJOZ_TELEFON",
+        "(93) 196-07-21": "MIJOZ_TELEFON",
+        "(94) 180-00-15": "MIJOZ_TELEFON",
         
         # Residential Contract specific
         "4B/9": "SHARTNOMA_RAQAMI",
@@ -605,15 +629,23 @@ def apply_replacements(docx_path, replacements, output_path):
         "57 168 000,00 (ellik yetti million bir yuz oltmish sakkiz ming) so`m": "{{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so`m",
         "57 168 000 (ellik yetti million bir yuz oltmish sakkiz ming) so`m": "{{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so`m",
         "ellik yetti million bir yuz oltmish sakkiz ming": "BOSHLANGICH_TOLOV_SOZ_BILAN",
+        "эллик етти миллион бир юз олтмиш саккиз минг": "BOSHLANGICH_TOLOV_SOZ_BILAN",
+        "икки юз саксон беш миллион саккиз юз қирқ минг": "UMUMIY_NARX_SOZ_BILAN",
         "36 (o'ttiz olti) oy": "{{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) oy",
         "36 (o`ttiz olti) oy": "{{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) oy",
         "36 (o'ttiz olti)": "{{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }})",
         "36 (o`ttiz olti)": "{{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }})",
+        "36 (ўттиз олти) ой": "{{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }}) ой",
+        "36 (ўттиз олти)": "{{ MUDDAT_OY }} ({{ MUDDAT_OY_SOZ_BILAN }})",
         "36": "MUDDAT_OY",
         "o'ttiz olti": "MUDDAT_OY_SOZ_BILAN",
         "o`ttiz olti": "MUDDAT_OY_SOZ_BILAN",
+        "ўттиз олти": "MUDDAT_OY_SOZ_BILAN",
         "kamida 20%, 57 168 000,00 (ellik yetti million bir yuz oltmish sakkiz ming) so`m": "kamida {{ BOSHLANGICH_TOLOV_FOIZ }}%, {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) so`m",
+        "камида 20%, 57 168 000,00 (эллик етти миллион бир юз олтмиш саккиз минг) сўм": "камида {{ BOSHLANGICH_TOLOV_FOIZ }}%, {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) сўм",
+        "камида 20%, 57 168 000 (эллик етти миллион бир юз олтмиш саккиз минг) сўм": "камида {{ BOSHLANGICH_TOLOV_FOIZ }}%, {{ BOSHLANGICH_TOLOV }} ({{ BOSHLANGICH_TOLOV_SOZ_BILAN }}) сўм",
         "kamida 20%": "kamida {{ BOSHLANGICH_TOLOV_FOIZ }}%",
+        "камида 20%": "камида {{ BOSHLANGICH_TOLOV_FOIZ }}%",
         
         # Commercial Contract specific
         "1B/1P": "SHARTNOMA_RAQAMI",
@@ -629,6 +661,10 @@ def apply_replacements(docx_path, replacements, output_path):
         "kamida 100%": "kamida {{ BOSHLANGICH_TOLOV_FOIZ }}%",
         
         # General company settings
+        "«Шер-Дор» ҳусусий корхонаси": "KORXONA_NOMI",
+        "«Шер-Дор» Ҳусусий корхонаси": "KORXONA_NOMI",
+        "«Шер-Дор» хусусий корхонаси": "KORXONA_NOMI",
+        "«Шер-Дор» Хусусий корхонаси": "KORXONA_NOMI",
         "«SHER-DOR» xususiy korxonasi": "KORXONA_NOMI",
         "«SHER-DOR» Xususiy korxonasi": "KORXONA_NOMI",
         "«Sher-Dor» Xususiy korxonasi": "KORXONA_NOMI",

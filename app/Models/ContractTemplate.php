@@ -37,14 +37,6 @@ class ContractTemplate extends Model
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules']);
 
         $date = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at) : now();
-        $monthsUz = [
-            1 => 'yanvar', 2 => 'fevral', 3 => 'mart', 4 => 'aprel',
-            5 => 'may', 6 => 'iyun', 7 => 'iyul', 8 => 'avgust',
-            9 => 'sentabr', 10 => 'oktabr', 11 => 'noyabr', 12 => 'dekabr'
-        ];
-        $kun = $date->format('d');
-        $oy = $monthsUz[(int)$date->format('m')] ?? 'mart';
-        $yil = $date->format('Y');
 
         $client = $contract->client;
         $unit = $contract->unit;
@@ -69,6 +61,49 @@ class ContractTemplate extends Model
             strpos(strtolower(base_path()), 'sellerarp') !== false
         );
 
+        $isCyrillic = false;
+        if (!empty($this->docx_path)) {
+            $fullDocx = storage_path('app/private/' . $this->docx_path);
+            if (!file_exists($fullDocx)) {
+                $fullDocx = storage_path('app/' . $this->docx_path);
+            }
+            if (file_exists($fullDocx)) {
+                $zip = new \ZipArchive();
+                if ($zip->open($fullDocx) === TRUE) {
+                    $docXml = $zip->getFromName('word/document.xml');
+                    if ($docXml && preg_match('/[а-яА-ЯёЁ]/u', $docXml)) {
+                        $isCyrillic = true;
+                    }
+                    $zip->close();
+                }
+            }
+        }
+        if (!$isCyrillic && !empty($this->name) && preg_match('/[а-яА-ЯёЁ]/u', $this->name)) {
+            $isCyrillic = true;
+        }
+        if (!$isCyrillic && !empty($this->preview_html) && preg_match('/[а-яА-ЯёЁ]/u', $this->preview_html)) {
+            $isCyrillic = true;
+        }
+        if (!$isZamon && in_array($this->type, ['residential', 'commercial'])) {
+            $isCyrillic = true;
+        }
+
+        $monthsUzLat = [
+            1 => 'yanvar', 2 => 'fevral', 3 => 'mart', 4 => 'aprel',
+            5 => 'may', 6 => 'iyun', 7 => 'iyul', 8 => 'avgust',
+            9 => 'sentabr', 10 => 'oktabr', 11 => 'noyabr', 12 => 'dekabr'
+        ];
+        $monthsUzCyr = [
+            1 => 'январ', 2 => 'феврал', 3 => 'март', 4 => 'апрел',
+            5 => 'май', 6 => 'июн', 7 => 'июл', 8 => 'август',
+            9 => 'сентябр', 10 => 'октябр', 11 => 'ноябр', 12 => 'декабр'
+        ];
+        $monthsUz = $isCyrillic ? $monthsUzCyr : $monthsUzLat;
+        $kun = $date->format('d');
+        $oy = $monthsUz[(int)$date->format('m')] ?? ($isCyrillic ? 'июл' : 'mart');
+        $oyNum = $date->format('m');
+        $yil = $date->format('Y');
+
         $settings = SystemSetting::first();
 
         if ($isZamon) {
@@ -81,33 +116,33 @@ class ContractTemplate extends Model
             $korxonaDirector = 'E. Sharipov';
             $korxonaTelefon = '(97) 708-44-44, (93) 573-29-29';
         } else {
-            $korxonaNomi = ($settings && $settings->company_name) ? $settings->company_name : '“SHER-DOR” XUSUSIY KORXONASI';
-            $korxonaManzili = ($settings && $settings->company_address) ? $settings->company_address : 'Samarqand viloyati, Urgut tumani, Do`stlik MFY, Navoiy ko`chasi 83-uy';
+            $korxonaNomi = ($settings && $settings->company_name) ? $settings->company_name : ($isCyrillic ? '«Шер-Дор» ҳусусий корхонаси' : '“SHER-DOR” XUSUSIY KORXONASI');
+            $korxonaManzili = ($settings && $settings->company_address) ? $settings->company_address : ($isCyrillic ? 'Ургут туман Дўстлик махалласи Навои-Шох кўчаси №3-уй' : 'Samarqand viloyati, Urgut tumani, Do`stlik MFY, Navoiy ko`chasi 83-uy');
             $korxonaHr = ($settings && $settings->company_bank_account) ? $settings->company_bank_account : '2020 8000 6005 5796 1001';
-            $korxonaBank = ($settings && $settings->company_bank_name) ? $settings->company_bank_name : 'ATB “Agrobank” Urgut tuman filiali';
+            $korxonaBank = ($settings && $settings->company_bank_name) ? $settings->company_bank_name : ($isCyrillic ? 'АТБ “Агробанк” Ургут туман филиали' : 'ATB “Agrobank” Urgut tuman filiali');
             $korxonaMfo = ($settings && $settings->company_mfo) ? $settings->company_mfo : '00300';
             $korxonaInn = ($settings && $settings->company_inn) ? $settings->company_inn : '202 162 496';
-            $korxonaDirector = ($settings && $settings->company_director) ? $settings->company_director : 'J. Raxmonov';
-            $korxonaTelefon = ($settings && $settings->company_phone) ? $settings->company_phone : '(91) 708-44-44, (93) 573-29-29';
+            $korxonaDirector = ($settings && $settings->company_director) ? $settings->company_director : ($isCyrillic ? 'Ж. Рахмонов' : 'J. Raxmonov');
+            $korxonaTelefon = ($settings && $settings->company_phone) ? $settings->company_phone : '(97) 708-44-44, (93) 573-29-29';
         }
 
         $totalAmount = $contract->total_amount ?? 0;
         $downPayment = $contract->down_payment ?? 0;
-        $totalAmountWords = self::numberToWords($totalAmount);
-        $downPaymentWords = self::numberToWords($downPayment);
+        $totalAmountWords = $isCyrillic ? self::numberToWordsCyrillic($totalAmount) : self::numberToWords($totalAmount);
+        $downPaymentWords = $isCyrillic ? self::numberToWordsCyrillic($downPayment) : self::numberToWords($downPayment);
         $downPaymentPercent = $totalAmount > 0 ? round(($downPayment / $totalAmount) * 100) : 0;
         
         $termMonths = $contract->term_months ?? 1;
-        $termMonthsWords = self::numberToWords($termMonths);
+        $termMonthsWords = $isCyrillic ? self::numberToWordsCyrillic($termMonths) : self::numberToWords($termMonths);
 
         $blockVal = ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '';
         $floorVal = $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '');
         $unitVal = $unit ? $unit->unit_number : '';
         $unitType = $unit ? $unit->type : 'residential';
 
-        $blockDesc = self::formatBlockUz($blockVal);
-        $floorDesc = self::formatFloorUz($floorVal);
-        $unitDesc = self::formatUnitUz($unitVal, $unitType);
+        $blockDesc = $isCyrillic ? self::formatBlockUzCyrillic($blockVal) : self::formatBlockUz($blockVal);
+        $floorDesc = $isCyrillic ? self::formatFloorUzCyrillic($floorVal) : self::formatFloorUz($floorVal);
+        $unitDesc = $isCyrillic ? self::formatUnitUzCyrillic($unitVal, $unitType) : self::formatUnitUz($unitVal, $unitType);
         $combinedVal = "{$blockDesc} {$floorDesc}, {$unitDesc}";
 
         $mijozPhoneClean = self::cleanPhoneForContract($client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______');
@@ -121,10 +156,13 @@ class ContractTemplate extends Model
             '{{ ОБЪЕКТ_ТАФСИЛОТИ }}' => $combinedVal, '{{ОБЪЕКТ_ТАФСИЛОТИ}}' => $combinedVal,
             '{{ KUN }}' => $kun, '{{KUN}}' => $kun,
             '{{ OY }}' => $oy, '{{OY}}' => $oy,
+            '{{ OY_NUM }}' => $oyNum, '{{OY_NUM}}' => $oyNum,
             '{{ YIL }}' => $yil, '{{YIL}}' => $yil,
             '{{ SHARTNOMA_RAQAMI }}' => $contract->contract_number ?: $contract->id, '{{SHARTNOMA_RAQAMI}}' => $contract->contract_number ?: $contract->id,
             '{{ MIJOZ_FISH }}' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum', '{{MIJOZ_FISH}}' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum',
+            '{{ MIJOZ_FISH_QISQA }}' => $client ? (mb_substr($client->first_name, 0, 1, 'UTF-8') . '. ' . ($client->last_name ?: '')) : '_______', '{{MIJOZ_FISH_QISQA}}' => $client ? (mb_substr($client->first_name, 0, 1, 'UTF-8') . '. ' . ($client->last_name ?: '')) : '_______',
             '{{ MIJOZ_MANZILI }}' => $client ? ($client->address ?? '_______') : '_______', '{{MIJOZ_MANZILI}}' => $client ? ($client->address ?? '_______') : '_______',
+            '{{ MIJOZ_MANZIL }}' => $client ? ($client->address ?? '_______') : '_______', '{{MIJOZ_MANZIL}}' => $client ? ($client->address ?? '_______') : '_______',
             '{{ MIJOZ_JSHSHIR }}' => $client ? ($client->pinfl ?? '_______') : '_______', '{{MIJOZ_JSHSHIR}}' => $client ? ($client->pinfl ?? '_______') : '_______',
             '{{ PASPORT_SERIYA }}' => $client ? ($client->passport_number ?? $client->passport_series ?? '_______') : '_______', '{{PASPORT_SERIYA}}' => $client ? ($client->passport_number ?? $client->passport_series ?? '_______') : '_______',
             '{{ PASPORT_SANA }}' => self::formatPassportDate($client), '{{PASPORT_SANA}}' => self::formatPassportDate($client),
@@ -278,14 +316,6 @@ class ContractTemplate extends Model
         $contract->load(['client', 'unit.floor.building', 'paymentSchedules']);
 
         $date = $contract->created_at ? \Carbon\Carbon::parse($contract->created_at) : now();
-        $monthsUz = [
-            1 => 'yanvar', 2 => 'fevral', 3 => 'mart', 4 => 'aprel',
-            5 => 'may', 6 => 'iyun', 7 => 'iyul', 8 => 'avgust',
-            9 => 'sentabr', 10 => 'oktabr', 11 => 'noyabr', 12 => 'dekabr'
-        ];
-        $kun = $date->format('d');
-        $oy = $monthsUz[(int)$date->format('m')] ?? 'mart';
-        $yil = $date->format('Y');
 
         $client = $contract->client;
         $unit = $contract->unit;
@@ -310,6 +340,49 @@ class ContractTemplate extends Model
             strpos(strtolower(base_path()), 'sellerarp') !== false
         );
 
+        $isCyrillic = false;
+        if (!empty($this->docx_path)) {
+            $fullDocx = storage_path('app/private/' . $this->docx_path);
+            if (!file_exists($fullDocx)) {
+                $fullDocx = storage_path('app/' . $this->docx_path);
+            }
+            if (file_exists($fullDocx)) {
+                $zip = new \ZipArchive();
+                if ($zip->open($fullDocx) === TRUE) {
+                    $docXml = $zip->getFromName('word/document.xml');
+                    if ($docXml && preg_match('/[а-яА-ЯёЁ]/u', $docXml)) {
+                        $isCyrillic = true;
+                    }
+                    $zip->close();
+                }
+            }
+        }
+        if (!$isCyrillic && !empty($this->name) && preg_match('/[а-яА-ЯёЁ]/u', $this->name)) {
+            $isCyrillic = true;
+        }
+        if (!$isCyrillic && !empty($this->preview_html) && preg_match('/[а-яА-ЯёЁ]/u', $this->preview_html)) {
+            $isCyrillic = true;
+        }
+        if (!$isZamon && in_array($this->type, ['residential', 'commercial'])) {
+            $isCyrillic = true;
+        }
+
+        $monthsUzLat = [
+            1 => 'yanvar', 2 => 'fevral', 3 => 'mart', 4 => 'aprel',
+            5 => 'may', 6 => 'iyun', 7 => 'iyul', 8 => 'avgust',
+            9 => 'sentabr', 10 => 'oktabr', 11 => 'noyabr', 12 => 'dekabr'
+        ];
+        $monthsUzCyr = [
+            1 => 'январ', 2 => 'феврал', 3 => 'март', 4 => 'апрел',
+            5 => 'май', 6 => 'июн', 7 => 'июл', 8 => 'август',
+            9 => 'сентябр', 10 => 'октябр', 11 => 'ноябр', 12 => 'декабр'
+        ];
+        $monthsUz = $isCyrillic ? $monthsUzCyr : $monthsUzLat;
+        $kun = $date->format('d');
+        $oy = $monthsUz[(int)$date->format('m')] ?? ($isCyrillic ? 'июл' : 'mart');
+        $oyNum = $date->format('m');
+        $yil = $date->format('Y');
+
         $settings = SystemSetting::first();
 
         if ($isZamon) {
@@ -322,33 +395,33 @@ class ContractTemplate extends Model
             $korxonaDirector = 'E. Sharipov';
             $korxonaTelefon = '(97) 708-44-44, (93) 573-29-29';
         } else {
-            $korxonaNomi = ($settings && $settings->company_name) ? $settings->company_name : '“SHER-DOR” XUSUSIY KORXONASI';
-            $korxonaManzili = ($settings && $settings->company_address) ? $settings->company_address : 'Samarqand viloyati, Urgut tumani, Do`stlik MFY, Navoiy ko`chasi 83-uy';
+            $korxonaNomi = ($settings && $settings->company_name) ? $settings->company_name : ($isCyrillic ? '«Шер-Дор» ҳусусий корхонаси' : '“SHER-DOR” XUSUSIY KORXONASI');
+            $korxonaManzili = ($settings && $settings->company_address) ? $settings->company_address : ($isCyrillic ? 'Ургут туман Дўстлик махалласи Навои-Шох кўчаси №3-уй' : 'Samarqand viloyati, Urgut tumani, Do`stlik MFY, Navoiy ko`chasi 83-uy');
             $korxonaHr = ($settings && $settings->company_bank_account) ? $settings->company_bank_account : '2020 8000 6005 5796 1001';
-            $korxonaBank = ($settings && $settings->company_bank_name) ? $settings->company_bank_name : 'ATB “Agrobank” Urgut tuman filiali';
+            $korxonaBank = ($settings && $settings->company_bank_name) ? $settings->company_bank_name : ($isCyrillic ? 'АТБ “Агробанк” Ургут туман филиали' : 'ATB “Agrobank” Urgut tuman filiali');
             $korxonaMfo = ($settings && $settings->company_mfo) ? $settings->company_mfo : '00300';
             $korxonaInn = ($settings && $settings->company_inn) ? $settings->company_inn : '202 162 496';
-            $korxonaDirector = ($settings && $settings->company_director) ? $settings->company_director : 'J. Raxmonov';
-            $korxonaTelefon = ($settings && $settings->company_phone) ? $settings->company_phone : '(91) 708-44-44, (93) 573-29-29';
+            $korxonaDirector = ($settings && $settings->company_director) ? $settings->company_director : ($isCyrillic ? 'Ж. Рахмонов' : 'J. Raxmonov');
+            $korxonaTelefon = ($settings && $settings->company_phone) ? $settings->company_phone : '(97) 708-44-44, (93) 573-29-29';
         }
 
         $totalAmount = $contract->total_amount ?? 0;
         $downPayment = $contract->down_payment ?? 0;
-        $totalAmountWords = self::numberToWords($totalAmount);
-        $downPaymentWords = self::numberToWords($downPayment);
+        $totalAmountWords = $isCyrillic ? self::numberToWordsCyrillic($totalAmount) : self::numberToWords($totalAmount);
+        $downPaymentWords = $isCyrillic ? self::numberToWordsCyrillic($downPayment) : self::numberToWords($downPayment);
         $downPaymentPercent = $totalAmount > 0 ? round(($downPayment / $totalAmount) * 100) : 0;
         
         $termMonths = $contract->term_months ?? 1;
-        $termMonthsWords = self::numberToWords($termMonths);
+        $termMonthsWords = $isCyrillic ? self::numberToWordsCyrillic($termMonths) : self::numberToWords($termMonths);
 
         $blockVal = ($unit && $unit->floor && $unit->floor->building) ? ($unit->floor->building->block_name ?: ($unit->floor->building->corpus_name ?: $unit->floor->building->name)) : '';
         $floorVal = $contract->floor ?? ($unit && $unit->floor ? $unit->floor->floor_number : '');
         $unitVal = $unit ? $unit->unit_number : '';
         $unitType = $unit ? $unit->type : 'residential';
 
-        $blockDesc = self::formatBlockUz($blockVal);
-        $floorDesc = self::formatFloorUz($floorVal);
-        $unitDesc = self::formatUnitUz($unitVal, $unitType);
+        $blockDesc = $isCyrillic ? self::formatBlockUzCyrillic($blockVal) : self::formatBlockUz($blockVal);
+        $floorDesc = $isCyrillic ? self::formatFloorUzCyrillic($floorVal) : self::formatFloorUz($floorVal);
+        $unitDesc = $isCyrillic ? self::formatUnitUzCyrillic($unitVal, $unitType) : self::formatUnitUz($unitVal, $unitType);
         $combinedVal = "{$blockDesc} {$floorDesc}, {$unitDesc}";
 
         $mijozPhoneClean = self::cleanPhoneForContract($client ? ($client->phone . ($client->phone_2 ? ', ' . $client->phone_2 : '')) : '_______');
@@ -363,11 +436,13 @@ class ContractTemplate extends Model
             'ОБЪЕКТ_ТАФСИЛОТИ' => $combinedVal,
             'KUN' => $kun,
             'OY' => $oy,
+            'OY_NUM' => $oyNum,
             'YIL' => $yil,
             'SHARTNOMA_RAQAMI' => $contract->contract_number ?: $contract->id,
             'MIJOZ_FISH' => $client ? ($client->last_name . ' ' . $client->first_name . ' ' . ($client->middle_name ?? '')) : 'Noma\'lum',
             'MIJOZ_FISH_QISQA' => $client ? (mb_substr($client->first_name, 0, 1, 'UTF-8') . '. ' . ($client->last_name ?: '')) : '_______',
             'MIJOZ_MANZILI' => $client ? ($client->address ?? '_______') : '_______',
+            'MIJOZ_MANZIL' => $client ? ($client->address ?? '_______') : '_______',
             'MIJOZ_JSHSHIR' => $client ? ($client->pinfl ?? '_______') : '_______',
             'PASPORT_SERIYA' => $client ? ($client->passport_number ?? $client->passport_series ?? '_______') : '_______',
             'PASPORT_SANA' => self::formatPassportDate($client),
@@ -385,7 +460,7 @@ class ContractTemplate extends Model
             'BOSHLANGICH_TOLOV_FOIZ' => $downPaymentPercent,
             'MUDDAT_OY' => $termMonths,
             'MUDDAT_OY_SOZ_BILAN' => $termMonthsWords,
-            'TOLOV_MUDDAT_KUN' => ($contract->payment_limit_days ?? 6) . ' (' . self::numberToWords($contract->payment_limit_days ?? 6) . ') bank',
+            'TOLOV_MUDDAT_KUN' => ($contract->payment_limit_days ?? 6) . ' (' . ($isCyrillic ? self::numberToWordsCyrillic($contract->payment_limit_days ?? 6) : self::numberToWords($contract->payment_limit_days ?? 6)) . ') банк',
             'MIJOZ_TELEFON' => $mijozPhoneClean,
             'DIREKTOR' => $korxonaDirector,
             'KORXONA_NOMI' => $korxonaNomi,
@@ -830,5 +905,152 @@ class ContractTemplate extends Model
         }
         $formattedDate = \Carbon\Carbon::parse($client->passport_issued_date)->format('d/m/Y');
         return $formattedDate . '-yilda';
+    }
+
+    /**
+     * Convert number to words in Uzbek language (Cyrillic).
+     */
+    public static function numberToWordsCyrillic($number): string
+    {
+        $number = floor($number);
+        if ($number == 0) {
+            return 'нол';
+        }
+
+        $ones = [
+            1 => 'бир', 2 => 'икки', 3 => 'уч', 4 => 'тўрт',
+            5 => 'беш', 6 => 'олти', 7 => 'етти', 8 => 'саккиз', 9 => 'тўққиз'
+        ];
+        $tens = [
+            10 => 'ўн', 20 => 'йигирма', 30 => 'ўттиз', 40 => 'қирқ',
+            50 => 'эллик', 60 => 'олтмиш', 70 => 'етмиш', 80 => 'саксон', 90 => 'тўқсон'
+        ];
+        
+        $words = [];
+        
+        if ($number >= 1000000000) {
+            $milliards = floor($number / 1000000000);
+            $words[] = self::numberToWordsCyrillic($milliards) . ' миллиард';
+            $number %= 1000000000;
+        }
+        
+        if ($number >= 1000000) {
+            $millions = floor($number / 1000000);
+            $words[] = self::numberToWordsCyrillic($millions) . ' миллион';
+            $number %= 1000000;
+        }
+        
+        if ($number >= 1000) {
+            $thousands = floor($number / 1000);
+            $words[] = self::numberToWordsCyrillic($thousands) . ' минг';
+            $number %= 1000;
+        }
+        
+        if ($number >= 100) {
+            $hundreds = floor($number / 100);
+            $words[] = ($hundreds >= 1 ? $ones[$hundreds] . ' ' : '') . 'юз';
+            $number %= 100;
+        }
+        
+        if ($number >= 10) {
+            $tenPart = floor($number / 10) * 10;
+            $words[] = $tens[$tenPart];
+            $number %= 10;
+        }
+        
+        if ($number > 0) {
+            $words[] = $ones[$number];
+        }
+        
+        return implode(' ', $words);
+    }
+
+    /**
+     * Convert number to ordinal words in Uzbek (Cyrillic).
+     */
+    public static function numberToOrdinalUzbekWordsCyrillic($number): string
+    {
+        $number = (int)$number;
+        if ($number == 0) {
+            return 'нолинчи';
+        }
+        
+        $words = self::numberToWordsCyrillic($number);
+        $parts = explode(' ', $words);
+        $lastWord = end($parts);
+        
+        $ordinals = [
+            'бир' => 'биринчи',
+            'икки' => 'иккинчи',
+            'уч' => 'учинчи',
+            'тўрт' => 'тўртинчи',
+            'беш' => 'бешинчи',
+            'олти' => 'олтинчи',
+            'етти' => 'еттинчи',
+            'саккиз' => 'саккизинчи',
+            'тўққиз' => 'тўққизинчи',
+            'ўн' => 'ўнинчи',
+            'йигирма' => 'йигирманчи',
+            'ўттиз' => 'ўттизинчи',
+            'қирқ' => 'қирқинчи',
+            'эллик' => 'элликинчи',
+            'олтмиш' => 'олтмишинчи',
+            'етмиш' => 'етмишинчи',
+            'саксон' => 'саксонинчи',
+            'тўқсон' => 'тўқсонинчи',
+            'юз' => 'юзинчи',
+            'минг' => 'мингинчи',
+            'миллион' => 'миллионинчи',
+            'миллиард' => 'миллиардинчи',
+            'нол' => 'нолинчи'
+        ];
+        
+        if (isset($ordinals[$lastWord])) {
+            $parts[count($parts) - 1] = $ordinals[$lastWord];
+        } else {
+            $parts[count($parts) - 1] = $lastWord . 'инчи';
+        }
+        
+        return implode(' ', $parts);
+    }
+
+    public static function formatBlockUzCyrillic($blockName): string
+    {
+        if (empty($blockName)) {
+            return '_______-блок';
+        }
+        $blockName = trim($blockName);
+        if (is_numeric($blockName)) {
+            $word = self::numberToOrdinalUzbekWordsCyrillic($blockName);
+            return "{$blockName}-({$word}) блок";
+        }
+        return "{$blockName}-блок";
+    }
+
+    public static function formatFloorUzCyrillic($floorNumber): string
+    {
+        if ($floorNumber === null || $floorNumber === '') {
+            return '_______-қавати';
+        }
+        $floorNumber = (int)$floorNumber;
+        if ($floorNumber < 0) {
+            return "{$floorNumber}-(подвал) қавати";
+        }
+        $word = self::numberToOrdinalUzbekWordsCyrillic($floorNumber);
+        return "{$floorNumber}-({$word}) қавати";
+    }
+
+    public static function formatUnitUzCyrillic($unitNumber, $type): string
+    {
+        if (empty($unitNumber)) {
+            return ($type === 'commercial') ? '_______-савдо дўконси' : '_______-квартираси';
+        }
+        $unitNumber = trim($unitNumber);
+        $suffix = ($type === 'commercial') ? 'савдо дўконси' : 'квартираси';
+        if (is_numeric($unitNumber)) {
+            $word = self::numberToOrdinalUzbekWordsCyrillic($unitNumber);
+            return "{$unitNumber}-({$word}) {$suffix}";
+        }
+        return "{$unitNumber}-{$suffix}";
     }
 }
